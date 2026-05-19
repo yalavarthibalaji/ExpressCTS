@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    zk.xml — ZK Framework Configuration
+    Placed in WEB-INF/ alongside web.xml
+    
+    Key settings:
+      - error-page : where ZK sends users on session timeout
+      - desktop-config : ajax timeout
+      - library-property : charset, theme settings
+-->
+<zk>
+
+    <!-- ── Session / Desktop ──────────────────────────────────────── -->
+    <desktop-config>
+        <!-- How long (milliseconds) a desktop (page) lives without activity -->
+        <!-- 30 minutes = 1800000 ms -->
+        <desktop-timeout>1800000</desktop-timeout>
+    </desktop-config>
+
+    <!-- ── Error Page on Session Timeout ─────────────────────────── -->
+    <!-- When a session expires, ZK redirects here -->
+    <error-page>
+        <exception-type>org.zkoss.zk.ui.Expired</exception-type>
+        <location>/WEB-INF/zul/login.zul</location>
+    </error-page>
+
+    <!-- ── Library Properties ─────────────────────────────────────── -->
+    <library-property>
+        <name>org.zkoss.web.charset</name>
+        <value>UTF-8</value>
+    </library-property>
+
+    <!-- Disable ZK default theme so our custom CSS takes full control -->
+    <library-property>
+        <name>org.zkoss.zul.theme</name>
+        <value>iceblue</value>
+    </library-property>
+
+</zk>

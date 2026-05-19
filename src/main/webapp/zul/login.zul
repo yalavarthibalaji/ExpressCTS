@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressCTS — Login" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/loginPage.css"?>
+<zk>
+<div sclass="cts-login-page" apply="com.iispl.controller.LoginController">
+    <div sclass="cts-login-card">
+
+        <!-- ── Logo row ── -->
+        <div sclass="cts-login-logo">
+            <div sclass="cts-login-logo-icon">E</div>
+            <div sclass="cts-login-logo-brand">
+                <span class="brand-express">Express</span><span class="brand-cts">CTS</span>
+            </div>
+        </div>
+
+        <!-- ── Subtitle — use label so ZK renders it properly ── -->
+        <label sclass="cts-login-subtitle"
+               value="CHEQUE TRUNCATION SYSTEM — SECURE PORTAL" />
+
+        <!-- ── Divider line ── -->
+        <div sclass="cts-divider" />
+
+        <!-- ── User ID ── -->
+        <div sclass="cts-form-group">
+            <label value="USER ID" sclass="cts-field-label" />
+            <textbox id="txtUserId" sclass="cts-textbox"
+                     placeholder="Enter your Employee / User ID"
+                     instant="true" />
+        </div>
+
+        <!-- ── Password ── -->
+        <div sclass="cts-form-group">
+            <label value="PASSWORD" sclass="cts-field-label" />
+            <textbox id="txtPassword" sclass="cts-textbox"
+                     type="password"
+                     placeholder="Enter password"
+                     instant="true" />
+        </div>
+
+        <!-- ── Detected Role (shown by controller on credential match) ── -->
+        <div id="detectedRoleWrap" sclass="cts-form-group" visible="false">
+            <label value="DETECTED ROLE" sclass="cts-field-label" />
+            <div id="detectedRoleBox" sclass="cts-detected-role">
+                <label id="detectedRoleIcon"  sclass="cts-role-icon" value="" />
+                <label id="detectedRoleLabel" sclass="cts-role-name" value="" />
+            </div>
+        </div>
+
+        <!-- ── Sign In button ── -->
+        <button id="btnSignIn" sclass="cts-btn-login" label="Sign In →" />
+
+        <!-- ── Error message ── -->
+        <div id="loginError" sclass="cts-login-error" visible="false">
+            <label id="loginErrorText" value="" />
+        </div>
+
+    </div>
+</div>
+</zk>

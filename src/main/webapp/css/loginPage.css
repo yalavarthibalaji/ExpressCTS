@@ -1,0 +1,237 @@
+/* ============================================================
+   ExpressCTS — Login Page CSS
+   Color Palette:
+     #FEFEFE – Primary Background
+     #F6F6F6 – Secondary Background
+     #EDF7FE – Light Blue Highlight
+     #E3E7EA – Soft Border Gray
+     #D6DBDD – Neutral Gray
+     #C2C3C4 – Medium Gray
+     #ADADAD – Dark Gray
+     #70B6E0 – Accent Blue
+   Design: Sharp edges (border-radius: 0 everywhere)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Inter', sans-serif; }
+.z-page, .z-page > div:first-child { min-height: 100vh; }
+
+/* ── BACKGROUND ──────────────────────────────────────────────── */
+.cts-login-page {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: #D6DBDD;
+    background-image:
+        linear-gradient(135deg, #C2C3C4 0%, #D6DBDD 40%, #E3E7EA 100%);
+}
+
+/* ── CARD ─────────────────────────────────────────────────────── */
+.cts-login-card {
+    background: #FEFEFE;
+    border-radius: 0;                        /* sharp edge */
+    width: 430px;
+    max-width: 100%;
+    padding: 46px 42px 42px;
+    border: 1.5px solid #E3E7EA;
+    border-top: 3px solid #70B6E0;          /* accent top bar */
+    box-shadow:
+        4px 4px 0px #D6DBDD,
+        0 8px 32px rgba(0,0,0,0.10);
+    animation: cardIn 0.4s ease;
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── LOGO ROW ─────────────────────────────────────────────────── */
+.cts-login-logo {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 10px;
+}
+.cts-login-logo-icon {
+    width: 46px; height: 46px;
+    background: #70B6E0;
+    border-radius: 0;                        /* sharp edge */
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: #FEFEFE;
+    font-family: 'Inter', sans-serif;
+    flex-shrink: 0;
+    border: 2px solid #ADADAD;
+}
+.cts-login-logo-brand {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+.brand-express { font-size: 23px; font-weight: 800; color: #2a2a2a; letter-spacing: -0.5px; }
+.brand-cts     { font-size: 23px; font-weight: 800; color: #70B6E0; letter-spacing: -0.5px; }
+
+/* ── SUBTITLE ─────────────────────────────────────────────────── */
+.cts-login-subtitle,
+.cts-login-subtitle.z-label,
+span.cts-login-subtitle {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #ADADAD !important;
+    letter-spacing: 1.2px !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    margin-top: 4px !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* ── DIVIDER ──────────────────────────────────────────────────── */
+.cts-divider {
+    height: 1px;
+    background: #E3E7EA;
+    margin: 18px 0 26px;
+    border: none;
+}
+
+/* ── FORM GROUP ───────────────────────────────────────────────── */
+.cts-form-group { margin-bottom: 20px; }
+
+/* ── FIELD LABEL ──────────────────────────────────────────────── */
+.cts-field-label,
+.cts-field-label.z-label,
+span.cts-field-label {
+    display: block !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: #ADADAD !important;
+    letter-spacing: 0.9px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 8px !important;
+}
+
+/* ── TEXTBOX ──────────────────────────────────────────────────── */
+.cts-textbox.z-textbox {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    border: 1.5px solid #E3E7EA !important;
+    border-radius: 0 !important;             /* sharp edge */
+    background: #EDF7FE !important;          /* light blue highlight on input */
+    box-shadow: none !important;
+    overflow: hidden !important;
+    transition: border-color 0.15s, background 0.15s !important;
+}
+.cts-textbox.z-textbox:focus-within {
+    border-color: #70B6E0 !important;
+    border-left: 3px solid #70B6E0 !important;
+    background: #FEFEFE !important;
+}
+.cts-textbox.z-textbox .z-textbox-inp {
+    display: block !important;
+    width: 100% !important;
+    padding: 13px 16px !important;
+    border: none !important;
+    background: transparent !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    color: #2a2a2a !important;
+    font-family: 'Inter', sans-serif !important;
+    outline: none !important;
+    box-shadow: none !important;
+    line-height: 1.4 !important;
+}
+.cts-textbox.z-textbox .z-textbox-inp::placeholder {
+    color: #C2C3C4 !important;
+    font-size: 13.5px !important;
+}
+
+/* ── DETECTED ROLE PANEL ─────────────────────────────────────── */
+.cts-detected-role,
+.cts-detected-role-matched {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 13px 16px !important;
+    background: #EDF7FE !important;          /* light blue highlight */
+    border: 1.5px solid #70B6E0 !important;  /* accent blue border */
+    border-left: 4px solid #70B6E0 !important;
+    border-radius: 0 !important;             /* sharp edge */
+    min-height: 50px !important;
+}
+
+/* Role icon */
+.cts-role-icon,
+.cts-role-icon.z-label,
+span.cts-role-icon {
+    font-size: 19px !important;
+    line-height: 1 !important;
+    flex-shrink: 0 !important;
+    display: inline !important;
+}
+
+/* Role name */
+.cts-role-name,
+.cts-role-name.z-label,
+span.cts-role-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #3a7fb5 !important;              /* darker accent blue for text */
+    flex: 1 !important;
+    display: inline !important;
+}
+
+/* ── SIGN IN BUTTON ───────────────────────────────────────────── */
+.cts-btn-login.z-button {
+    display: block !important;
+    width: 100% !important;
+    padding: 14px 20px !important;
+    background: #70B6E0 !important;          /* accent blue */
+    color: #FEFEFE !important;
+    border: 2px solid #70B6E0 !important;
+    border-radius: 0 !important;             /* sharp edge */
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    font-family: 'Inter', sans-serif !important;
+    cursor: pointer !important;
+    letter-spacing: 0.5px !important;
+    text-align: center !important;
+    box-shadow: 3px 3px 0px #ADADAD !important;
+    margin-top: 8px !important;
+    line-height: 1.4 !important;
+    transition: background 0.15s, box-shadow 0.1s, transform 0.1s !important;
+    text-transform: uppercase !important;
+}
+.cts-btn-login.z-button:hover {
+    background: #5aa3d0 !important;
+    border-color: #5aa3d0 !important;
+    box-shadow: 4px 4px 0px #ADADAD !important;
+    transform: translateY(-1px) !important;
+}
+.cts-btn-login.z-button:active {
+    background: #70B6E0 !important;
+    transform: translate(2px, 2px) !important;
+    box-shadow: 1px 1px 0px #ADADAD !important;
+}
+
+/* ── ERROR BOX ────────────────────────────────────────────────── */
+.cts-login-error {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #FEF2F2;
+    border: 1.5px solid #FECACA;
+    border-left: 4px solid #EF4444;
+    border-radius: 0;                        /* sharp edge */
+    text-align: center;
+}
+.cts-login-error .z-label,
+.cts-login-error span {
+    font-size: 13px !important;
+    color: #DC2626 !important;
+    font-weight: 500 !important;
+}
