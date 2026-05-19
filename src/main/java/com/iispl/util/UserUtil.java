@@ -1,0 +1,127 @@
+package com.iispl.util;
+
+import com.iispl.model.UserModel;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * UserUtil.java
+ * Utility class — holds the hardcoded user registry.
+ *
+ * Package : com.iispl.cts.util
+ * Pattern : MVC — Utility layer (helper, no business logic)
+ *
+ * In a real project, this data would come from a JDBC query
+ * against a users/roles table in PostgreSQL.
+ * For this training project, credentials are hardcoded here
+ * to match the prototype's ROLES object exactly.
+ *
+ * Credentials from prototype:
+ *   maker1        / maker123    → Maker (Data Entry)
+ *   checker1      / check123   → Checker (Verifier)
+ *   supervisor1   / super123   → CTS Supervisor
+ *   cts_admin     / cts123     → CTS Admin
+ *   microperator1 / microp123  → MICR Operator
+ *   iw_maker1     / iwmaker123 → Inward Maker (MICR R/R)
+ *   iw_sup1       / iwsup123   → Inward Supervisor
+ *   tech1         / tech1123   → Technical Verifier - I
+ *   tech2         / tech2123   → Technical Verifier - II
+ *   bm1           / bm123      → Branch Manager
+ */
+public class UserUtil {
+
+    // Singleton list — built once when class loads
+    private static final List<UserModel> USERS = new ArrayList<>();
+
+    static {
+        // ── Outward Clearing Roles ──────────────────────────────────
+        USERS.add(new UserModel(
+            "maker1", "maker123",
+            "maker", "Maker (Data Entry)", "M", "✏️",
+            "ow-create-batch"
+        ));
+        USERS.add(new UserModel(
+            "checker1", "check123",
+            "checker", "Checker (Verifier)", "C", "✅",
+            "ow-checker"
+        ));
+        USERS.add(new UserModel(
+            "supervisor1", "super123",
+            "supervisor", "CTS Supervisor", "V", "👁",
+            "dashboard"
+        ));
+        USERS.add(new UserModel(
+            "cts_admin", "cts123",
+            "cts", "CTS Admin", "A", "🏦",
+            "dashboard"
+        ));
+        USERS.add(new UserModel(
+            "microperator1", "microp123",
+            "micr_op", "MICR Operator", "MO", "🔧",
+            "ow-create-batch"
+        ));
+
+        // ── Inward Clearing Roles ───────────────────────────────────
+        USERS.add(new UserModel(
+            "iw_maker1", "iwmaker123",
+            "iw_maker", "Inward Maker (MICR R/R)", "IM", "🔬",
+            "iw-micr"
+        ));
+        USERS.add(new UserModel(
+            "iw_sup1", "iwsup123",
+            "iw_supervisor", "Inward Supervisor", "S", "📥",
+            "iw-receive"
+        ));
+        USERS.add(new UserModel(
+            "tech1", "tech1123",
+            "tech1", "Technical Verifier - I", "T1", "🔍",
+            "iw-officer"
+        ));
+        USERS.add(new UserModel(
+            "tech2", "tech2123",
+            "tech2", "Technical Verifier - II", "T2", "✍️",
+            "iw-sig"
+        ));
+        USERS.add(new UserModel(
+            "bm1", "bm123",
+            "bm", "Branch Manager", "B", "🏛",
+            "bm-dashboard"
+        ));
+    }
+
+    /**
+     * Find a user by userId + password.
+     * Returns the matching UserModel, or null if not found.
+     *
+     * Called by AuthService.authenticate().
+     */
+    public static UserModel findByCredentials(String userId, String password) {
+        if (userId == null || password == null) return null;
+
+        for (UserModel user : USERS) {
+            if (user.getUserId().equals(userId.trim()) &&
+                user.getPassword().equals(password.trim())) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find a user by userId only (used for auto-detect while typing).
+     * Password check is done separately in AuthService.
+     */
+    public static UserModel findByUserId(String userId) {
+        if (userId == null) return null;
+        for (UserModel user : USERS) {
+            if (user.getUserId().equals(userId.trim())) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    // Prevent instantiation — pure static utility
+    private UserUtil() { }
+}
