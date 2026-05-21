@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="CTS Admin Dashboard"?>
+<zk>
+<div apply="com.iispl.controller.AdminDashboardController"
+     style="font-family: sans-serif; padding: 20px; background: #f5f5f5; min-height: 100vh;">
+
+    <!-- Header -->
+    <div style="background: #1a237e; color: white; padding: 15px 20px;
+                border-radius: 8px; margin-bottom: 20px;
+                display: flex; justify-content: space-between; align-items: center;">
+        <label style="font-size: 20px; font-weight: bold;">
+            CTS Admin — User Management
+        </label>
+        <button id="btnLogout"
+                style="background: #ef5350; color: white; border: none;
+                       padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+            Logout
+        </button>
+    </div>
+
+    <!-- ── ADD NEW USER ──────────────────────────────────── -->
+    <div style="background: white; padding: 20px; border-radius: 8px;
+                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+        <label style="font-size: 16px; font-weight: bold;
+                      color: #1a237e; display: block; margin-bottom: 15px;">
+            Add New User
+        </label>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>User ID *</label>
+                <textbox id="txtNewUserId" width="100%"
+                         placeholder="e.g. maker02"/>
+            </div>
+            <div>
+                <label>Full Name *</label>
+                <textbox id="txtNewFullName" width="100%"
+                         placeholder="e.g. Rajesh Kumar"/>
+            </div>
+            <div>
+                <label>Branch Code *</label>
+                <textbox id="txtNewBranchCode" width="100%"
+                         placeholder="e.g. BR001"/>
+            </div>
+            <div>
+                <label>Initial</label>
+                <textbox id="txtNewInitial" width="100%"
+                         placeholder="e.g. RK"/>
+            </div>
+            <div>
+                <label>Role *</label>
+                <combobox id="cmbNewRole" width="100%"
+                          readonly="true" placeholder="Select Role"/>
+            </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+            <button id="btnAddUser"
+                    style="background: #1a237e; color: white; border: none;
+                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
+                Create User
+            </button>
+        </div>
+        <label id="lblAddUserMsg" style="display: block; margin-top: 8px;"/>
+    </div>
+
+    <!-- ── MODIFY USER ───────────────────────────────────── -->
+    <div style="background: white; padding: 20px; border-radius: 8px;
+                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+        <label style="font-size: 16px; font-weight: bold;
+                      color: #1a237e; display: block; margin-bottom: 15px;">
+            Modify User
+        </label>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label>User ID</label>
+                <textbox id="txtModifyUserId" width="100%"
+                         placeholder="Enter User ID to load"/>
+            </div>
+            <button id="btnLoadModifyUser"
+                    style="background: #455a64; color: white; border: none;
+                           padding: 10px 16px; border-radius: 4px; cursor: pointer;">
+                Load User
+            </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>Full Name</label>
+                <textbox id="txtModifyFullName" width="100%"/>
+            </div>
+            <div>
+                <label>Branch Code</label>
+                <textbox id="txtModifyBranchCode" width="100%"/>
+            </div>
+            <div>
+                <label>Initial</label>
+                <textbox id="txtModifyInitial" width="100%"/>
+            </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+            <button id="btnSaveModifyUser"
+                    style="background: #1a237e; color: white; border: none;
+                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
+                Save Changes
+            </button>
+        </div>
+        <label id="lblModifyMsg" style="display: block; margin-top: 8px;"/>
+    </div>
+
+    <!-- ── ENABLE / DISABLE ──────────────────────────────── -->
+    <div style="background: white; padding: 20px; border-radius: 8px;
+                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+                display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+        <!-- Enable -->
+        <div>
+            <label style="font-size: 16px; font-weight: bold;
+                          color: #2e7d32; display: block; margin-bottom: 12px;">
+                Enable User
+            </label>
+            <label>User ID</label>
+            <textbox id="txtEnableUserId" width="100%"
+                     placeholder="Enter User ID"/>
+            <div style="margin-top: 10px;">
+                <button id="btnEnableUser"
+                        style="background: #2e7d32; color: white; border: none;
+                               padding: 10px 24px; border-radius: 4px; cursor: pointer;">
+                    Enable
+                </button>
+            </div>
+            <label id="lblEnableMsg" style="display: block; margin-top: 8px;"/>
+        </div>
+
+        <!-- Disable -->
+        <div>
+            <label style="font-size: 16px; font-weight: bold;
+                          color: #c62828; display: block; margin-bottom: 12px;">
+                Disable User
+            </label>
+            <label>User ID</label>
+            <textbox id="txtDisableUserId" width="100%"
+                     placeholder="Enter User ID"/>
+            <div style="margin-top: 10px;">
+                <button id="btnDisableUser"
+                        style="background: #c62828; color: white; border: none;
+                               padding: 10px 24px; border-radius: 4px; cursor: pointer;">
+                    Disable
+                </button>
+            </div>
+            <label id="lblDisableMsg" style="display: block; margin-top: 8px;"/>
+        </div>
+    </div>
+
+    <!-- ── ROLE MAPPING ──────────────────────────────────── -->
+    <div style="background: white; padding: 20px; border-radius: 8px;
+                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+        <label style="font-size: 16px; font-weight: bold;
+                      color: #1a237e; display: block; margin-bottom: 15px;">
+            Change User Role
+        </label>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>User ID</label>
+                <textbox id="txtRoleUserId" width="100%"
+                         placeholder="Enter User ID"/>
+            </div>
+            <div>
+                <label>New Role</label>
+                <combobox id="cmbRoleSelect" width="100%"
+                          readonly="true" placeholder="Select Role"/>
+            </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+            <button id="btnChangeRole"
+                    style="background: #1a237e; color: white; border: none;
+                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
+                Update Role
+            </button>
+        </div>
+        <label id="lblRoleMsg" style="display: block; margin-top: 8px;"/>
+    </div>
+
+    <!-- ── RESET PASSWORD ────────────────────────────────── -->
+    <div style="background: white; padding: 20px; border-radius: 8px;
+                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+        <label style="font-size: 16px; font-weight: bold;
+                      color: #1a237e; display: block; margin-bottom: 15px;">
+            Reset Password
+        </label>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>User ID</label>
+                <textbox id="txtResetUserId" width="100%"
+                         placeholder="Enter User ID"/>
+            </div>
+            <div>
+                <label>New Password</label>
+                <textbox id="txtNewPassword" width="100%"
+                         type="password" placeholder="Min 6 characters"/>
+            </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+            <button id="btnResetPassword"
+                    style="background: #e65100; color: white; border: none;
+                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
+                Reset Password
+            </button>
+        </div>
+        <label id="lblResetMsg" style="display: block; margin-top: 8px;"/>
+    </div>
+
+    <!-- ── USER LIST ─────────────────────────────────────── -->
+    <div style="background: white; padding: 20px; border-radius: 8px;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+        <label style="font-size: 16px; font-weight: bold;
+                      color: #1a237e; display: block; margin-bottom: 15px;">
+            All Users
+        </label>
+
+        <listbox id="lstUsers" width="100%">
+            <listhead>
+                <listheader label="User ID"    width="150px"/>
+                <listheader label="Full Name"  width="200px"/>
+                <listheader label="Branch"     width="100px"/>
+                <listheader label="Role"       width="150px"/>
+                <listheader label="Status"     width="100px"/>
+            </listhead>
+        </listbox>
+    </div>
+
+</div>
+</zk>
