@@ -1,6 +1,6 @@
 package com.iispl.util;
 
-import com.iispl.entity.OutwardCheque;
+import com.iispl.entity.OutwardChequeDummy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +21,8 @@ public class ChequeDataUtil {
      * Returns 20 dummy cheques that match the prototype's CHQ001-CHQ020.
      * These are pre-loaded into the Maker Queue on the dashboard.
      */
-    public static List<OutwardCheque> buildDummyCheques(String batchId) {
-        List<OutwardCheque> list = new ArrayList<>();
+    public static List<OutwardChequeDummy> buildDummyCheques(String batchId) {
+        List<OutwardChequeDummy> list = new ArrayList<>();
 
         list.add(make("CHQ001","TXN20250415001","000123456","State Bank of India","MG Road Branch","SBIN0001234","600002010","15-Apr-2025","15-Apr-2025","Rajesh Kumar","50100123456789","ABC Traders","Two Lakh Fifty Thousand Rupees Only",250000,"ACTIVE","","20100987654321","PASS",batchId));
         list.add(make("CHQ002","TXN20250415002","000234567","HDFC Bank","Calicut Branch","HDFC0002345","673240002","12-Apr-2025","15-Apr-2025","Priya Nair","50100234567890","Kerala Distributors","Seventy Five Thousand Rupees Only",75000,"ACTIVE","","20100876543210","PASS",batchId));
@@ -49,7 +49,7 @@ public class ChequeDataUtil {
     }
 
     // ── Builder helper ────────────────────────────────────────────────
-    private static OutwardCheque make(
+    private static OutwardChequeDummy make(
             String id, String txnId, String chequeNo,
             String bankName, String branchName,
             String ifsc, String micr,
@@ -59,7 +59,7 @@ public class ChequeDataUtil {
             String chequeStatus, String bounceReason,
             String depositorAcc, String iqaStatus, String batchId) {
 
-        OutwardCheque c = new OutwardCheque();
+        OutwardChequeDummy c = new OutwardChequeDummy();
         c.setId(id);
         c.setTransactionId(txnId);
         c.setChequeNumber(chequeNo);

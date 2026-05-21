@@ -19,7 +19,7 @@ import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listitem;
 import org.zkoss.zul.Textbox;
 
-import com.iispl.entity.OutwardCheque;
+import com.iispl.entity.OutwardChequeDummy;
 import com.iispl.model.UserModel;
 import com.iispl.service.MakerDashboardService;
 
@@ -380,11 +380,11 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void renderLoadedChequeTable() {
-        List<OutwardCheque> list = service.getAllLoadedCheques();
+        List<OutwardChequeDummy> list = service.getAllLoadedCheques();
         loadedChequeCount.setValue(list.size() + " cheques");
         StringBuilder sb = new StringBuilder();
         int i = 1;
-        for (OutwardCheque c : list) {
+        for (OutwardChequeDummy c : list) {
             sb.append("<tr>")
               .append("<td style=\"color:#ADADAD;font-size:11px;\">").append(i++).append("</td>")
               .append("<td class=\"mono\">").append(esc(c.getChequeNumber())).append("</td>")
@@ -489,10 +489,10 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void renderBatchChequeTable(String search) {
-        List<OutwardCheque> list = service.getChequesForBatch(activeBatchId, search);
+        List<OutwardChequeDummy> list = service.getChequesForBatch(activeBatchId, search);
         StringBuilder sb = new StringBuilder();
         int i = 1;
-        for (OutwardCheque c : list) {
+        for (OutwardChequeDummy c : list) {
             boolean isDone  = "done".equals(c.getMakerStatus());
             boolean isHV    = c.getAmountInFigures() >= 500_000;
             boolean iqaFail = "FAIL".equals(c.getIqaStatus()) || c.isIqaManualEntry();
@@ -550,7 +550,7 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void populateChequeDetailForm() {
-        OutwardCheque c = service.getChequeById(activeChequeId);
+        OutwardChequeDummy c = service.getChequeById(activeChequeId);
         if (c == null) return;
 
         boolean done      = "done".equals(c.getMakerStatus());
