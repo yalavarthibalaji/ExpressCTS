@@ -7,18 +7,15 @@ import java.util.List;
 
 /**
  * UserUtil.java
- * Utility class — holds the hardcoded user registry.
+ * Hardcoded user credential registry — matches the prototype's ROLES object exactly.
  *
- * Package : com.iispl.cts.util
- * Pattern : MVC — Utility layer (helper, no business logic)
+ * Package  : com.iispl.util
+ * Pattern  : Utility (pure static helper, no business logic)
  *
- * In a real project, this data would come from a JDBC query
- * against a users/roles table in PostgreSQL.
- * For this training project, credentials are hardcoded here
- * to match the prototype's ROLES object exactly.
+ * To switch to DB: Replace USERS list with a JDBC call in findByCredentials().
  *
- * Credentials from prototype:
- *   maker1        / maker123    → Maker (Data Entry)
+ * Credentials (from prototype):
+ *   maker1        / maker123   → Maker (Data Entry)
  *   checker1      / check123   → Checker (Verifier)
  *   supervisor1   / super123   → CTS Supervisor
  *   cts_admin     / cts123     → CTS Admin
@@ -31,11 +28,10 @@ import java.util.List;
  */
 public class UserUtil {
 
-    // Singleton list — built once when class loads
     private static final List<UserModel> USERS = new ArrayList<>();
 
     static {
-        // ── Outward Clearing Roles ──────────────────────────────────
+        // ── Outward Clearing Roles ──────────────────────────────────────
         USERS.add(new UserModel(
             "maker1", "maker123",
             "maker", "Maker (Data Entry)", "M", "✏️",
@@ -62,7 +58,7 @@ public class UserUtil {
             "ow-create-batch"
         ));
 
-        // ── Inward Clearing Roles ───────────────────────────────────
+        // ── Inward Clearing Roles ───────────────────────────────────────
         USERS.add(new UserModel(
             "iw_maker1", "iwmaker123",
             "iw_maker", "Inward Maker (MICR R/R)", "IM", "🔬",
@@ -91,14 +87,11 @@ public class UserUtil {
     }
 
     /**
-     * Find a user by userId + password.
-     * Returns the matching UserModel, or null if not found.
-     *
-     * Called by AuthService.authenticate().
+     * Authenticate: match userId + password exactly.
+     * @return UserModel on success, null if credentials don't match.
      */
     public static UserModel findByCredentials(String userId, String password) {
         if (userId == null || password == null) return null;
-
         for (UserModel user : USERS) {
             if (user.getUserId().equals(userId.trim()) &&
                 user.getPassword().equals(password.trim())) {
@@ -109,19 +102,16 @@ public class UserUtil {
     }
 
     /**
-     * Find a user by userId only (used for auto-detect while typing).
-     * Password check is done separately in AuthService.
+     * Lookup by userId only (used for role-detection preview while typing).
      */
     public static UserModel findByUserId(String userId) {
         if (userId == null) return null;
         for (UserModel user : USERS) {
-            if (user.getUserId().equals(userId.trim())) {
-                return user;
-            }
+            if (user.getUserId().equals(userId.trim())) return user;
         }
         return null;
     }
 
-    // Prevent instantiation — pure static utility
-    private UserUtil() { }
+    // Prevent instantiation
+    private UserUtil() {}
 }

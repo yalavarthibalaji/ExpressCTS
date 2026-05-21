@@ -9,7 +9,7 @@
         <div sclass="cts-login-logo">
             <div sclass="cts-login-logo-icon">E</div>
             <div sclass="cts-login-logo-brand">
-                <span class="brand-express">Express</span><span class="brand-cts">CTS</span>
+                <span sclass="brand-express">Express</span><span sclass="brand-cts">CTS</span>
             </div>
         </div>
 
