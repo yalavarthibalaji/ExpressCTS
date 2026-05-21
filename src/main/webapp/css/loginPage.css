@@ -1,237 +1,252 @@
-/* ============================================================
-   ExpressCTS — Login Page CSS
-   Color Palette:
-     #FEFEFE – Primary Background
-     #F6F6F6 – Secondary Background
-     #EDF7FE – Light Blue Highlight
-     #E3E7EA – Soft Border Gray
-     #D6DBDD – Neutral Gray
-     #C2C3C4 – Medium Gray
-     #ADADAD – Dark Gray
-     #70B6E0 – Accent Blue
-   Design: Sharp edges (border-radius: 0 everywhere)
-   ============================================================ */
+/* =============================================================
+   loginPage.css  |  ExpressCTS  |  Login Page
+   Matches chequeTruncation_v15.html login design exactly.
+   ============================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+    --blue-900: #0a1628;
+    --blue-800: #0d2044;
+    --blue-700: #1a3a6e;
+    --blue-600: #1e4d9b;
+    --blue-500: #2563c8;
+    --blue-400: #4a80d4;
+    --blue-300: #7aaae0;
+    --blue-100: #dbeafe;
+    --blue-50:  #eff6ff;
+    --gray-50:  #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --green:    #16a34a;
+    --green-lt: #dcfce7;
+    --red:      #dc2626;
+    --red-lt:   #fee2e2;
+}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; font-family: 'Inter', sans-serif; }
-.z-page, .z-page > div:first-child { min-height: 100vh; }
+html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; }
 
-/* ── BACKGROUND ──────────────────────────────────────────────── */
+/* ── ZK page root fills viewport ─────────────────────────────── */
+.z-page,
+.z-page > div:first-child { min-height: 100vh; }
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN PAGE BACKGROUND
+   ═══════════════════════════════════════════════════════════════ */
 .cts-login-page {
     min-height: 100vh;
-    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    background-color: #D6DBDD;
-    background-image:
-        linear-gradient(135deg, #C2C3C4 0%, #D6DBDD 40%, #E3E7EA 100%);
+    background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-700) 60%, var(--blue-500) 100%);
+    position: relative;
+    overflow: hidden;
+}
+/* Subtle grid overlay */
+.cts-login-page::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,.03) 40px, rgba(255,255,255,.03) 41px),
+        repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,.03) 40px, rgba(255,255,255,.03) 41px);
 }
 
-/* ── CARD ─────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN CARD
+   ═══════════════════════════════════════════════════════════════ */
 .cts-login-card {
-    background: #FEFEFE;
-    border-radius: 0;                        /* sharp edge */
-    width: 430px;
-    max-width: 100%;
-    padding: 46px 42px 42px;
-    border: 1.5px solid #E3E7EA;
-    border-top: 3px solid #70B6E0;          /* accent top bar */
-    box-shadow:
-        4px 4px 0px #D6DBDD,
-        0 8px 32px rgba(0,0,0,0.10);
-    animation: cardIn 0.4s ease;
+    background: #fff;
+    border-radius: 16px;
+    width: 440px;
+    padding: 48px 40px 40px;
+    box-shadow: 0 32px 80px rgba(0,0,0,.35);
+    position: relative;
+    z-index: 1;
+    animation: loginSlideUp .5s ease;
 }
-@keyframes cardIn {
-    from { opacity: 0; transform: translateY(18px); }
-    to   { opacity: 1; transform: translateY(0);    }
+@keyframes loginSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── LOGO ROW ─────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   LOGO ROW
+   ═══════════════════════════════════════════════════════════════ */
 .cts-login-logo {
     display: flex;
     align-items: center;
-    gap: 13px;
-    margin-bottom: 10px;
+    gap: 12px;
+    margin-bottom: 8px;
 }
 .cts-login-logo-icon {
     width: 46px; height: 46px;
-    background: #70B6E0;
-    border-radius: 0;                        /* sharp edge */
+    background: var(--blue-600);
+    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 800; color: #FEFEFE;
-    font-family: 'Inter', sans-serif;
-    flex-shrink: 0;
-    border: 2px solid #ADADAD;
+    font-size: 22px; color: #fff; font-weight: 700;
 }
 .cts-login-logo-brand {
-    display: flex;
-    align-items: center;
-    line-height: 1;
+    font-size: 22px; font-weight: 700; color: var(--blue-900);
 }
-.brand-express { font-size: 23px; font-weight: 800; color: #2a2a2a; letter-spacing: -0.5px; }
-.brand-cts     { font-size: 23px; font-weight: 800; color: #70B6E0; letter-spacing: -0.5px; }
+.brand-cts { color: var(--blue-500); }
 
-/* ── SUBTITLE ─────────────────────────────────────────────────── */
-.cts-login-subtitle,
-.cts-login-subtitle.z-label,
-span.cts-login-subtitle {
-    display: block !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    color: #ADADAD !important;
-    letter-spacing: 1.2px !important;
-    text-transform: uppercase !important;
-    white-space: nowrap !important;
-    margin-top: 4px !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
+/* ═══════════════════════════════════════════════════════════════
+   SUBTITLE + DIVIDER
+   ═══════════════════════════════════════════════════════════════ */
+.cts-login-subtitle {
+    display: block;
+    font-size: 12px;
+    color: var(--gray-400);
+    margin-bottom: 24px;
+    font-weight: 500;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Sans', sans-serif;
 }
-
-/* ── DIVIDER ──────────────────────────────────────────────────── */
 .cts-divider {
     height: 1px;
-    background: #E3E7EA;
-    margin: 18px 0 26px;
-    border: none;
+    background: var(--gray-200);
+    margin-bottom: 22px;
 }
 
-/* ── FORM GROUP ───────────────────────────────────────────────── */
-.cts-form-group { margin-bottom: 20px; }
+/* ═══════════════════════════════════════════════════════════════
+   FORM GROUPS  (ZK textbox inside .cts-form-group)
+   ═══════════════════════════════════════════════════════════════ */
+.cts-form-group { margin-bottom: 16px; }
 
-/* ── FIELD LABEL ──────────────────────────────────────────────── */
-.cts-field-label,
-.cts-field-label.z-label,
-span.cts-field-label {
-    display: block !important;
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
-    color: #ADADAD !important;
-    letter-spacing: 0.9px !important;
-    text-transform: uppercase !important;
-    margin-bottom: 8px !important;
+.cts-field-label {
+    display: block;
+    font-size: 12px; font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 7px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
 }
 
-/* ── TEXTBOX ──────────────────────────────────────────────────── */
-.cts-textbox.z-textbox {
-    display: block !important;
-    width: 100% !important;
-    padding: 0 !important;
-    border: 1.5px solid #E3E7EA !important;
-    border-radius: 0 !important;             /* sharp edge */
-    background: #EDF7FE !important;          /* light blue highlight on input */
-    box-shadow: none !important;
-    overflow: hidden !important;
-    transition: border-color 0.15s, background 0.15s !important;
+/* ── ZK textbox inside form group ───────────────────────────── */
+.cts-textbox,
+.cts-form-group .z-textbox,
+.cts-form-group input {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--gray-800);
+    background: var(--gray-50);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+    font-family: 'IBM Plex Sans', sans-serif;
+    box-shadow: none;
 }
-.cts-textbox.z-textbox:focus-within {
-    border-color: #70B6E0 !important;
-    border-left: 3px solid #70B6E0 !important;
-    background: #FEFEFE !important;
-}
-.cts-textbox.z-textbox .z-textbox-inp {
-    display: block !important;
-    width: 100% !important;
-    padding: 13px 16px !important;
-    border: none !important;
-    background: transparent !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    color: #2a2a2a !important;
-    font-family: 'Inter', sans-serif !important;
-    outline: none !important;
-    box-shadow: none !important;
-    line-height: 1.4 !important;
-}
-.cts-textbox.z-textbox .z-textbox-inp::placeholder {
-    color: #C2C3C4 !important;
-    font-size: 13.5px !important;
+.cts-textbox:focus,
+.cts-form-group .z-textbox:focus {
+    border-color: var(--blue-500);
+    box-shadow: 0 0 0 3px rgba(37,99,200,.12);
+    background: #fff;
 }
 
-/* ── DETECTED ROLE PANEL ─────────────────────────────────────── */
-.cts-detected-role,
-.cts-detected-role-matched {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    padding: 13px 16px !important;
-    background: #EDF7FE !important;          /* light blue highlight */
-    border: 1.5px solid #70B6E0 !important;  /* accent blue border */
-    border-left: 4px solid #70B6E0 !important;
-    border-radius: 0 !important;             /* sharp edge */
-    min-height: 50px !important;
+/* ═══════════════════════════════════════════════════════════════
+   DETECTED ROLE BOX
+   ═══════════════════════════════════════════════════════════════ */
+.cts-detected-role {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--blue-50);
+    border: 1.5px solid var(--blue-300);
+    border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    color: var(--blue-700);
 }
+.cts-role-icon { font-size: 20px; }
+.cts-role-name { font-weight: 600; }
 
-/* Role icon */
-.cts-role-icon,
-.cts-role-icon.z-label,
-span.cts-role-icon {
-    font-size: 19px !important;
-    line-height: 1 !important;
-    flex-shrink: 0 !important;
-    display: inline !important;
-}
-
-/* Role name */
-.cts-role-name,
-.cts-role-name.z-label,
-span.cts-role-name {
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    color: #3a7fb5 !important;              /* darker accent blue for text */
-    flex: 1 !important;
-    display: inline !important;
-}
-
-/* ── SIGN IN BUTTON ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   SIGN IN BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+.cts-btn-login,
 .cts-btn-login.z-button {
-    display: block !important;
-    width: 100% !important;
-    padding: 14px 20px !important;
-    background: #70B6E0 !important;          /* accent blue */
-    color: #FEFEFE !important;
-    border: 2px solid #70B6E0 !important;
-    border-radius: 0 !important;             /* sharp edge */
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    font-family: 'Inter', sans-serif !important;
-    cursor: pointer !important;
-    letter-spacing: 0.5px !important;
-    text-align: center !important;
-    box-shadow: 3px 3px 0px #ADADAD !important;
-    margin-top: 8px !important;
-    line-height: 1.4 !important;
-    transition: background 0.15s, box-shadow 0.1s, transform 0.1s !important;
-    text-transform: uppercase !important;
-}
-.cts-btn-login.z-button:hover {
-    background: #5aa3d0 !important;
-    border-color: #5aa3d0 !important;
-    box-shadow: 4px 4px 0px #ADADAD !important;
-    transform: translateY(-1px) !important;
-}
-.cts-btn-login.z-button:active {
-    background: #70B6E0 !important;
-    transform: translate(2px, 2px) !important;
-    box-shadow: 1px 1px 0px #ADADAD !important;
-}
-
-/* ── ERROR BOX ────────────────────────────────────────────────── */
-.cts-login-error {
-    margin-top: 14px;
-    padding: 12px 16px;
-    background: #FEF2F2;
-    border: 1.5px solid #FECACA;
-    border-left: 4px solid #EF4444;
-    border-radius: 0;                        /* sharp edge */
+    display: block;
+    width: 100%;
+    padding: 13px;
+    background: var(--blue-600);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px; font-weight: 600;
+    transition: background .2s;
+    margin-top: 8px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
     text-align: center;
 }
-.cts-login-error .z-label,
-.cts-login-error span {
-    font-size: 13px !important;
-    color: #DC2626 !important;
-    font-weight: 500 !important;
+.cts-btn-login:hover,
+.cts-btn-login.z-button:hover { background: var(--blue-700); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ERROR MESSAGE
+   ═══════════════════════════════════════════════════════════════ */
+.cts-login-error {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--red-lt);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 500;
+    text-align: center;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LIVE CLOCK (bottom of page)
+   ═══════════════════════════════════════════════════════════════ */
+.cts-login-clock {
+    position: absolute;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    text-align: center; z-index: 2;
+}
+.cts-clock-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px; font-weight: 600;
+    color: rgba(255,255,255,.9);
+    letter-spacing: 2px; line-height: 1;
+}
+.cts-clock-date {
+    font-size: 12px;
+    color: rgba(255,255,255,.45);
+    margin-top: 4px; letter-spacing: .5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HINT BOX
+   ═══════════════════════════════════════════════════════════════ */
+.cts-login-hint {
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--blue-50);
+    border-radius: 8px;
+    border-left: 3px solid var(--blue-400);
+}
+.cts-login-hint-title {
+    font-weight: 600; color: var(--blue-700);
+    margin-bottom: 6px; font-size: 11px;
+    letter-spacing: .4px; text-transform: uppercase;
+}
+.cts-login-hint-row {
+    font-size: 11px; color: var(--gray-600); line-height: 1.8;
+}
+.cts-hint-strong { color: var(--blue-600); font-weight: 600; }
+
+/* ZK label inside hint */
+.cts-login-hint .z-label { font-size: inherit; color: inherit; display: inline; }
