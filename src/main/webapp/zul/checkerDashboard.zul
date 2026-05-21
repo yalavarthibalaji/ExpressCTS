@@ -1,0 +1,990 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressCTS — Checker" contentType="text/html;charset=UTF-8"?>
+<?link rel="preconnect" href="https://fonts.googleapis.com"?>
+<?link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
+<?link rel="stylesheet" type="text/css" href="/css/makerDashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/checkerDashboard.css"?>
+<zk>
+
+<!--
+    checkerDashboard.zul  |  ExpressCTS  |  ZK MVC
+    Controller : com.iispl.controller.CheckerController
+    Components : header.zul (shared), checkerSidebar.zul (checker-specific)
+
+    Reusable component pattern — identical to makerDashboard.zul:
+      <include src="/zul/components/header.zul"/>       → HeaderController
+      <include src="/zul/components/checkerSidebar.zul"/> → CheckerSidebarController
+
+    CheckerSidebarController fires nav events (onNavDashboard, onNavChecker, etc.)
+    that bubble up to div#chkApp where CheckerController @Listen catches them.
+-->
+
+<zscript><![CDATA[
+    import org.zkoss.zk.ui.event.Events;
+    import org.zkoss.zk.ui.event.Event;
+
+    void doOpenBatch(String batchId) {
+        Events.postEvent(new Event("onOpenBatch", chkApp, batchId));
+    }
+    void doViewCheque(String chequeId) {
+        Events.postEvent(new Event("onViewCheque", chkApp, chequeId));
+    }
+    void doNavDashboard()  { Events.postEvent(new Event("onNavDashboard",  chkApp, null)); }
+    void doNavChecker()    { Events.postEvent(new Event("onNavChecker",    chkApp, null)); }
+    void doNavBatchMgmt()  { Events.postEvent(new Event("onNavBatchMgmt",  chkApp, null)); }
+    void doNavMicrRepair() { Events.postEvent(new Event("onNavMicrRepair", chkApp, null)); }
+    void doNavReports()    { Events.postEvent(new Event("onNavReports",    chkApp, null)); }
+    void doNavAudit()      { Events.postEvent(new Event("onNavAudit",      chkApp, null)); }
+    void doSearch(String k){ Events.postEvent(new Event("onSearch",        chkApp, k));    }
+    void doTimerTick()     { Events.postEvent(new Event("onTimerTick",     chkApp, null)); }
+
+    // Quick-fill helpers for spot-check remarks
+    // Cannot use single quotes inside onClick attribute — zscript functions instead
+    void doQuickFill1() { txtCheckerRemarks.setValue("Data matches cheque image"); }
+    void doQuickFill2() { txtCheckerRemarks.setValue("Amount in words and figures match"); }
+    void doQuickFill3() { txtCheckerRemarks.setValue("All fields verified and correct"); }
+    void doQuickFill4() { txtCheckerRemarks.setValue("Signature mismatch — rejecting"); }
+    void doQuickFill5() { txtCheckerRemarks.setValue("Account details confirmed with CBS"); }
+
+    // Batch Mgmt actions
+    void doVerifyBatch(String batchId) {
+        Events.postEvent(new Event("onVerifyBatch", chkApp, batchId));
+    }
+    void doViewBatchCheques(String batchId) {
+        Events.postEvent(new Event("onViewBatchCheques", chkApp, batchId));
+    }
+    // MICR Repair actions
+    void doRepairCheque(String chequeId) {
+        Events.postEvent(new Event("onRepairCheque", chkApp, chequeId));
+    }
+    void doVerifyMicrCheque(String chequeId) {
+        Events.postEvent(new Event("onVerifyMicrCheque", chkApp, chequeId));
+    }
+]]></zscript>
+
+<div id="chkApp" sclass="cts-app" apply="com.iispl.controller.CheckerController">
+
+    <!-- ── 1. HEADER (shared reusable component — same as Maker) ── -->
+    <include src="/zul/components/header.zul"/>
+
+    <!-- ── 2. BODY: sidebar + main ────────────────────────────── -->
+    <div sclass="cts-body">
+
+        <!-- 2a. CHECKER SIDEBAR (reusable component) -->
+        <include src="/zul/components/checkerSidebar.zul"/>
+
+        <!-- 2b. MAIN CONTENT -->
+        <div sclass="cts-main-content">
+
+            <!-- ══════════════════════════════════════
+                 PANEL: DASHBOARD
+            ══════════════════════════════════════ -->
+            <div id="panelDashboard" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">Outward Clearing</div>
+                    <div sclass="cts-page-title">Dashboard</div>
+                </div>
+                <div sclass="cts-stats-row">
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Checker Queue</div>
+                        <div sclass="cts-stat-value"><label id="dashTotalBatches" value="0" /></div>
+                        <div sclass="cts-stat-sub">batches</div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total Cheques</div>
+                        <div sclass="cts-stat-value"><label id="dashTotalCheques" value="0" /></div>
+                        <div sclass="cts-stat-sub">in queue</div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Approved</div>
+                        <div sclass="cts-stat-value cts-green"><label id="dashApproved" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Pending</div>
+                        <div sclass="cts-stat-value cts-orange"><label id="dashPending" value="0" /></div>
+                    </div>
+                </div>
+                <div sclass="cts-card">
+                    <div sclass="cts-card-body" style="text-align:center;padding:32px;">
+                        <label id="dashRoleName"
+                               style="display:block;font-size:15px;font-weight:700;color:#1a3a6e;margin-bottom:20px;"
+                               value="" />
+                        <button sclass="cts-btn cts-btn-primary"
+                                label="Go to Checker Verification &#8594;"
+                                onClick="doNavChecker()" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 PANEL: BATCH MANAGEMENT
+            ══════════════════════════════════════ -->
+            <div id="panelBatchMgmt" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">Outward Clearing &#8250; Batch Management</div>
+                    <div sclass="cts-page-title">Batch Management</div>
+                </div>
+
+                <!-- Summary stats -->
+                <div sclass="cts-stats-row">
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total Batches</div>
+                        <div sclass="cts-stat-value"><label id="bmTotalBatches" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Approved</div>
+                        <div sclass="cts-stat-value cts-green"><label id="bmApprovedBatches" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Pending Checker</div>
+                        <div sclass="cts-stat-value cts-orange"><label id="bmPendingBatches" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total Cheques</div>
+                        <div sclass="cts-stat-value"><label id="bmTotalCheques" value="0" /></div>
+                    </div>
+                </div>
+
+                <!-- Batch table -->
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Batch Summary</span>
+                        <label id="bmBatchBadge" sclass="cts-badge cts-badge-blue" value="0 batch(es)" />
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridBatchMgmt" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No batches found.">
+                            <columns>
+                                <column label="#"              width="50px" />
+                                <column label="Batch ID"       width="200px" />
+                                <column label="Cheques"        width="90px" />
+                                <column label="Total Amount"   width="160px" />
+                                <column label="Status"         width="150px" />
+                                <column label="Progress" />
+                                <column label="Action"         width="200px" />
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:#ADADAD;font-size:11px;" />
+                                    <label value="${each.batchId}"
+                                           sclass="cts-mono cts-blue-700 cts-fw700" />
+                                    <label value="${each.totalCheques}" />
+                                    <label value="${each.formattedAmount}" sclass="cts-mono cts-fw600" />
+                                    <label value="${each.status eq 'APPROVED' ? 'Approved' : 'Checker Pending'}"
+                                           sclass="${each.status eq 'APPROVED' ? 'cts-badge cts-badge-green' : 'cts-badge cts-badge-orange'}" />
+                                    <div>
+                                        <label value="${each.approvedCount}/${each.totalCheques}"
+                                               style="font-size:12px;color:#333;" />
+                                        <div sclass="cts-progress-track">
+                                            <div sclass="cts-progress-fill"
+                                                 style="width:${each.progressPercent}%;" />
+                                        </div>
+                                    </div>
+                                    <div sclass="cts-action-row" style="gap:6px;">
+                                        <button label="View Cheques"
+                                                sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                                onClick='doViewBatchCheques("${each.batchId}")' />
+                                        <button label="Verify &#10003;"
+                                                sclass="cts-btn cts-btn-success cts-btn-sm"
+                                                visible="${each.status ne 'APPROVED'}"
+                                                onClick='doVerifyBatch("${each.batchId}")' />
+                                        <label value="&#10003; Verified"
+                                               sclass="cts-approved-text"
+                                               visible="${each.status eq 'APPROVED'}" />
+                                    </div>
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+
+                <!-- Expanded batch cheque detail (shown when View Cheques clicked) -->
+                <div id="divBatchMgmtChequeDetail" visible="false">
+                    <div sclass="cts-card">
+                        <div sclass="cts-card-header">
+                            <span sclass="cts-card-title">
+                                Cheques in Batch: <label id="lblBmSelectedBatch" value="" />
+                            </span>
+                            <button id="btnBmCloseCheques"
+                                    sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                    label="&#10005; Close" />
+                        </div>
+                        <div sclass="cts-card-body" style="padding:0;">
+                            <grid id="gridBatchMgmtCheques" sclass="cts-table-grid" width="100%"
+                                  emptyMessage="No cheques.">
+                                <columns>
+                                    <column label="#"           width="50px" />
+                                    <column label="Cheque No."  width="130px" />
+                                    <column label="Bank" />
+                                    <column label="Drawer"      width="160px" />
+                                    <column label="Amount"      width="140px" />
+                                    <column label="Date"        width="110px" />
+                                    <column label="Maker"       width="90px" />
+                                    <column label="Checker"     width="120px" />
+                                </columns>
+                                <template name="model">
+                                    <row>
+                                        <label value="${forEachStatus.index + 1}"
+                                               style="color:#ADADAD;font-size:11px;" />
+                                        <label value="${each.chequeNumber}" sclass="cts-mono" />
+                                        <label value="${each.bankName}" style="font-size:12px;" />
+                                        <label value="${each.drawerName}" style="font-size:12px;" />
+                                        <label value="${each.formattedAmount}"
+                                               sclass="cts-mono cts-blue-700 cts-fw700" />
+                                        <label value="${each.chequeDate}" style="font-size:12px;" />
+                                        <label value="&#10003; Done" sclass="cts-badge cts-badge-green" />
+                                        <label value="${each.checkerStatus eq 'approved' ? '&#10003; Passed' : each.checkerStatus eq 'rejected' ? '&#10007; Exception' : 'Pending'}"
+                                               sclass="${each.checkerStatus eq 'approved' ? 'cts-badge cts-badge-green' : each.checkerStatus eq 'rejected' ? 'cts-badge cts-badge-red' : 'cts-badge cts-badge-orange'}" />
+                                    </row>
+                                </template>
+                            </grid>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /panelBatchMgmt -->
+
+            <!-- ══════════════════════════════════════
+                 PANEL: MICR REPAIR
+            ══════════════════════════════════════ -->
+            <div id="panelMicrRepair" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">Outward Clearing &#8250; MICR Repair</div>
+                    <div sclass="cts-page-title">MICR Repair Exception Queue</div>
+                </div>
+
+                <!-- Summary stats -->
+                <div sclass="cts-stats-row">
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total MICR Flags</div>
+                        <div sclass="cts-stat-value"><label id="micrTotal" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Pending Repair</div>
+                        <div sclass="cts-stat-value cts-orange"><label id="micrPending" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Repaired</div>
+                        <div sclass="cts-stat-value cts-blue"><label id="micrRepaired" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Verified</div>
+                        <div sclass="cts-stat-value cts-green"><label id="micrVerified" value="0" /></div>
+                    </div>
+                </div>
+
+                <!-- Maker section: repair table -->
+                <div sclass="cts-card" style="margin-bottom:20px;">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Maker — MICR Data Repair</span>
+                        <label id="micrPendingBadge" sclass="cts-badge cts-badge-orange" value="0 pending" />
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridMicrRepair" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No MICR repair items. IQA-failed cheques will appear here after XML upload.">
+                            <columns>
+                                <column label="#"             width="50px" />
+                                <column label="Cheque No."    width="130px" />
+                                <column label="Bank" />
+                                <column label="Drawer"        width="160px" />
+                                <column label="Amount"        width="130px" />
+                                <column label="MICR Flag"     width="130px" />
+                                <column label="Status"        width="150px" />
+                                <column label="Action"        width="110px" />
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:#ADADAD;font-size:11px;" />
+                                    <label value="${each.chequeNumber}" sclass="cts-mono" />
+                                    <label value="${each.bankName}" style="font-size:12px;" />
+                                    <label value="${each.drawerName}" style="font-size:12px;" />
+                                    <label value="${each.formattedAmount}"
+                                           sclass="cts-mono cts-blue-700 cts-fw700" />
+                                    <label value="MICR / IQA Fail"
+                                           sclass="cts-badge cts-badge-red" />
+                                    <label value="${each.checkerStatus eq 'approved' ? '&#10003; Verified' : each.checkerStatus eq 'rejected' ? 'Returned' : 'Pending Repair'}"
+                                           sclass="${each.checkerStatus eq 'approved' ? 'cts-badge cts-badge-green' : each.checkerStatus eq 'rejected' ? 'cts-badge cts-badge-red' : 'cts-badge cts-badge-yellow'}" />
+                                    <button label="Repair &#9998;"
+                                            sclass="cts-btn cts-btn-primary cts-btn-sm"
+                                            visible="${each.checkerStatus eq 'pending'}"
+                                            onClick='doRepairCheque("${each.chequeId}")' />
+                                    <label value="Submitted"
+                                           sclass="cts-badge cts-badge-gray"
+                                           visible="${each.checkerStatus ne 'pending'}" />
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+
+                <!-- Inline Repair Form (shown when Repair clicked) -->
+                <div id="divMicrRepairForm" visible="false" sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">&#9998; MICR Repair — Cheque: <label id="lblMicrRepairChequeNum" value="" /></span>
+                        <button id="btnCloseMicrRepairForm"
+                                sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                label="&#10005; Close" />
+                    </div>
+                    <div sclass="cts-card-body">
+                        <div sclass="cts-form-row">
+                            <div sclass="cts-field">
+                                <label sclass="cts-field-lbl" value="MICR Code (corrected)" />
+                                <textbox id="micrFldMicrCode" sclass="cts-textbox-edit" width="100%" />
+                            </div>
+                            <div sclass="cts-field">
+                                <label sclass="cts-field-lbl" value="Cheque Number (corrected)" />
+                                <textbox id="micrFldChequeNum" sclass="cts-textbox-edit" width="100%" />
+                            </div>
+                        </div>
+                        <div sclass="cts-form-row">
+                            <div sclass="cts-field">
+                                <label sclass="cts-field-lbl" value="Bank Name" />
+                                <textbox id="micrFldBankName" sclass="cts-textbox-edit" width="100%" />
+                            </div>
+                            <div sclass="cts-field">
+                                <label sclass="cts-field-lbl" value="IFSC Code" />
+                                <textbox id="micrFldIfsc" sclass="cts-textbox-edit" width="100%" />
+                            </div>
+                        </div>
+                        <div sclass="cts-field" style="margin-bottom:14px;">
+                            <label sclass="cts-field-lbl" value="Repair Remarks" />
+                            <textbox id="micrFldRemarks" sclass="cts-textbox-edit"
+                                     multiline="true" rows="2"
+                                     placeholder="Enter reason for correction..."
+                                     width="100%" />
+                        </div>
+                        <div sclass="cts-action-row">
+                            <button id="btnSubmitMicrRepair"
+                                    sclass="cts-btn cts-btn-success"
+                                    label="&#10003; Submit Repair" />
+                            <button id="btnReturnToDepositor"
+                                    sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                    label="&#8617; Return to Depositor" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checker verification section -->
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Checker — MICR Repair Verification</span>
+                        <label id="micrAwaitingBadge" sclass="cts-badge cts-badge-blue" value="0 awaiting" />
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridMicrVerify" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No repairs submitted for verification yet.">
+                            <columns>
+                                <column label="#"           width="50px" />
+                                <column label="Cheque No."  width="130px" />
+                                <column label="Bank" />
+                                <column label="Drawer"      width="160px" />
+                                <column label="Amount"      width="130px" />
+                                <column label="Repair By"   width="120px" />
+                                <column label="Status"      width="130px" />
+                                <column label="Action"      width="100px" />
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:#ADADAD;font-size:11px;" />
+                                    <label value="${each.chequeNumber}" sclass="cts-mono" />
+                                    <label value="${each.bankName}" style="font-size:12px;" />
+                                    <label value="${each.drawerName}" style="font-size:12px;" />
+                                    <label value="${each.formattedAmount}"
+                                           sclass="cts-mono cts-blue-700 cts-fw700" />
+                                    <label value="Maker" style="font-size:12px;" />
+                                    <label value="Awaiting Checker"
+                                           sclass="cts-badge cts-badge-blue" />
+                                    <button label="Verify &#8250;"
+                                            sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                            onClick='doVerifyMicrCheque("${each.chequeId}")' />
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+
+                <!-- Verify inline panel -->
+                <div id="divMicrVerifyPanel" visible="false" sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Verify Repair — Cheque: <label id="lblMicrVerifyChequeNum" value="" /></span>
+                        <button id="btnCloseMicrVerify"
+                                sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                label="&#10005; Close" />
+                    </div>
+                    <div sclass="cts-card-body">
+                        <div sclass="cts-form-row">
+                            <div sclass="cts-field">
+                                <label sclass="cts-field-lbl" value="MICR Code (repaired)" />
+                                <textbox id="micrVfyMicrCode" sclass="cts-field-ro" readonly="true" />
+                            </div>
+                            <div sclass="cts-field">
+                                <label sclass="cts-field-lbl" value="Cheque Number (repaired)" />
+                                <textbox id="micrVfyChequeNum" sclass="cts-field-ro" readonly="true" />
+                            </div>
+                        </div>
+                        <div sclass="cts-field" style="margin-bottom:14px;">
+                            <label sclass="cts-field-lbl" value="Checker Remarks" />
+                            <textbox id="micrVfyRemarks" sclass="cts-textbox-edit"
+                                     multiline="true" rows="2"
+                                     placeholder="Enter verification remarks..."
+                                     width="100%" />
+                        </div>
+                        <div sclass="cts-action-row">
+                            <button id="btnApproveMicrRepair"
+                                    sclass="cts-btn cts-btn-success"
+                                    label="&#10003; Approve Repair" />
+                            <button id="btnRejectMicrRepair"
+                                    sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                    label="&#10007; Reject — Return to Maker" />
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /panelMicrRepair -->
+
+            <!-- ══════════════════════════════════════
+                 PANEL: CHECKER — BATCH LIST
+            ══════════════════════════════════════ -->
+            <div id="panelBatchList" visible="true">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">Outward Clearing &#8250; Checker</div>
+                    <div sclass="cts-page-title">Checker Verification</div>
+                </div>
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Batches Ready for Verification</span>
+                        <label id="lblBatchCount" sclass="cts-badge cts-badge-orange" value="0 batch(es)" />
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridBatchList" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No batches in checker queue.">
+                            <columns>
+                                <column label="#"                width="50px" />
+                                <column label="Batch ID"         width="200px" />
+                                <column label="Cheques"          width="90px" />
+                                <column label="Total Amount"     width="160px" />
+                                <column label="Status"           width="150px" />
+                                <column label="Checker Progress" />
+                                <column label="Action"           width="160px" />
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:#ADADAD;font-size:11px;" />
+                                    <label value="${each.batchId}"
+                                           sclass="cts-mono cts-blue-700 cts-fw700" />
+                                    <label value="${each.totalCheques}" />
+                                    <label value="${each.formattedAmount}" sclass="cts-mono cts-fw600" />
+                                    <label value="${each.status eq 'APPROVED' ? 'APPROVED' : 'CHECKER PENDING'}"
+                                           sclass="${each.status eq 'APPROVED' ? 'cts-badge cts-badge-green' : 'cts-badge cts-badge-orange'}" />
+                                    <div>
+                                        <label value="${each.approvedCount}/${each.totalCheques} approved"
+                                               style="font-size:12px;color:#333;" />
+                                        <div sclass="cts-progress-track">
+                                            <div sclass="cts-progress-fill"
+                                                 style="width:${each.progressPercent}%;" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label value="&#10003; Approved" sclass="cts-approved-text"
+                                               visible="${each.status eq 'APPROVED'}" />
+                                        <button label="Open Batch &#8594;"
+                                                sclass="cts-btn cts-btn-primary cts-btn-sm"
+                                                visible="${each.status ne 'APPROVED'}"
+                                                onClick='doOpenBatch("${each.batchId}")' />
+                                    </div>
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 PANEL: CHECKER — CHEQUE LIST
+            ══════════════════════════════════════ -->
+            <div id="panelChequeList" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">
+                        <label value="Outward Clearing &#8250; Checker &#8250; " />
+                        <label id="lblBreadcrumbBatchId" value="" sclass="cts-blue-700 cts-fw600" />
+                    </div>
+                    <div sclass="cts-page-title"><label id="lblActiveBatchId" value="" /></div>
+                </div>
+
+                <!-- Batch banner -->
+                <div sclass="cts-batch-banner">
+                    <span style="font-size:16px;">&#128230;</span>
+                    <label id="lblBatchBannerId" value="" sclass="cts-mono cts-blue-700 cts-fw700" style="font-size:13px;" />
+                    <label value=" | " style="color:#C2C3C4;" />
+                    <label id="lblBatchTotalChq" value="" style="font-size:13px;" />
+                    <label value=" cheques | " style="color:#C2C3C4;font-size:13px;" />
+                    <label id="lblBatchAmount" value="" sclass="cts-fw700" style="font-size:13px;" />
+                    <div sclass="cts-batch-banner-spacer" />
+                    <button id="btnBackToBatchList" sclass="cts-btn cts-btn-outline cts-btn-sm"
+                            label="&#8592; Back" />
+                </div>
+
+                <!-- Stats -->
+                <div sclass="cts-stats-row">
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total</div>
+                        <div sclass="cts-stat-value"><label id="lblStatTotal" value="0" /></div>
+                        <div sclass="cts-stat-sub"><label id="lblStatAmount" value="" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Approved</div>
+                        <div sclass="cts-stat-value cts-green"><label id="lblApprovedCount" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Exceptions</div>
+                        <div sclass="cts-stat-value cts-red"><label id="lblRejectedCount" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Pending</div>
+                        <div sclass="cts-stat-value cts-orange"><label id="lblPendingCount" value="0" /></div>
+                    </div>
+                </div>
+
+                <!-- Batch-level approval -->
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Batch-Level Approval</span>
+                        <label id="lblApprovalSummary" value="" style="font-size:12px;color:#ADADAD;" />
+                    </div>
+                    <div sclass="cts-card-body">
+                        <div id="divBatchApprovedBanner" visible="false" sclass="cts-alert cts-alert-success">
+                            <span sclass="cts-alert-icon">&#9989;</span>
+                            <label value="Batch " />
+                            <label id="lblApprovedBatchId" value="" style="font-weight:700;" />
+                            <label value=" APPROVED." />
+                        </div>
+                        <div id="divBatchActions" visible="true" sclass="cts-action-row">
+                            <button id="btnApproveBatch" sclass="cts-btn cts-btn-success"
+                                    label="&#9989; Approve Batch" />
+                            <button id="btnReturnBatch" sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                    label="&#8617; Return to Maker" />
+                        </div>
+                        <div id="divReturnRemarks" visible="false" sclass="cts-return-box">
+                            <div sclass="cts-return-box-label"><label value="Return reason (required)" /></div>
+                            <textbox id="txtReturnRemarks" sclass="cts-textbox-edit"
+                                     multiline="true" rows="2" placeholder="Enter reason..."
+                                     width="100%" />
+                            <div sclass="cts-action-row" style="margin-top:8px;">
+                                <button id="btnConfirmReturn" sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                        label="&#8617; Confirm Return" />
+                                <button id="btnCancelReturn" sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                        label="Cancel" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cheque list -->
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">
+                            Cheques — <label id="lblChequeListBatchId" value="" />
+                        </span>
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridChequeList" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No cheques in this batch.">
+                            <columns>
+                                <column label="#"             width="50px" />
+                                <column label="Cheque No."    width="130px" />
+                                <column label="Bank" />
+                                <column label="Drawer"        width="160px" />
+                                <column label="Amount"        width="140px" />
+                                <column label="Cheque Date"   width="110px" />
+                                <column label="Maker"         width="90px" />
+                                <column label="Checker"       width="130px" />
+                                <column label="Action"        width="90px" />
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:#ADADAD;font-size:11px;" />
+                                    <label value="${each.chequeNumber}" sclass="cts-mono" />
+                                    <label value="${each.bankName}" style="font-size:12px;" />
+                                    <label value="${each.drawerName}" style="font-size:12px;" />
+                                    <div>
+                                        <label value="${each.formattedAmount}"
+                                               sclass="cts-mono cts-blue-700 cts-fw700" />
+                                        <label value="HV" sclass="cts-badge cts-badge-orange"
+                                               visible="${each.highValue}"
+                                               style="font-size:10px;margin-left:4px;" />
+                                    </div>
+                                    <label value="${each.chequeDate}" style="font-size:12px;" />
+                                    <label value="&#10003; Done" sclass="cts-badge cts-badge-green" />
+                                    <label value="${each.checkerStatus eq 'approved' ? '&#10003; Passed' : each.checkerStatus eq 'rejected' ? '&#10007; Exception' : 'Pending'}"
+                                           sclass="${each.checkerStatus eq 'approved' ? 'cts-badge cts-badge-green' : each.checkerStatus eq 'rejected' ? 'cts-badge cts-badge-red' : 'cts-badge cts-badge-orange'}" />
+                                    <button label="View &#8250;"
+                                            sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                            onClick='doViewCheque("${each.chequeId}")' />
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 PANEL: CHECKER — CHEQUE DETAIL
+            ══════════════════════════════════════ -->
+            <div id="panelChequeDetail" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">
+                        <label value="Outward Clearing &#8250; Checker &#8250; " />
+                        <label id="lblDetailBatchId" value="" sclass="cts-blue-700 cts-fw600" />
+                    </div>
+                    <div sclass="cts-page-title"><label id="lblDetailChequeNum" value="" /></div>
+                </div>
+
+                <!-- Nav bar -->
+                <div sclass="cts-detail-nav">
+                    <button id="btnBackToList" sclass="cts-btn cts-btn-outline cts-btn-sm"
+                            label="&#8592; Back to Batch" />
+                    <div sclass="cts-detail-nav-right">
+                        <label id="lblDetailPosition" sclass="cts-position-label" value="" />
+                        <label id="lblDetailStatus" sclass="cts-badge" value="" />
+                        <button id="btnPrevCheque" sclass="cts-btn cts-btn-outline cts-btn-sm"
+                                label="&#8249; Prev" />
+                        <button id="btnNextCheque" sclass="cts-btn cts-btn-primary cts-btn-sm"
+                                label="Next &#8250;" />
+                    </div>
+                </div>
+
+                <!-- High value alert -->
+                <div id="divHighValueAlert" sclass="cts-alert cts-alert-warning" visible="false">
+                    <span sclass="cts-alert-icon">&#9888;&#65039;</span>
+                    <label value="HIGH VALUE — Verify all fields carefully." style="font-weight:700;" />
+                </div>
+
+                <!-- Two-panel layout -->
+                <div sclass="cts-detail-layout">
+
+                    <!-- LEFT: cheque images -->
+                    <div sclass="cts-detail-left">
+                        <div sclass="cts-card">
+                            <div sclass="cts-card-header">
+                                <span sclass="cts-card-title">Front Image</span>
+                            </div>
+                            <div sclass="cts-cheque-front">
+                                <div sclass="cts-cheque-bank-row">
+                                    <label id="lblImgBank" sclass="cts-cheque-bank" value="" />
+                                </div>
+                                <div sclass="cts-cheque-num-row">
+                                    <label id="lblImgChequeNum" sclass="cts-cheque-num" value="" />
+                                </div>
+                                <div sclass="cts-cheque-field-row">
+                                    <label sclass="cts-cheque-field-lbl" value="Pay to" />
+                                    <label id="lblImgPayee" sclass="cts-cheque-field-val" value="" />
+                                </div>
+                                <div sclass="cts-cheque-bottom">
+                                    <label id="lblImgDate" sclass="cts-cheque-date" value="" />
+                                    <label id="lblImgAmount" sclass="cts-cheque-amount" value="" />
+                                </div>
+                                <div sclass="cts-cheque-sig-row">
+                                    <label sclass="cts-cheque-sig-line" value="________________________" />
+                                    <label id="lblImgSig" sclass="cts-cheque-sig-name" value="" />
+                                </div>
+                                <label id="lblImgMicr" sclass="cts-cheque-micr" value="" />
+                            </div>
+                        </div>
+                        <div sclass="cts-card">
+                            <div sclass="cts-card-header">
+                                <span sclass="cts-card-title">Back Image</span>
+                            </div>
+                            <div sclass="cts-cheque-back">
+                                <div sclass="cts-endorsement-stamp">
+                                    <div sclass="cts-endorsement-title">Endorsement</div>
+                                    <label id="lblBackBank" value="" style="font-size:11px;display:block;" />
+                                    <label id="lblBackAcc"  value="" style="font-size:11px;display:block;" />
+                                    <label id="lblBackDate" value="" style="font-size:11px;display:block;" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: cheque data + decision -->
+                    <div>
+                        <div sclass="cts-card">
+                            <div sclass="cts-card-header">
+                                <span sclass="cts-card-title">Cheque Details</span>
+                            </div>
+                            <div sclass="cts-card-body">
+                                <div sclass="cts-section-label"><label value="System / XML" /></div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="Transaction ID" />
+                                        <textbox id="fldTransactionId" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="Cheque Number" />
+                                        <textbox id="fldChequeNumber" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="MICR Code" />
+                                        <textbox id="fldMicrCode" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="IFSC Code" />
+                                        <textbox id="fldIfscCode" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="Bank Name" />
+                                        <textbox id="fldBankName" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="Branch" />
+                                        <textbox id="fldBranchName" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="Drawer Name" />
+                                        <textbox id="fldDrawerName" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl" value="Cheque Status" />
+                                        <textbox id="fldChequeStatus" sclass="cts-field-ro" readonly="true" />
+                                    </div>
+                                </div>
+                                <div sclass="cts-field" style="margin-bottom:12px;">
+                                    <label sclass="cts-field-lbl" value="Drawer Account" />
+                                    <textbox id="fldDrawerAcc" sclass="cts-field-ro" readonly="true" width="100%" />
+                                </div>
+                                <div sclass="cts-divider" />
+                                <div sclass="cts-section-label cts-section-label-maker">
+                                    <label value="Maker Entered" />
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl cts-field-lbl-maker" value="Amount (&#8377;)" />
+                                        <textbox id="fldAmount" sclass="cts-field-ro cts-field-maker" readonly="true" />
+                                        <label id="fldAmountWords" sclass="cts-field-note" value="" />
+                                    </div>
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl cts-field-lbl-maker" value="Cheque Date" />
+                                        <textbox id="fldChequeDate" sclass="cts-field-ro cts-field-maker" readonly="true" />
+                                    </div>
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl cts-field-lbl-maker" value="Payee Name" />
+                                        <textbox id="fldPayee" sclass="cts-field-ro cts-field-maker" readonly="true" />
+                                    </div>
+                                    <div sclass="cts-field">
+                                        <label sclass="cts-field-lbl cts-field-lbl-maker" value="Depositor Account" />
+                                        <textbox id="fldDepositorAcc" sclass="cts-field-ro cts-field-maker" readonly="true" />
+                                    </div>
+                                </div>
+                                <div sclass="cts-field" style="margin-bottom:12px;">
+                                    <label sclass="cts-field-lbl cts-field-lbl-maker" value="Flag / Remark" />
+                                    <textbox id="fldMakerFlag" sclass="cts-field-ro cts-field-maker" readonly="true" width="100%" />
+                                </div>
+                                <div sclass="cts-field">
+                                    <label sclass="cts-field-lbl cts-field-lbl-maker" value="Maker Remarks" />
+                                    <textbox id="fldMakerRemarks" sclass="cts-field-ro cts-field-maker"
+                                             multiline="true" rows="2" readonly="true" width="100%" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Decision card — matches Figma exactly -->
+                        <div sclass="cts-card">
+                            <div sclass="cts-card-header">
+                                <span sclass="cts-card-title">&#128393; Spot-Check Decision</span>
+                                <span style="font-size:11px;color:#ADADAD;">Individual cheque — Batch approval is on the previous screen</span>
+                            </div>
+                            <div sclass="cts-card-body">
+
+                                <!-- Pending: show action UI -->
+                                <div id="divDecisionPending" visible="true">
+
+                                    <!-- Checker Remarks label -->
+                                    <div sclass="cts-field-lbl" style="margin-bottom:6px;">
+                                        <label value="Checker Remarks (Required for flagging an exception)" />
+                                    </div>
+
+                                    <!-- Quick-fill buttons — from Figma -->
+                                    <div sclass="cts-quickfill-row">
+                                        <label sclass="cts-quickfill-label" value="Quick fill:" />
+                                        <button sclass="cts-btn-quickfill"
+                                                label="Data matches cheque image"
+                                                onClick="doQuickFill1()" />
+                                        <button sclass="cts-btn-quickfill"
+                                                label="Amount in words and figures match"
+                                                onClick="doQuickFill2()" />
+                                        <button sclass="cts-btn-quickfill"
+                                                label="All fields verified and correct"
+                                                onClick="doQuickFill3()" />
+                                        <button sclass="cts-btn-quickfill"
+                                                label="Signature mismatch — rejecting"
+                                                onClick="doQuickFill4()" />
+                                        <button sclass="cts-btn-quickfill"
+                                                label="Account details confirmed with CBS"
+                                                onClick="doQuickFill5()" />
+                                    </div>
+
+                                    <!-- Remarks textbox -->
+                                    <textbox id="txtCheckerRemarks" sclass="cts-textbox-edit"
+                                             multiline="true" rows="2"
+                                             placeholder="Enter spot-check remarks or exception reason for audit log..."
+                                             width="100%"
+                                             style="margin-bottom:14px;" />
+
+                                    <!-- Row 1: Pass / Pass & Next -->
+                                    <div sclass="cts-action-row" style="margin-bottom:8px;">
+                                        <button id="btnApprove"
+                                                sclass="cts-btn cts-btn-success"
+                                                label="&#10003; Spot-check Pass" />
+                                        <button id="btnApproveNext"
+                                                sclass="cts-btn cts-btn-primary"
+                                                label="&#10003; Pass &amp; Next &#8594;" />
+                                    </div>
+
+                                    <!-- Row 2: Flag Exception / Return File -->
+                                    <div sclass="cts-action-row" style="margin-bottom:8px;">
+                                        <button id="btnReject"
+                                                sclass="cts-btn cts-btn-danger"
+                                                label="&#9888; Flag Exception &#8594; Back to Maker" />
+                                        <button id="btnReturnFile"
+                                                sclass="cts-btn cts-btn-return-file"
+                                                label="&#8617; Return File (Code 28+)" />
+                                    </div>
+
+                                    <!-- Row 3: Escalate -->
+                                    <div sclass="cts-action-row">
+                                        <button id="btnEscalate"
+                                                sclass="cts-btn cts-btn-escalate"
+                                                label="&#8679; Escalate" />
+                                    </div>
+
+                                </div>
+
+                                <!-- Done: show result -->
+                                <div id="divDecisionDone" visible="false">
+                                    <label id="lblDecisionResult" value="" sclass="cts-decision-result" />
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 PANEL: REPORTS
+            ══════════════════════════════════════ -->
+            <div id="panelReports" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">Reports</div>
+                    <div sclass="cts-page-title">Outward Reports</div>
+                </div>
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Checker Activity</span>
+                    </div>
+                    <div sclass="cts-card-body">
+                        <div sclass="cts-report-summary-row">
+                            <div sclass="cts-report-stat">
+                                <div sclass="cts-stat-label">Batches</div>
+                                <div sclass="cts-stat-value"><label id="rptBatchCount" value="0" /></div>
+                            </div>
+                            <div sclass="cts-report-stat">
+                                <div sclass="cts-stat-label">Approved</div>
+                                <div sclass="cts-stat-value cts-green"><label id="rptApproved" value="0" /></div>
+                            </div>
+                            <div sclass="cts-report-stat">
+                                <div sclass="cts-stat-label">Exceptions</div>
+                                <div sclass="cts-stat-value cts-red"><label id="rptRejected" value="0" /></div>
+                            </div>
+                            <div sclass="cts-report-stat">
+                                <div sclass="cts-stat-label">Amount Cleared</div>
+                                <div sclass="cts-stat-value cts-blue"><label id="rptAmount" value="&#8377;0" /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════
+                 PANEL: AUDIT LOG
+            ══════════════════════════════════════ -->
+            <div id="panelAudit" visible="false">
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">Utilities</div>
+                    <div sclass="cts-page-title">Audit Log</div>
+                </div>
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Session Audit Log</span>
+                        <label id="lblAuditCount" sclass="cts-badge cts-badge-blue" value="0 entries" />
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridAuditLog" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No entries yet.">
+                            <columns>
+                                <column label="#"      width="50px" />
+                                <column label="Time"   width="130px" />
+                                <column label="Type"   width="110px" />
+                                <column label="Action" />
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:#ADADAD;font-size:11px;" />
+                                    <label value="${each.time}" sclass="cts-mono" style="font-size:12px;" />
+                                    <label value="${each.type}"
+                                           sclass="${each.type eq 'APPROVE' ? 'cts-badge cts-badge-green' : each.type eq 'REJECT' ? 'cts-badge cts-badge-red' : 'cts-badge cts-badge-blue'}" />
+                                    <label value="${each.message}" style="font-size:13px;" />
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- /main-content -->
+    </div>
+    <!-- /body -->
+
+    <!-- BOTTOM BAR -->
+    <div sclass="cts-bottom-bar">
+        <div sclass="cts-bottom-stat">
+            <span sclass="cts-bottom-num"><label id="barTotal" value="0" /></span>
+            <span sclass="cts-bottom-lbl">TOTAL</span>
+        </div>
+        <div sclass="cts-bottom-stat">
+            <span sclass="cts-bottom-num cts-orange"><label id="barPending" value="0" /></span>
+            <span sclass="cts-bottom-lbl">PENDING</span>
+        </div>
+        <div sclass="cts-bottom-stat">
+            <span sclass="cts-bottom-num cts-green"><label id="barApproved" value="0" /></span>
+            <span sclass="cts-bottom-lbl">APPROVED</span>
+        </div>
+        <div sclass="cts-bottom-stat">
+            <span sclass="cts-bottom-num cts-red"><label id="barRejected" value="0" /></span>
+            <span sclass="cts-bottom-lbl">REJECTED</span>
+        </div>
+        <div sclass="cts-bottom-spacer" />
+        <label id="lblBottomStatus" sclass="cts-bottom-status-text" value="Checker Queue &#8212; 0 of 0 done" />
+    
+    </div>
+    <!-- /body -->
+
+</div>
+<!-- /chkApp -->
+</zk>
