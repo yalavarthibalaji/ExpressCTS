@@ -106,7 +106,19 @@ public class LoginController extends SelectorComposer<Component> {
         }
 
         Sessions.getCurrent().setAttribute("loggedInUser", user);
-        Executions.sendRedirect("/zul/makerDashboard.zul");
+
+
+        // ── Role-based redirect ──────────────────────────────────
+        // Each role goes to its own dashboard ZUL.
+        // Add more roles here as new dashboards are built.
+        String roleId = user.getRoleId();
+        if ("checker".equals(roleId)) {
+            Executions.sendRedirect("/zul/checkerDashboard.zul");
+        } else {
+            // Default: maker and all other roles → maker dashboard
+            Executions.sendRedirect("/zul/makerDashboard.zul");
+        }
+
     }
 
     // ── Helper ───────────────────────────────────────────────────
