@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    components/header.zul
+    ExpressCTS — Reusable Header Component
+    Usage: <include src="/zul/components/header.zul"/>
+    Requires session attribute "loggedInUser" (UserModel)
+    Controller: com.iispl.controller.HeaderController
+-->
+<zk>
+<div sclass="cts-header" apply="com.iispl.controller.HeaderController">
+
+    <!-- Left: Logo + Divider + Role badge + Branch -->
+    <div sclass="cts-header-left">
+        <div sclass="cts-logo">
+            <div sclass="cts-logo-icon">E</div>
+            <div sclass="cts-logo-text">
+                <span>Express</span><span sclass="brand-cts">CTS</span>
+            </div>
+        </div>
+        <div sclass="cts-header-divider"/>
+        <div id="headerRoleBadge" sclass="cts-role-badge"/>
+        <div sclass="cts-branch-label">Kozhikode Service Branch</div>
+    </div>
+
+    <!-- Right: Avatar + Name + Logout -->
+    <div sclass="cts-header-right">
+        <div sclass="cts-header-user">
+            <div id="headerAvatar" sclass="cts-avatar"/>
+            <label id="headerUserName" sclass="cts-user-name" value="—"/>
+        </div>
+        <button id="btnHeaderLogout" sclass="cts-btn-logout">Sign Out</button>
+    </div>
+
+</div>
+</zk>

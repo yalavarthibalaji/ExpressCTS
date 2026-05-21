@@ -1,5 +1,6 @@
 package com.iispl.controller;
 
+
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.Sessions;
@@ -105,7 +106,7 @@ public class LoginController extends SelectorComposer<Component> {
         }
 
         Sessions.getCurrent().setAttribute("loggedInUser", user);
-        Executions.sendRedirect("/zul/maker/makerDashboard.zul");
+        Executions.sendRedirect("/zul/makerDashboard.zul");
     }
 
     // ── Helper ───────────────────────────────────────────────────
