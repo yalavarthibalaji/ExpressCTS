@@ -109,6 +109,9 @@ public class LoginController extends SelectorComposer<Component> {
 
 		// Store user in ZK session
 		Sessions.getCurrent().setAttribute("loggedInUser", user);
+		
+		//Added by Giri
+		Sessions.getCurrent().setAttribute("userRole", user.getRoleId());
 
 		// ── Role-based redirect ──────────────────────────────────────
 		String roleId = user.getRoleId();

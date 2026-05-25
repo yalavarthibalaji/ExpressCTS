@@ -34,7 +34,7 @@ public class HibernateUtil {
             cfg.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
 
             // Show SQL in console - helpful for debugging
-            cfg.setProperty("hibernate.show_sql", "true");
+            cfg.setProperty("hibernate.show_sql", "false"); //Changed by giri
             cfg.setProperty("hibernate.format_sql", "true");
 
             // Tables already created in Supabase manually
