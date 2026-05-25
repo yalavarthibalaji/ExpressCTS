@@ -3,6 +3,18 @@
          version="2.5">
 
     <display-name>Reusable Components</display-name>
+    
+    <!-- Added by Giri -->
+    <!-- Session Filter — ADD THIS BLOCK -->
+	<filter>
+		<filter-name>SessionManagement</filter-name>
+		<filter-class>com.iispl.sessionManagement.SessionManagement</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>SessionManagement</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 
     <!-- ZK Loader -->
     <servlet>
@@ -30,6 +42,10 @@
         <servlet-name>auEngine</servlet-name>
         <url-pattern>/zkau/*</url-pattern>
     </servlet-mapping>
+    
+    <session-config>
+<session-timeout>30</session-timeout>
+</session-config>
 
     <!-- Default page -->
     <welcome-file-list>
