@@ -1,4 +1,4 @@
-package com.iispl.entity;
+package com.iispl.dto;
 
 /**
  * CheckerBatch.java

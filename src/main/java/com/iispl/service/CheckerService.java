@@ -1,8 +1,8 @@
 /*This class created by Ramana , Checker module*/
 package com.iispl.service;
 
-import com.iispl.entity.CheckerBatch;
-import com.iispl.entity.CheckerCheque;
+import com.iispl.dto.CheckerBatch;
+import com.iispl.dto.CheckerCheque;
 import java.util.List;
 
 /**

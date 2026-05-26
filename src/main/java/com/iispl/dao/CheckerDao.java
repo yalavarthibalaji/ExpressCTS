@@ -1,7 +1,7 @@
 package com.iispl.dao;
 
-import com.iispl.entity.CheckerBatch;
-import com.iispl.entity.CheckerCheque;
+import com.iispl.dto.CheckerBatch;
+import com.iispl.dto.CheckerCheque;
 import java.util.List;
 
 /**

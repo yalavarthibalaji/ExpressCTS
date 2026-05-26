@@ -2,6 +2,8 @@ package com.iispl.controller;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -19,8 +21,8 @@ import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listitem;
 import org.zkoss.zul.Textbox;
 
-import com.iispl.entity.OutwardChequeDummy;
-import com.iispl.entity.UserModel;
+import com.iispl.entity.OutwardCheque;
+import com.iispl.dto.UserModel;
 import com.iispl.service.MakerDashboardService;
 
 /**
@@ -30,7 +32,7 @@ import com.iispl.service.MakerDashboardService;
  * Package  : com.iispl.controller
  * Pattern  : ZK MVC (SelectorComposer)
  * Role     : Maker (Data Entry)
- * Data     : All dummy, no DB — backed by MakerDashboardService (in-memory)
+ * Data     : In-memory — backed by MakerDashboardService
  */
 public class MakerDashboardController extends SelectorComposer<Component> {
 
@@ -115,7 +117,7 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     @Wire("#staleDateLabel")    private Label staleDateLabel;
     @Wire("#bounceReasonLabel") private Label bounceReasonLabel;
 
-    // Cheque dummy image
+    // Cheque image fields
     @Wire("#frontImgLabel")    private Label frontImgLabel;
     @Wire("#cdBank")           private Label cdBank;
     @Wire("#cdNum")            private Label cdNum;
@@ -162,6 +164,9 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     private String               activeBatchId;
     private String               activeChequeId;
 
+    // Date formatter for LocalDate display
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
+
     // ════════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ════════════════════════════════════════════════════════════════
@@ -169,13 +174,11 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     @Override
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
-
         currentUser = (UserModel) Sessions.getCurrent().getAttribute("loggedInUser");
         if (currentUser == null) {
             Executions.sendRedirect("/zul/login.zul");
             return;
         }
-
         service = new MakerDashboardService();
         initDashboard();
     }
@@ -328,9 +331,7 @@ public class MakerDashboardController extends SelectorComposer<Component> {
               .append("<td>").append(esc(r[3])).append("</td>")
               .append("<td>").append(esc(r[4])).append("</td>")
               .append("<td>").append(badgeHtml(r[5])).append("</td>")
-              .append("<td><button class=\"cts-btn cts-btn-outline cts-btn-sm\" "
-                    + "onclick=\"zAu.send(new zk.Event(zk.$('#sectionLoadCheques'),'onClick',null,{bubble:true}));\">")
-              .append("Load Cheques →</button></td>")
+              .append("<td><button class=\"cts-btn cts-btn-outline cts-btn-sm\">Load Cheques →</button></td>")
               .append("</tr>");
         }
         replaceHtml(batchTableBody, sb.toString());
@@ -380,18 +381,19 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void renderLoadedChequeTable() {
-        List<OutwardChequeDummy> list = service.getAllLoadedCheques();
+        List<OutwardCheque> list = service.getAllLoadedCheques();
         loadedChequeCount.setValue(list.size() + " cheques");
         StringBuilder sb = new StringBuilder();
         int i = 1;
-        for (OutwardChequeDummy c : list) {
+        for (OutwardCheque c : list) {
             sb.append("<tr>")
               .append("<td style=\"color:#ADADAD;font-size:11px;\">").append(i++).append("</td>")
               .append("<td class=\"mono\">").append(esc(c.getChequeNumber())).append("</td>")
               .append("<td style=\"font-size:12px;\">").append(esc(c.getBankName())).append("</td>")
               .append("<td>").append(esc(c.getDrawerName())).append("</td>")
-              .append("<td class=\"mono\" style=\"font-weight:700;color:#2563c8;\">").append(fmtAmt(c.getAmountInFigures())).append("</td>")
-              .append("<td>").append(esc(c.getChequeDate())).append("</td>")
+              .append("<td class=\"mono\" style=\"font-weight:700;color:#2563c8;\">")
+                .append(fmtAmt(c.getAmountInFigures() != null ? c.getAmountInFigures() : 0L)).append("</td>")
+              .append("<td>").append(formatDate(c.getChequeDate())).append("</td>")
               .append("<td>").append(iqaBadge(c.getIqaStatus())).append("</td>")
               .append("</tr>");
         }
@@ -489,13 +491,15 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void renderBatchChequeTable(String search) {
-        List<OutwardChequeDummy> list = service.getChequesForBatch(activeBatchId, search);
+        List<OutwardCheque> list = service.getChequesForBatch(activeBatchId, search);
         StringBuilder sb = new StringBuilder();
         int i = 1;
-        for (OutwardChequeDummy c : list) {
+        for (OutwardCheque c : list) {
             boolean isDone  = "done".equals(c.getMakerStatus());
-            boolean isHV    = c.getAmountInFigures() >= 500_000;
-            boolean iqaFail = "FAIL".equals(c.getIqaStatus()) || c.isIqaManualEntry();
+            long    amt     = c.getAmountInFigures() != null ? c.getAmountInFigures() : 0L;
+            boolean isHV    = amt >= 500_000;
+            boolean iqaFail = "FAIL".equals(c.getIqaStatus());
+
             sb.append("<tr class=\"cts-tr-clickable\">")
               .append("<td style=\"color:#ADADAD;font-size:11px;\">").append(i++).append("</td>")
               .append("<td class=\"mono\">").append(esc(c.getChequeNumber()))
@@ -504,16 +508,17 @@ public class MakerDashboardController extends SelectorComposer<Component> {
               .append("<td style=\"font-size:12px;\">").append(esc(c.getBankName())).append("</td>")
               .append("<td>").append(esc(c.getDrawerName())).append("</td>")
               .append("<td class=\"mono\" style=\"font-weight:700;color:#2563c8;\">")
-                .append(fmtAmt(c.getAmountInFigures()))
+                .append(fmtAmt(amt))
                 .append(isHV ? "<br/><span class=\"cts-badge cts-badge-yellow\" style=\"font-size:10px;\">⚠ HV</span>" : "")
               .append("</td>")
-              .append("<td>").append(esc(c.getChequeDate())).append("</td>")
+              .append("<td>").append(formatDate(c.getChequeDate())).append("</td>")
               .append("<td>").append(isDone
                     ? "<span class=\"cts-badge cts-badge-green\">✓ Submitted</span>"
                     : "<span class=\"cts-badge cts-badge-yellow\">Pending</span>")
               .append("</td>")
               .append("<td><button class=\"cts-btn cts-btn-outline cts-btn-sm\" ")
-              .append("onClick=\"zk.Widget.$('$makerDashboard').fire('onOpenMakerCheque','").append(c.getId()).append("')\">")
+              // We use getChequeId() — the unique ID field on OutwardCheque
+              .append("onClick=\"zk.Widget.$('$makerDashboard').fire('onOpenMakerCheque','").append(c.getChequeId()).append("')\">")
               .append("Open ›</button></td>")
               .append("</tr>");
         }
@@ -550,19 +555,20 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void populateChequeDetailForm() {
-        OutwardChequeDummy c = service.getChequeById(activeChequeId);
+        OutwardCheque c = service.getChequeById(activeChequeId);
         if (c == null) return;
 
         boolean done      = "done".equals(c.getMakerStatus());
-        boolean isIqaFail = "FAIL".equals(c.getIqaStatus()) || c.isIqaManualEntry();
-        boolean isHV      = c.getAmountInFigures() >= 500_000;
-        boolean isStale   = isStaleDate(c.getChequeDate());
-        boolean isBounced = "BOUNCED".equals(c.getChequeStatus());
+        boolean isIqaFail = "FAIL".equals(c.getIqaStatus());
+        long    amt       = c.getAmountInFigures() != null ? c.getAmountInFigures() : 0L;
+        boolean isHV      = amt >= 500_000;
+        boolean isStale   = isStaleLocalDate(c.getChequeDate());
 
-        // Breadcrumb & nav
-        chequeDetailBatchCrumb.setValue(c.getBatchId() != null ? c.getBatchId() : "—");
+        // Breadcrumb — batchId is stored in makerUserId in in-memory mode
+        chequeDetailBatchCrumb.setValue(c.getMakerUserId() != null ? c.getMakerUserId() : "—");
         chequeDetailNumCrumb.setValue(c.getChequeNumber());
 
+        // Navigation
         int[] nav = service.getChequeNavIndex(activeBatchId, activeChequeId);
         chequeNavMeta.setValue("Cheque " + (nav[0] + 1) + " of " + nav[2] + " in batch");
         btnPrevCheque.setDisabled(nav[0] == 0);
@@ -573,59 +579,52 @@ public class MakerDashboardController extends SelectorComposer<Component> {
         alertIqaPass.setVisible(!isIqaFail);
         alertHighValue.setVisible(isHV);
         alertStale.setVisible(isStale);
-        alertBounced.setVisible(isBounced);
-        if (isIqaFail)  iqaRemarksText.setValue(c.getIqaOfficerRemarks() != null ? c.getIqaOfficerRemarks() : "—");
-        if (isHV)        hvAmountLabel.setValue("₹" + fmtAmt(c.getAmountInFigures()));
-        if (isStale)     staleDateLabel.setValue(c.getChequeDate());
-        if (isBounced)   bounceReasonLabel.setValue(c.getBounceReason());
+        alertBounced.setVisible(false); // no bounced flag on OutwardCheque
 
-        // Dummy cheque image
+        if (isIqaFail) iqaRemarksText.setValue(c.getMakerRemarks() != null ? c.getMakerRemarks() : "IQA failed");
+        if (isHV)      hvAmountLabel.setValue("₹" + fmtAmt(amt));
+        if (isStale)   staleDateLabel.setValue(formatDate(c.getChequeDate()));
+
+        // Cheque image area
         frontImgLabel.setValue(isIqaFail
             ? "⚠ Front Image — IQA FAILED — " + c.getChequeNumber()
             : "Front Image — " + c.getChequeNumber());
         iqaFailCorner.setVisible(isIqaFail);
         iqaFailCornerLabel.setVisible(isIqaFail);
-        cdBank.setValue(c.getBankName());
-        cdNum.setValue("Cheque No: " + c.getChequeNumber() + " | Branch: " + c.getBranchName());
+        cdBank.setValue(safe(c.getBankName()));
+        cdNum.setValue("Cheque No: " + c.getChequeNumber() + " | Branch: " + safe(c.getBranchName()));
         cdPayee.setValue(c.getPayeeName() != null ? c.getPayeeName() : "[verify from physical]");
         cdAmtWords.setValue(c.getAmountInWords() != null ? c.getAmountInWords() : "[verify from physical]");
-        cdDate.setValue(c.getChequeDate() != null ? c.getChequeDate() : "[verify]");
-        cdAmount.setValue(c.getAmountInFigures() > 0 ? "₹" + fmtAmt(c.getAmountInFigures()) : "[verify]");
+        cdDate.setValue(formatDate(c.getChequeDate()));
+        cdAmount.setValue(amt > 0 ? "₹" + fmtAmt(amt) : "[verify]");
         cdSig.setValue(c.getDrawerName() != null ? c.getDrawerName().split(" ")[0] : "—");
         cdMicr.setValue(isIqaFail
             ? "|" + c.getChequeNumber() + "| ███████ |████████████|"
-            : "|" + c.getChequeNumber() + "| " + c.getMicrCode() + "| " + c.getDrawerAccountNumber() + "|");
-        cdDepositorAcc.setValue(c.getDepositorAcc());
+            : "|" + c.getChequeNumber() + "| " + safe(c.getMicrCode()) + "| " + safe(c.getDrawerAccountNumber()) + "|");
+        cdDepositorAcc.setValue(safe(c.getDepositorAccountNumber()));
 
-        // Read-only fields
-        mfTransactionId.setValue(c.getTransactionId());
-        mfChequeNumber.setValue(c.getChequeNumber());
-        mfMicrCode.setValue(c.getMicrCode());
-        mfIfscCode.setValue(c.getIfscCode());
-        mfBankName.setValue(c.getBankName());
-        mfBranchName.setValue(c.getBranchName());
-        mfDrawerAccNo.setValue(c.getDrawerAccountNumber());
+        // Read-only form fields
+        mfTransactionId.setValue(safe(c.getTransactionId()));
+        mfChequeNumber.setValue(safe(c.getChequeNumber()));
+        mfMicrCode.setValue(safe(c.getMicrCode()));
+        mfIfscCode.setValue(safe(c.getIfscCode()));
+        mfBankName.setValue(safe(c.getBankName()));
+        mfBranchName.setValue(safe(c.getBranchName()));
+        mfDrawerAccNo.setValue(safe(c.getDrawerAccountNumber()));
 
-        // Editable fields
-        mfAmtFig.setValue(c.getAmountInFigures() > 0 ? String.valueOf(c.getAmountInFigures()) : "");
+        // Editable form fields
+        mfAmtFig.setValue(amt > 0 ? String.valueOf(amt) : "");
         mfAmtWordsHint.setValue(c.getAmountInWords() != null ? c.getAmountInWords() : "—");
         mfPayeeName.setValue(c.getPayeeName() != null ? c.getPayeeName() : "");
-        mfDepositorAcc.setValue(c.getDepositorAcc() != null ? c.getDepositorAcc() : "");
+        mfDepositorAcc.setValue(c.getDepositorAccountNumber() != null ? c.getDepositorAccountNumber() : "");
         mfRemarks.setValue(c.getMakerRemarks() != null ? c.getMakerRemarks() : "");
 
-        // Lock if already done
+        // Lock fields if already submitted
         mfAmtFig.setReadonly(done);
         mfPayeeName.setReadonly(done);
         mfDepositorAcc.setReadonly(done);
         mfRemarks.setReadonly(done);
         mfFlag.setDisabled(done);
-
-        // Pre-select flag
-        if (c.getMakerFlag() != null) {
-            for (Listitem li : mfFlag.getItems()) {
-                if (c.getMakerFlag().equals(li.getValue())) { li.setSelected(true); break; }
-            }
-        }
 
         // Action bar
         chequeActionBar.setVisible(!done);
@@ -693,13 +692,18 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     }
 
     private void saveChequeFromForm() {
-        String flag   = mfFlag.getSelectedItem() != null
-                      ? (String) mfFlag.getSelectedItem().getValue() : "";
         String amtStr = mfAmtFig.getValue();
         long   amt    = amtStr.isEmpty() ? 0 : Long.parseLong(amtStr.replace(",", "").trim());
+        // flag is no longer stored separately — we put it in remarks prefix if needed
+        String flag   = mfFlag.getSelectedItem() != null
+                      ? (String) mfFlag.getSelectedItem().getValue() : "";
+        String remarks = mfRemarks.getValue();
+        if (!flag.isEmpty()) {
+            remarks = "[" + flag + "] " + remarks;
+        }
         service.saveMakerChequeData(activeChequeId,
             amt, mfPayeeName.getValue(), mfDepositorAcc.getValue(),
-            flag, mfRemarks.getValue());
+            flag, remarks);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -762,7 +766,7 @@ public class MakerDashboardController extends SelectorComposer<Component> {
     public void onReportIqa(Event e) {
         replaceHtml(reportContent,
             "<div class=\"cts-alert cts-alert-info\"><span class=\"cts-alert-icon\">ℹ️</span>"
-          + "<div>IQA Report — loaded from batch data. "
+          + "<div>IQA Report — "
           + service.getMicrRepairRows().size() + " cheques with IQA FAIL.</div></div>");
     }
 
@@ -799,7 +803,24 @@ public class MakerDashboardController extends SelectorComposer<Component> {
         if (container == null) return;
         container.getChildren().clear();
         if (html != null && !html.isEmpty())
-        	container.appendChild(new org.zkoss.zul.Html(html));    }
+            container.appendChild(new org.zkoss.zul.Html(html));
+    }
+
+    // Formats LocalDate to dd-MMM-yyyy string for display
+    private String formatDate(LocalDate date) {
+        if (date == null) return "—";
+        return date.format(DATE_FMT);
+    }
+
+    // Checks if a LocalDate is older than 90 days (stale cheque)
+    private boolean isStaleLocalDate(LocalDate date) {
+        if (date == null) return false;
+        return date.isBefore(LocalDate.now().minusDays(90));
+    }
+
+    private String safe(String s) {
+        return s == null ? "" : s;
+    }
 
     private static String esc(String s) {
         if (s == null) return "";
@@ -834,13 +855,5 @@ public class MakerDashboardController extends SelectorComposer<Component> {
         if (lb == null || lb.getSelectedItem() == null) return def;
         Object v = lb.getSelectedItem().getValue();
         return v != null ? v.toString() : def;
-    }
-
-    private static boolean isStaleDate(String dateStr) {
-        if (dateStr == null) return false;
-        try {
-            Date d = new SimpleDateFormat("dd-MMM-yyyy").parse(dateStr);
-            return System.currentTimeMillis() - d.getTime() > (90L * 24 * 60 * 60 * 1000);
-        } catch (Exception ex) { return false; }
     }
 }

@@ -1,8 +1,9 @@
 package com.iispl.controller;
 
 import com.iispl.entity.SystemRole;
+
 import com.iispl.entity.SystemUser;
-import com.iispl.entity.UserModel;
+import com.iispl.dto.UserModel;
 import com.iispl.service.UserManagementService;
 import com.iispl.serviceImpl.UserManagementServiceImpl;
 
