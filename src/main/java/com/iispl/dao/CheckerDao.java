@@ -48,4 +48,19 @@ public interface CheckerDao {
 	 * repair — maker must fix again.
 	 */
 	void resetMicrChequeStatus(String chequeId, String remarks);
+	/**
+	 * Returns stats for the Reports panel — counts ALL batches including
+	 * already-approved ones (which disappear from getAllCheckerBatches).
+	 * Returns int[]: [totalBatches, approvedBatches, rejectedCheques, totalApprovedAmount]
+	 */
+	long[] getReportStats();
+
+	/**
+	 * Inserts one audit log entry into the audit_logs table in Supabase.
+	 * Called by CheckerController.addAudit() on every checker action.
+	 */
+	void insertAuditLog(String logType, String actionCode, String message,
+	                    String userId, String userRole, String batchRef, String chequeRef);
+
+
 }
