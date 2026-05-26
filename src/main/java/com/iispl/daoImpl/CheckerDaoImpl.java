@@ -3,8 +3,8 @@ package com.iispl.daoImpl;
 
 import com.iispl.dao.CheckerDao;
 import com.iispl.db.HibernateUtil;
-import com.iispl.entity.CheckerBatch;
-import com.iispl.entity.CheckerCheque;
+import com.iispl.dto.CheckerBatch;
+import com.iispl.dto.CheckerCheque;
 import com.iispl.entity.OutwardBatch;
 import com.iispl.entity.OutwardCheque;
 

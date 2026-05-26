@@ -1,7 +1,6 @@
 package com.iispl.service;
 
-import com.iispl.entity.OutwardChequeDummy;
-import com.iispl.util.ChequeDataUtil;
+import com.iispl.entity.OutwardCheque;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -10,44 +9,77 @@ import java.util.stream.Collectors;
 
 /**
  * MakerDashboardService.java
- * Pure in-memory service — NO database, NO DAO.
- * All data lives in static maps for the session lifetime.
+ * In-memory service — NO database, NO DAO (temporary, to be replaced with real DB calls).
  *
  * Package  : com.iispl.service
  * Used by  : MakerDashboardController
- *
- * Data stores:
- *   batches   — Map<batchId, String[]>  (batch metadata)
- *   cheques   — Map<chequeId, OutwardCheque>  (all cheques across batches)
  */
 public class MakerDashboardService {
 
-    // ── In-memory stores (static = shared across controller instances) ──
-    private static final Map<String, String[]> batches   = new LinkedHashMap<>();
+    // ── In-memory stores ──────────────────────────────────────────────
     // String[] = { batchId, date, session, route, remarks, status }
+    private static final Map<String, String[]> batches = new LinkedHashMap<>();
+    private static final Map<String, OutwardCheque> cheques = new LinkedHashMap<>();
 
-    private static final Map<String, OutwardChequeDummy> cheques = new LinkedHashMap<>();
-
-    // Batch ID counter
     private static int batchCounter = 1;
 
-    // ── Pre-load dummy data on first instantiation ──────────────────
+    // ── Static initializer — loads one default batch with sample data ──
     static {
-        // Create one default batch and load the 20 dummy cheques into it
         String defaultBatch = "OW-" + todayStr() + "-001";
         batches.put(defaultBatch, new String[]{
             defaultBatch, todayStr(), "MORNING", "MAKER_CHECKER", "Pre-loaded batch", "IN_PROGRESS"
         });
         batchCounter = 2;
 
-        List<OutwardChequeDummy> dummy = ChequeDataUtil.buildDummyCheques(defaultBatch);
-        for (OutwardChequeDummy c : dummy) {
-            cheques.put(c.getId(), c);
+        // Load sample cheques into the default batch
+        List<OutwardCheque> sampleCheques = buildSampleCheques(defaultBatch);
+        for (OutwardCheque c : sampleCheques) {
+            cheques.put(c.getChequeId(), c);
         }
     }
 
     // ════════════════════════════════════════════════════════════════
-    // STATS — for dashboard counters
+    // SAMPLE DATA BUILDER — replaces ChequeDataUtil
+    // ════════════════════════════════════════════════════════════════
+
+    private static List<OutwardCheque> buildSampleCheques(String batchId) {
+        List<OutwardCheque> list = new ArrayList<>();
+        String[] banks    = {"State Bank of India", "HDFC Bank", "ICICI Bank", "Axis Bank", "Punjab National Bank"};
+        String[] branches = {"MG Road Branch", "Anna Nagar Branch", "Kochi Main Branch", "Thrissur Branch", "Palakkad Branch"};
+        String[] drawers  = {"Rajesh Kumar", "Priya Nair", "Suresh Menon", "Anjali Pillai", "Manoj Sharma"};
+        String[] ifsc     = {"SBIN0001234", "HDFC0002345", "ICIC0003456", "UTIB0004567", "PUNB0005678"};
+        String[] micr     = {"680002010", "680002020", "680002030", "680002040", "680002050"};
+
+        for (int i = 1; i <= 10; i++) {
+            OutwardCheque c = new OutwardCheque();
+            c.setChequeId("CHQ" + String.format("%03d", i));
+            c.setTransactionId("TXN" + todayStr() + String.format("%03d", i));
+            c.setChequeNumber(String.format("%09d", 100000 + i));
+            c.setBankName(banks[i % banks.length]);
+            c.setBranchName(branches[i % branches.length]);
+            c.setIfscCode(ifsc[i % ifsc.length]);
+            c.setMicrCode(micr[i % micr.length]);
+            c.setDrawerName(drawers[i % drawers.length]);
+            c.setDrawerAccountNumber("5010" + String.format("%010d", i));
+            c.setPayeeName("Payee Company " + i);
+            long amt = (i % 3 == 0) ? 600000L * i : 50000L * i;
+            c.setAmountInFigures(amt);
+            c.setAmountInWords("Sample Amount " + i);
+            c.setDepositorAccountNumber("DEPO" + String.format("%08d", i));
+            c.setIqaStatus(i % 4 == 0 ? "FAIL" : "PASS");
+            c.setMakerStatus("pending");
+            c.setCheckerStatus("pending");
+            c.setReviewed(false);
+            // batchId stored via the OutwardBatch relation — we keep it in chequeId prefix for filtering
+            // We store batchId in makerUserId temporarily for in-memory filtering (will be replaced with DB)
+            c.setMakerUserId(batchId);
+            list.add(c);
+        }
+        return list;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // STATS
     // ════════════════════════════════════════════════════════════════
 
     public int getTotalBatches() {
@@ -91,7 +123,7 @@ public class MakerDashboardService {
     }
 
     // ════════════════════════════════════════════════════════════════
-    // BATCH TABLE ROWS — for Create Batch section table
+    // BATCH TABLE ROWS
     // String[] = { batchId, date, session, route, chequeCount, status }
     // ════════════════════════════════════════════════════════════════
 
@@ -99,16 +131,16 @@ public class MakerDashboardService {
         List<String[]> rows = new ArrayList<>();
         for (Map.Entry<String, String[]> e : batches.entrySet()) {
             String batchId = e.getKey();
-            String[] b    = e.getValue();
-            long count    = cheques.values().stream()
-                              .filter(c -> batchId.equals(c.getBatchId())).count();
+            String[] b = e.getValue();
+            long count = cheques.values().stream()
+                .filter(c -> batchId.equals(c.getMakerUserId())).count();
             rows.add(new String[]{
-                batchId,        // 0 batchId
-                b[1],           // 1 date
-                b[2],           // 2 session
-                b[3],           // 3 route
-                String.valueOf(count),  // 4 chequeCount
-                b[5]            // 5 status
+                batchId,
+                b[1],
+                b[2],
+                b[3],
+                String.valueOf(count),
+                b[5]
             });
         }
         return rows;
@@ -123,54 +155,43 @@ public class MakerDashboardService {
         List<String[]> rows = new ArrayList<>();
         for (String batchId : batches.keySet()) {
             long total = cheques.values().stream()
-                           .filter(c -> batchId.equals(c.getBatchId())).count();
-            long done  = cheques.values().stream()
-                           .filter(c -> batchId.equals(c.getBatchId())
-                                     && "done".equals(c.getMakerStatus())).count();
+                .filter(c -> batchId.equals(c.getMakerUserId())).count();
+            long done = cheques.values().stream()
+                .filter(c -> batchId.equals(c.getMakerUserId()) && "done".equals(c.getMakerStatus())).count();
             String status = batches.get(batchId)[5];
-            rows.add(new String[]{
-                batchId,
-                String.valueOf(total),
-                String.valueOf(done),
-                status
-            });
+            rows.add(new String[]{ batchId, String.valueOf(total), String.valueOf(done), status });
         }
         return rows;
     }
 
     // ════════════════════════════════════════════════════════════════
-    // LOAD CHEQUES — simulate XML upload (just use dummy data)
+    // LOAD CHEQUES (simulated XML upload)
     // ════════════════════════════════════════════════════════════════
 
     public int loadChequesFromXml(String batchId, org.zkoss.util.media.Media media) {
-        // In a real system: parse the XML file from media.getStreamData()
-        // Here: load fresh dummy cheques into the selected batch
-        List<OutwardChequeDummy> loaded = ChequeDataUtil.buildDummyCheques(batchId);
+        // Remove existing cheques for this batch first
+        cheques.entrySet().removeIf(e -> batchId.equals(e.getValue().getMakerUserId()));
 
-        // Remove existing cheques for this batch first (avoid duplicates)
-        cheques.entrySet().removeIf(e -> batchId.equals(e.getValue().getBatchId()));
-
-        for (OutwardChequeDummy c : loaded) {
-            // Give unique IDs per batch to avoid collisions
-            String uid = batchId + "_" + c.getId();
-            c.setId(uid);
+        List<OutwardCheque> loaded = buildSampleCheques(batchId);
+        for (OutwardCheque c : loaded) {
+            String uid = batchId + "_" + c.getChequeId();
+            c.setChequeId(uid);
             cheques.put(uid, c);
         }
-        // Update batch status
         if (batches.containsKey(batchId)) {
             batches.get(batchId)[5] = "LOADED";
         }
         return loaded.size();
     }
 
-    public List<OutwardChequeDummy> getAllLoadedCheques() {
+    public List<OutwardCheque> getAllLoadedCheques() {
         return new ArrayList<>(cheques.values());
     }
 
     public int moveChequesToMakerQueue(String batchId) {
         int count = 0;
-        for (OutwardChequeDummy c : cheques.values()) {
-            if (batchId.equals(c.getBatchId()) && "PASS".equals(c.getIqaStatus())) {
+        for (OutwardCheque c : cheques.values()) {
+            if (batchId.equals(c.getMakerUserId()) && "PASS".equals(c.getIqaStatus())) {
                 c.setMakerStatus("pending");
                 count++;
             }
@@ -190,19 +211,20 @@ public class MakerDashboardService {
         List<String[]> rows = new ArrayList<>();
         for (Map.Entry<String, String[]> entry : batches.entrySet()) {
             String batchId = entry.getKey();
-            String status  = entry.getValue()[5];
+            String status = entry.getValue()[5];
 
-            List<OutwardChequeDummy> bCheques = cheques.values().stream()
-                .filter(c -> batchId.equals(c.getBatchId()))
+            List<OutwardCheque> bCheques = cheques.values().stream()
+                .filter(c -> batchId.equals(c.getMakerUserId()))
                 .collect(Collectors.toList());
 
-            if (bCheques.isEmpty()) continue; // only show batches with cheques
+            if (bCheques.isEmpty()) continue;
 
             long total   = bCheques.size();
             long iqaPass = bCheques.stream().filter(c -> "PASS".equals(c.getIqaStatus())).count();
             long iqaFail = bCheques.stream().filter(c -> "FAIL".equals(c.getIqaStatus())).count();
             long done    = bCheques.stream().filter(c -> "done".equals(c.getMakerStatus())).count();
-            long totalAmt = bCheques.stream().mapToLong(OutwardChequeDummy::getAmountInFigures).sum();
+            long totalAmt = bCheques.stream()
+                .mapToLong(c -> c.getAmountInFigures() != null ? c.getAmountInFigures() : 0L).sum();
 
             rows.add(new String[]{
                 batchId,
@@ -218,43 +240,34 @@ public class MakerDashboardService {
     }
 
     public void loadBatchIntoMakerQueue(String batchId) {
-        // No-op in dummy mode — cheques already in memory
+        // No-op in in-memory mode
     }
 
     // ════════════════════════════════════════════════════════════════
-    // BATCH META — for batch detail header
+    // BATCH META
     // String[] = { batchId, totalCheques, totalAmt, iqaFail, status }
     // ════════════════════════════════════════════════════════════════
 
     public String[] getBatchMeta(String batchId) {
         if (!batches.containsKey(batchId)) return null;
-
-        List<OutwardChequeDummy> bc = cheques.values().stream()
-            .filter(c -> batchId.equals(c.getBatchId()))
+        List<OutwardCheque> bc = cheques.values().stream()
+            .filter(c -> batchId.equals(c.getMakerUserId()))
             .collect(Collectors.toList());
-
         long total   = bc.size();
         long iqaFail = bc.stream().filter(c -> "FAIL".equals(c.getIqaStatus())).count();
-        long totalAmt = bc.stream().mapToLong(OutwardChequeDummy::getAmountInFigures).sum();
+        long totalAmt = bc.stream()
+            .mapToLong(c -> c.getAmountInFigures() != null ? c.getAmountInFigures() : 0L).sum();
         String status = batches.get(batchId)[5];
-
-        return new String[]{
-            batchId,
-            String.valueOf(total),
-            fmtAmt(totalAmt),
-            String.valueOf(iqaFail),
-            status
-        };
+        return new String[]{ batchId, String.valueOf(total), fmtAmt(totalAmt), String.valueOf(iqaFail), status };
     }
 
     // ════════════════════════════════════════════════════════════════
-    // BATCH CHEQUE COUNTS
-    // int[] = { total, done, pending }
+    // BATCH CHEQUE COUNTS — int[] = { total, done, pending }
     // ════════════════════════════════════════════════════════════════
 
     public int[] getBatchChequeCounts(String batchId) {
-        List<OutwardChequeDummy> bc = cheques.values().stream()
-            .filter(c -> batchId.equals(c.getBatchId()))
+        List<OutwardCheque> bc = cheques.values().stream()
+            .filter(c -> batchId.equals(c.getMakerUserId()))
             .collect(Collectors.toList());
         int total   = bc.size();
         int done    = (int) bc.stream().filter(c -> "done".equals(c.getMakerStatus())).count();
@@ -268,13 +281,13 @@ public class MakerDashboardService {
     }
 
     // ════════════════════════════════════════════════════════════════
-    // CHEQUES FOR BATCH — filtered list for batch detail table
+    // CHEQUES FOR BATCH
     // ════════════════════════════════════════════════════════════════
 
-    public List<OutwardChequeDummy> getChequesForBatch(String batchId, String search) {
+    public List<OutwardCheque> getChequesForBatch(String batchId, String search) {
         String q = (search == null) ? "" : search.toLowerCase().trim();
         return cheques.values().stream()
-            .filter(c -> batchId.equals(c.getBatchId()))
+            .filter(c -> batchId.equals(c.getMakerUserId()))
             .filter(c -> q.isEmpty()
                 || contains(c.getChequeNumber(), q)
                 || contains(c.getDrawerName(), q)
@@ -287,19 +300,19 @@ public class MakerDashboardService {
     // CHEQUE BY ID
     // ════════════════════════════════════════════════════════════════
 
-    public OutwardChequeDummy getChequeById(String chequeId) {
+    public OutwardCheque getChequeById(String chequeId) {
         return cheques.get(chequeId);
     }
 
     // ════════════════════════════════════════════════════════════════
-    // CHEQUE NAVIGATION — prev / next within a batch
-    // int[] = { currentIndex, ?, totalCount }
+    // CHEQUE NAVIGATION
+    // int[] = { currentIndex, currentIndex, totalCount }
     // ════════════════════════════════════════════════════════════════
 
     public int[] getChequeNavIndex(String batchId, String chequeId) {
         List<String> ids = cheques.values().stream()
-            .filter(c -> batchId != null && batchId.equals(c.getBatchId()))
-            .map(OutwardChequeDummy::getId)
+            .filter(c -> batchId != null && batchId.equals(c.getMakerUserId()))
+            .map(OutwardCheque::getChequeId)
             .collect(Collectors.toList());
         int idx = ids.indexOf(chequeId);
         return new int[]{ idx, idx, ids.size() };
@@ -307,8 +320,8 @@ public class MakerDashboardService {
 
     public String getPrevChequeId(String batchId, String chequeId) {
         List<String> ids = cheques.values().stream()
-            .filter(c -> batchId != null && batchId.equals(c.getBatchId()))
-            .map(OutwardChequeDummy::getId)
+            .filter(c -> batchId != null && batchId.equals(c.getMakerUserId()))
+            .map(OutwardCheque::getChequeId)
             .collect(Collectors.toList());
         int idx = ids.indexOf(chequeId);
         return (idx > 0) ? ids.get(idx - 1) : null;
@@ -316,8 +329,8 @@ public class MakerDashboardService {
 
     public String getNextChequeId(String batchId, String chequeId) {
         List<String> ids = cheques.values().stream()
-            .filter(c -> batchId != null && batchId.equals(c.getBatchId()))
-            .map(OutwardChequeDummy::getId)
+            .filter(c -> batchId != null && batchId.equals(c.getMakerUserId()))
+            .map(OutwardCheque::getChequeId)
             .collect(Collectors.toList());
         int idx = ids.indexOf(chequeId);
         return (idx >= 0 && idx < ids.size() - 1) ? ids.get(idx + 1) : null;
@@ -328,19 +341,17 @@ public class MakerDashboardService {
     // ════════════════════════════════════════════════════════════════
 
     public void saveMakerChequeData(String chequeId, long amount,
-                                     String payeeName, String depositorAcc,
-                                     String flag, String remarks) {
-        OutwardChequeDummy c = cheques.get(chequeId);
+                                    String payeeName, String depositorAcc,
+                                    String flag, String remarks) {
+        OutwardCheque c = cheques.get(chequeId);
         if (c == null) return;
-        if (amount > 0)        c.setAmountInFigures(amount);
-        if (payeeName != null) c.setPayeeName(payeeName);
-        if (depositorAcc != null) c.setDepositorAcc(depositorAcc);
-        c.setMakerFlag(flag);
+        if (amount > 0)           c.setAmountInFigures(amount);
+        if (payeeName != null)    c.setPayeeName(payeeName);
+        if (depositorAcc != null) c.setDepositorAccountNumber(depositorAcc);
         c.setMakerRemarks(remarks);
         c.setMakerStatus("done");
         c.setReviewed(true);
-        // Update batch status
-        String batchId = c.getBatchId();
+        String batchId = c.getMakerUserId();
         if (batchId != null && batches.containsKey(batchId)) {
             batches.get(batchId)[5] = "IN_PROGRESS";
         }
@@ -351,8 +362,8 @@ public class MakerDashboardService {
     // ════════════════════════════════════════════════════════════════
 
     public int submitBatchToChecker(String batchId) {
-        List<OutwardChequeDummy> done = cheques.values().stream()
-            .filter(c -> batchId.equals(c.getBatchId()) && "done".equals(c.getMakerStatus()))
+        List<OutwardCheque> done = cheques.values().stream()
+            .filter(c -> batchId.equals(c.getMakerUserId()) && "done".equals(c.getMakerStatus()))
             .collect(Collectors.toList());
         if (done.isEmpty()) return -1;
         done.forEach(c -> c.setCheckerStatus("pending"));
@@ -367,16 +378,15 @@ public class MakerDashboardService {
     // ════════════════════════════════════════════════════════════════
 
     public void markChequeReturned(String chequeId, String remarks) {
-        OutwardChequeDummy c = cheques.get(chequeId);
+        OutwardCheque c = cheques.get(chequeId);
         if (c == null) return;
         c.setMakerStatus("done");
-        c.setMakerFlag("returned");
         c.setMakerRemarks("RETURN: " + (remarks != null ? remarks : ""));
     }
 
     // ════════════════════════════════════════════════════════════════
     // MICR REPAIR QUEUE
-    // String[] = { chequeNo, bankName, readMicr, issue }
+    // String[] = { chequeNo, bankName, micrCode, issue }
     // ════════════════════════════════════════════════════════════════
 
     public List<String[]> getMicrRepairRows() {
@@ -392,11 +402,11 @@ public class MakerDashboardService {
     }
 
     // ════════════════════════════════════════════════════════════════
-    // TIMELINE — for dashboard
+    // TIMELINE
     // ════════════════════════════════════════════════════════════════
 
-    public boolean isStep1Done() { return !batches.isEmpty(); }
-    public boolean isStep2Done() { return !cheques.isEmpty(); }
+    public boolean isStep1Done()   { return !batches.isEmpty(); }
+    public boolean isStep2Done()   { return !cheques.isEmpty(); }
     public boolean isStep4Active() {
         return getPendingMakerCount() > 0 || getSubmittedToCheckerCount() > 0;
     }

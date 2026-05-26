@@ -1,9 +1,10 @@
 package com.iispl.util;
 
 import java.util.ArrayList;
+
 import java.util.List;
 
-import com.iispl.entity.UserModel;
+import com.iispl.dto.UserModel;
 
 /**
  * UserUtil.java Hardcoded user credential registry — matches the prototype's

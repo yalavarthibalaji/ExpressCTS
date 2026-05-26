@@ -1,6 +1,7 @@
 package com.iispl.controller;
 
 import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 import org.zkoss.zk.ui.Component;
@@ -13,7 +14,7 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Label;
 
-import com.iispl.entity.UserModel;
+import com.iispl.dto.UserModel;
 
 /**
  * HeaderController.java

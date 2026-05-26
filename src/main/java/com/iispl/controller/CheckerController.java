@@ -2,9 +2,9 @@
  * service class business logic and dao database (dummy data in CheckerDaoImpl class)*/
 package com.iispl.controller;
 
-import com.iispl.entity.CheckerBatch;
-import com.iispl.entity.CheckerCheque;
-import com.iispl.entity.UserModel;
+import com.iispl.dto.CheckerBatch;
+import com.iispl.dto.CheckerCheque;
+import com.iispl.dto.UserModel;
 import com.iispl.service.CheckerService;
 import com.iispl.serviceImpl.CheckerServiceImpl;
 

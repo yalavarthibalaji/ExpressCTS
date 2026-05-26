@@ -1,5 +1,5 @@
 /*Role-based navigation This program done by Ramana Login page is linked*/
-package com.iispl.model;
+package com.iispl.dto;
 
 /**
  * UserModel.java

@@ -3,10 +3,11 @@ package com.iispl.service;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
+
 import com.iispl.dao.UserDao;
 import com.iispl.daoImpl.UserDaoImpl;
 import com.iispl.entity.SystemUser;
-import com.iispl.entity.UserModel;
+import com.iispl.dto.UserModel;
 
 /**
  * AuthService.java
