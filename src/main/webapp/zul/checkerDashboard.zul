@@ -140,8 +140,21 @@
                         <div sclass="cts-stat-value cts-orange"><label id="bmPendingBatches" value="0" /></div>
                     </div>
                     <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Dispatched</div>
+                        <div sclass="cts-stat-value cts-blue"><label id="bmDispatchedBatches" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
                         <div sclass="cts-stat-label">Total Cheques</div>
                         <div sclass="cts-stat-value"><label id="bmTotalCheques" value="0" /></div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total Amount</div>
+                        <div sclass="cts-stat-value" style="font-size:18px;">
+                            <label id="bmTotalAmount" value="&#8377;0" />
+                        </div>
+                        <div sclass="cts-stat-sub">
+                            Session: <label id="lblBmSessionId" value="" />
+                        </div>
                     </div>
                 </div>
 
@@ -184,11 +197,11 @@
                                     <div sclass="cts-action-row" style="gap:6px;">
                                         <button label="View Cheques"
                                                 sclass="cts-btn cts-btn-outline cts-btn-sm"
-                                                onClick='doViewBatchCheques("${each.batchId}")' />
+                                                onClick="doViewBatchCheques(self.getTooltiptext())" tooltiptext="${each.batchId}" />
                                         <button label="Verify &#10003;"
                                                 sclass="cts-btn cts-btn-success cts-btn-sm"
                                                 visible="${each.status ne 'APPROVED'}"
-                                                onClick='doVerifyBatch("${each.batchId}")' />
+                                                onClick="doVerifyBatch(self.getTooltiptext())" tooltiptext="${each.batchId}" />
                                         <label value="&#10003; Verified"
                                                sclass="cts-approved-text"
                                                visible="${each.status eq 'APPROVED'}" />
@@ -310,7 +323,7 @@
                                     <button label="Repair &#9998;"
                                             sclass="cts-btn cts-btn-primary cts-btn-sm"
                                             visible="${each.checkerStatus eq 'pending'}"
-                                            onClick='doRepairCheque("${each.chequeId}")' />
+                                            onClick="doRepairCheque(self.getTooltiptext())" tooltiptext="${each.chequeId}" />
                                     <label value="Submitted"
                                            sclass="cts-badge cts-badge-gray"
                                            visible="${each.checkerStatus ne 'pending'}" />
@@ -400,7 +413,7 @@
                                            sclass="cts-badge cts-badge-blue" />
                                     <button label="Verify &#8250;"
                                             sclass="cts-btn cts-btn-outline cts-btn-sm"
-                                            onClick='doVerifyMicrCheque("${each.chequeId}")' />
+                                            onClick="doVerifyMicrCheque(self.getTooltiptext())" tooltiptext="${each.chequeId}" />
                                 </row>
                             </template>
                         </grid>
@@ -496,7 +509,7 @@
                                         <button label="Open Batch &#8594;"
                                                 sclass="cts-btn cts-btn-primary cts-btn-sm"
                                                 visible="${each.status ne 'APPROVED'}"
-                                                onClick='doOpenBatch("${each.batchId}")' />
+                                                onClick="doOpenBatch(self.getTooltiptext())" tooltiptext="${each.batchId}" />
                                     </div>
                                 </row>
                             </template>
@@ -626,7 +639,7 @@
                                            sclass="${each.checkerStatus eq 'approved' ? 'cts-badge cts-badge-green' : each.checkerStatus eq 'rejected' ? 'cts-badge cts-badge-red' : 'cts-badge cts-badge-orange'}" />
                                     <button label="View &#8250;"
                                             sclass="cts-btn cts-btn-outline cts-btn-sm"
-                                            onClick='doViewCheque("${each.chequeId}")' />
+                                            onClick="doViewCheque(self.getTooltiptext())" tooltiptext="${each.chequeId}" />
                                 </row>
                             </template>
                         </grid>
