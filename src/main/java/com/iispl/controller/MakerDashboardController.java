@@ -20,7 +20,7 @@ import org.zkoss.zul.Listitem;
 import org.zkoss.zul.Textbox;
 
 import com.iispl.entity.OutwardChequeDummy;
-import com.iispl.model.UserModel;
+import com.iispl.entity.UserModel;
 import com.iispl.service.MakerDashboardService;
 
 /**
