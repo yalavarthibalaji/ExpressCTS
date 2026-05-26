@@ -3,6 +3,8 @@
 <?link rel="stylesheet" type="text/css" href="/css/loginPage.css"?>
 <zk>
 <div sclass="cts-login-page" apply="com.iispl.controller.LoginController">
+ <!-- ──This Zul file is created by Ramana and it have Login page components and linked with loginController ── -->
+
     <div sclass="cts-login-card">
 
         <!-- ── Logo row ── -->

@@ -1,3 +1,4 @@
+/*this class created by Ramana and it has checker business logic*/
 package com.iispl.serviceImpl;
 
 import com.iispl.dao.CheckerDao;
@@ -130,4 +131,17 @@ public class CheckerServiceImpl implements CheckerService {
         // Reset to pending so maker must repair again
         checkerDao.updateChequeCheckerStatus(chequeId, "pending", remarks.trim());
     }
+    @Override
+    public long[] getReportStats() {
+        return checkerDao.getReportStats();
+    }
+
+    @Override
+    public void insertAuditLog(String logType, String actionCode, String message,
+                                String userId, String userRole, String batchRef, String chequeRef) {
+        // Delegate directly to DAO — no business rule needed for audit logging
+        checkerDao.insertAuditLog(logType, actionCode, message, userId, userRole, batchRef, chequeRef);
+    }
+
+
 }

@@ -1,3 +1,4 @@
+/*This class created by Ramana , Checker module*/
 package com.iispl.service;
 
 import com.iispl.entity.CheckerBatch;
@@ -62,4 +63,17 @@ public interface CheckerService {
      * @param remarks  reason for rejection (required)
      */
     void resetMicrChequeStatus(String chequeId, String remarks);
+    /**
+     * Returns report stats counting ALL batches (including already approved).
+     * [0] = total batches, [1] = approved, [2] = rejected cheques, [3] = amount cleared
+     */
+    long[] getReportStats();
+
+    /**
+     * Inserts one audit log entry into the Supabase audit_logs table.
+     */
+    void insertAuditLog(String logType, String actionCode, String message,
+                        String userId, String userRole, String batchRef, String chequeRef);
+
+
 }
