@@ -1,8 +1,9 @@
 package com.iispl.controller;
 
 import com.iispl.entity.MicrRepairEntry;
+
 import com.iispl.entity.OutwardBatch;
-import com.iispl.entity.UserModel;
+import com.iispl.dto.UserModel;
 import com.iispl.service.MicrRepairService;
 import com.iispl.serviceImpl.MicrRepairServiceImpl;
 

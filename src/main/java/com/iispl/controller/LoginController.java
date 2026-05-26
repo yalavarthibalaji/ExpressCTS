@@ -2,6 +2,7 @@
 package com.iispl.controller;
 
 import org.zkoss.zk.ui.Component;
+
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.Sessions;
 import org.zkoss.zk.ui.event.Event;
@@ -13,7 +14,7 @@ import org.zkoss.zul.Div;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Textbox;
 
-import com.iispl.entity.UserModel;
+import com.iispl.dto.UserModel;
 import com.iispl.service.AuthService;
 
 public class LoginController extends SelectorComposer<Component> {
