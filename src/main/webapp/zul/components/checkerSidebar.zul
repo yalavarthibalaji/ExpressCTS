@@ -1,64 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    components/checkerSidebar.zul
-    ExpressCTS — Reusable Checker Sidebar Navigation Component
-
-    Usage  : <include src="/zul/components/checkerSidebar.zul"/>
-    Pattern: Identical to makerSidebar.zul — forward="onClick=eventName"
-             bubbles up to CheckerController @Listen annotations.
-
-    Nav items fire custom events that CheckerController listens for
-    on the root cts-app div (same pattern as MakerSidebarController).
--->
 <zk>
 <div sclass="cts-sidebar" apply="com.iispl.controller.CheckerSidebarController">
 
     <div sclass="cts-nav">
 
         <!-- MAIN MENU -->
-        <div id="navDashboard" sclass="cts-nav-item"
-             forward="onClick=onNavDashboard">
+        <!--This zul file is created by Ramana and it has CheckerSidebar-->
+        <div sclass="cts-nav-section-label">Main Menu</div>
+
+        <div id="navDashboard" sclass="cts-nav-item">
             <span sclass="cts-nav-icon">&#127968;</span>
             <span sclass="cts-nav-label">Dashboard</span>
         </div>
 
+
         <!-- CLEARING -->
         <div sclass="cts-nav-section-label">Outward Clearing</div>
 
-        <!-- Batch Management (read-only view for checker) -->
-        <div id="navBatchMgmt" sclass="cts-nav-item"
-             forward="onClick=onNavBatchMgmt">
+        <div id="navBatchMgmt" sclass="cts-nav-item">
             <span sclass="cts-nav-icon">&#128193;</span>
             <span sclass="cts-nav-label">Batch Management</span>
         </div>
 
-        <!-- MICR Repair (checker verifies repaired entries) -->
-        <div id="navMicrRepair" sclass="cts-nav-item"
-             forward="onClick=onNavMicrRepair">
+        <div id="navMicrRepair" sclass="cts-nav-item">
             <span sclass="cts-nav-icon">&#128295;</span>
-            <span sclass="cts-nav-label">MICR Repair</span>
+            <span sclass="cts-nav-label">MICR Repair*</span>
         </div>
 
-        <!-- Checker Verification — primary task -->
-        <div id="navChecker" sclass="cts-nav-item active"
-             forward="onClick=onNavChecker">
+        <div id="navChecker" sclass="cts-nav-item active">
             <span sclass="cts-nav-icon">&#9989;</span>
             <span sclass="cts-nav-label">Checker (Verification)</span>
         </div>
 
         <!-- OTHER -->
-        <div sclass="cts-nav-section-label">Other</div>
+        <div sclass="cts-nav-section-label">Reports</div>
 
-        <!-- Reports -->
-        <div id="navReports" sclass="cts-nav-item"
-             forward="onClick=onNavReports">
+        <div id="navReports" sclass="cts-nav-item">
             <span sclass="cts-nav-icon">&#128202;</span>
-            <span sclass="cts-nav-label">Reports</span>
+            <span sclass="cts-nav-label">Outward Reports</span>
         </div>
 
-        <!-- Audit Log -->
-        <div id="navAudit" sclass="cts-nav-item"
-             forward="onClick=onNavAudit">
+        <!-- UTILITIES -->
+        <div sclass="cts-nav-section-label">Utilities</div>
+
+        <div id="navAudit" sclass="cts-nav-item">
             <span sclass="cts-nav-icon">&#128203;</span>
             <span id="lblAuditNav" sclass="cts-nav-label">Audit Log</span>
         </div>
