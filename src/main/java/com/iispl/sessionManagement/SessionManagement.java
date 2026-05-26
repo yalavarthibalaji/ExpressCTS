@@ -2,7 +2,8 @@ package com.iispl.sessionManagement;
 
 import java.io.IOException;
 
-import com.iispl.entity.UserModel;
+
+import com.iispl.dto.UserModel;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;

@@ -5,13 +5,16 @@ import java.util.List;
 
 public interface OutwardChequeDao {
 
-    // save a single cheque to master table
+    // save a new cheque to master table
     void saveCheque(OutwardCheque cheque);
 
-    // find all cheques by batch id
+    // update an existing cheque (used by maker to save verified data)
+    void updateCheque(OutwardCheque cheque);
+
+    // find all cheques belonging to a batch
     List<OutwardCheque> findAllByBatchId(Long batchId);
 
-    // find cheque by cheque id
+    // find cheque by cheque id (string like CHQ-...)
     OutwardCheque findByChequeId(String chequeId);
 
 }
