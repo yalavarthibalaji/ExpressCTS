@@ -4,7 +4,7 @@ package com.iispl.controller;
 
 import com.iispl.entity.CheckerBatch;
 import com.iispl.entity.CheckerCheque;
-import com.iispl.model.UserModel;
+import com.iispl.entity.UserModel;
 import com.iispl.service.CheckerService;
 import com.iispl.serviceImpl.CheckerServiceImpl;
 

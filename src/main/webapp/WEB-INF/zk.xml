@@ -17,12 +17,6 @@
         <desktop-timeout>1800000</desktop-timeout>
     </desktop-config>
 
-    <!-- ── Error Page on Session Timeout ─────────────────────────── -->
-    <!-- When a session expires, ZK redirects here -->
-    <error-page>
-        <exception-type>org.zkoss.zk.ui.Expired</exception-type>
-        <location>/WEB-INF/zul/login.zul</location>
-    </error-page>
 
     <!-- ── Library Properties ─────────────────────────────────────── -->
     <library-property>

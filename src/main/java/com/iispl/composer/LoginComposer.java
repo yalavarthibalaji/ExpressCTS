@@ -12,7 +12,7 @@ import org.zkoss.zul.Div;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Textbox;
 
-import com.iispl.model.UserModel;
+import com.iispl.entity.UserModel;
 import com.iispl.service.AuthService;
 
 /**
