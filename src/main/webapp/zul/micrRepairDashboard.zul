@@ -1,0 +1,659 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressCTS — MICR Repair" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/micrDashboard.css"?>
+<zk>
+
+<div id="micrApp" sclass="cts-app" apply="com.iispl.controller.MicrRepairController">
+
+    <!-- HEADER -->
+    <include src="/zul/components/header.zul"/>
+
+    <!-- BODY -->
+    <div sclass="cts-body">
+
+        <!-- SIDEBAR -->
+        <include src="/zul/components/micrSidebar.zul"/>
+
+        <!-- MAIN CONTENT -->
+        <div sclass="cts-main-content">
+
+
+            <!-- ═══════════════════════════════════════════
+                 PANEL 1 — BATCH LIST
+            ════════════════════════════════════════════ -->
+            <div id="panelBatchList" visible="true">
+
+                <!-- Stats row — 3 cards -->
+                <div sclass="cts-stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total Batches</div>
+                        <div sclass="cts-stat-value">
+                            <label id="lblTotalBatches" value="0"/>
+                        </div>
+                        <div sclass="cts-stat-sub">In repair queue</div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Pending Repair</div>
+                        <div sclass="cts-stat-value" style="color:var(--orange);">
+                            <label id="lblPendingBatches" value="0"/>
+                        </div>
+                        <div sclass="cts-stat-sub">Awaiting operator</div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Completed</div>
+                        <div sclass="cts-stat-value" style="color:var(--green);">
+                            <label id="lblCompletedBatches" value="0"/>
+                        </div>
+                        <div sclass="cts-stat-sub">Fully verified</div>
+                    </div>
+                </div>
+
+                <!-- Batch list table -->
+                <div sclass="cts-card">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Repair Batches</span>
+                        <label id="lblBatchCount" sclass="cts-badge cts-badge-blue" value="0 batch(es)"/>
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridBatchList" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No MICR repair batches found in the system.">
+                            <columns>
+                                <column label="#"              width="50px"/>
+                                <column label="Batch ID"       width="200px"/>
+                                <column label="Clearing Date"  width="130px"/>
+                                <column label="Total Cheques"  width="120px"/>
+                                <column label="Branch Code"    width="120px"/>
+                                <column label="Status"         width="160px"/>
+                                <column label="Action"         width="110px"/>
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:var(--gray-400);font-size:11px;"/>
+                                    <label value="${each.batchId}" sclass="cts-mono"
+                                           style="color:var(--blue-600);font-weight:700;"/>
+                                    <label value="${each.clearingDate}"/>
+                                    <label value="${each.totalCheques}"/>
+                                    <label value="${each.branchCode}"/>
+                                    <label value="${each.status}"
+                                           sclass="${each.status eq 'APPROVED' ? 'cts-badge cts-badge-green' :
+                                                    each.status eq 'MICR_REPAIR_PENDING' ? 'cts-badge cts-badge-orange' :
+                                                    'cts-badge cts-badge-yellow'}"/>
+                                    <button sclass="cts-btn cts-btn-primary cts-btn-sm"
+                                            label="Open →"
+                                            forward="onClick=onOpenBatch">
+                                        <custom-attributes batchId="${each.id}"/>
+                                    </button>
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /panelBatchList -->
+
+
+            <!-- ═══════════════════════════════════════════
+                 PANEL 2 — ENTRY LIST
+            ════════════════════════════════════════════ -->
+            <div id="panelEntryList" visible="false">
+
+                <!-- Page header -->
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">
+                        MICR Repair › <label id="lblActiveBatchId" value=""/>
+                    </div>
+                    <div sclass="cts-page-title">Repair Entries</div>
+                    <div sclass="cts-page-desc">
+                        Cheques with MICRRepairFlag=true. Operator corrects MICR data → Checker verifies.
+                    </div>
+                </div>
+
+                <!-- Stats row — 4 cards -->
+                <div sclass="cts-stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Total Entries</div>
+                        <div sclass="cts-stat-value">
+                            <label id="lblTotalEntries" value="0"/>
+                        </div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Pending Repair</div>
+                        <div sclass="cts-stat-value" style="color:var(--yellow);">
+                            <label id="lblPendingEntries" value="0"/>
+                        </div>
+                        <div sclass="cts-stat-sub">Awaiting operator entry</div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Awaiting Checker</div>
+                        <div sclass="cts-stat-value" style="color:var(--blue-500);">
+                            <label id="lblRepairedEntries" value="0"/>
+                        </div>
+                        <div sclass="cts-stat-sub">Submitted by operator</div>
+                    </div>
+                    <div sclass="cts-stat-card">
+                        <div sclass="cts-stat-label">Flagged</div>
+                        <div sclass="cts-stat-value" style="color:var(--red);">
+                            <label id="lblFlaggedEntries" value="0"/>
+                        </div>
+                        <div sclass="cts-stat-sub">Cannot repair</div>
+                    </div>
+                </div>
+
+                <!-- Back button -->
+                <div style="margin-bottom:14px;">
+                    <button id="btnBackToBatchList"
+                            sclass="cts-btn cts-btn-gray"
+                            label="← Back to Batch List"/>
+                </div>
+
+                <!-- ── SECTION A: Operator Repair Table ──────────────── -->
+                <div sclass="cts-card" style="margin-bottom:20px;">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">✏️ MICR Operator — Data Repair</span>
+                        <label id="lblPendingBadge" sclass="cts-badge cts-badge-orange" value="0 pending"/>
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridEntryList" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No repair entries found for this batch.">
+                            <columns>
+                                <column label="#"              width="50px"/>
+                                <column label="Cheque No."     width="130px"/>
+                                <column label="Bank"           width="180px"/>
+                                <column label="Drawer"         width="160px"/>
+                                <column label="Amount"         width="120px"/>
+                                <column label="MICR Flag"      width="140px"/>
+                                <column label="Status"         width="150px"/>
+                                <column label="Action"         width="120px"/>
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:var(--gray-400);font-size:11px;"/>
+                                    <label value="${each.chequeNumber}" sclass="cts-mono"
+                                           style="font-weight:700;"/>
+                                    <label value="${each.outwardCheque.bankName}"
+                                           style="font-size:12px;"/>
+                                    <label value="${each.outwardCheque.drawerName}"/>
+                                    <label value="${each.outwardCheque.amountInFigures}" sclass="cts-mono"
+                                           style="color:var(--blue-700);font-weight:700;"/>
+                                    <label value="🔧 MICRRepairFlag"
+                                           sclass="cts-badge cts-badge-red"
+                                           style="font-size:10px;"/>
+                                    <label value="${each.repairStatus eq 'REPAIRED' ? 'Awaiting Checker' :
+                                                    each.repairStatus eq 'FLAGGED' ? '↩ Flagged' :
+                                                    each.checkerVerified ? '✓ Verified' : 'Pending Repair'}"
+                                           sclass="${each.checkerVerified ? 'cts-badge cts-badge-green' :
+                                                    each.repairStatus eq 'REPAIRED' ? 'cts-badge cts-badge-blue' :
+                                                    each.repairStatus eq 'FLAGGED' ? 'cts-badge cts-badge-red' :
+                                                    'cts-badge cts-badge-yellow'}"/>
+                                    <button sclass="cts-btn cts-btn-warning cts-btn-sm"
+                                            label="✏️ Repair"
+                                            visible="${each.repairStatus eq 'PENDING'}"
+                                            forward="onClick=onOpenEntry">
+                                        <custom-attributes entryId="${each.id}"/>
+                                    </button>
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+
+                <!-- ── SECTION B: Checker Verification Table ─────────── -->
+                <div sclass="cts-card" style="margin-bottom:20px;">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">✅ Checker — MICR Repair Verification</span>
+                        <label id="lblCheckerBadge" sclass="cts-badge cts-badge-blue" value="0 awaiting"/>
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridCheckerList" sclass="cts-table-grid" width="100%"
+                              emptyMessage="No repairs submitted for checker verification yet.">
+                            <columns>
+                                <column label="#"              width="50px"/>
+                                <column label="Cheque No."     width="130px"/>
+                                <column label="Bank"           width="180px"/>
+                                <column label="Drawer"         width="160px"/>
+                                <column label="Amount"         width="120px"/>
+                                <column label="Repaired By"    width="130px"/>
+                                <column label="Submitted At"   width="140px"/>
+                                <column label="Action"         width="120px"/>
+                            </columns>
+                            <template name="model">
+                                <row>
+                                    <label value="${forEachStatus.index + 1}"
+                                           style="color:var(--gray-400);font-size:11px;"/>
+                                    <label value="${each.chequeNumber}" sclass="cts-mono"
+                                           style="font-weight:700;"/>
+                                    <label value="${each.outwardCheque.bankName}"
+                                           style="font-size:12px;"/>
+                                    <label value="${each.outwardCheque.drawerName}"/>
+                                    <label value="${each.outwardCheque.amountInFigures}" sclass="cts-mono"
+                                           style="color:var(--blue-700);font-weight:700;"/>
+                                    <label value="${each.repairedBy}"/>
+                                    <label value="${each.repairedAt}" style="font-size:11px;"/>
+                                    <button sclass="cts-btn cts-btn-primary cts-btn-sm"
+                                            label="Verify ›"
+                                            forward="onClick=onOpenCheckerPanel">
+                                        <custom-attributes entryId="${each.id}"/>
+                                    </button>
+                                </row>
+                            </template>
+                        </grid>
+                    </div>
+                </div>
+
+                <!-- ── Re-queue banner (shown when all entries done) ─── -->
+                <div id="divRequeueBanner" visible="false"
+                     sclass="cts-alert cts-alert-success"
+                     style="align-items:center;">
+                    <span sclass="cts-alert-icon">✅</span>
+                    <div style="flex:1;">
+                        All MICR repairs completed and verified.
+                        <label id="lblRequeueSummary" value=""/>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /panelEntryList -->
+
+
+            <!-- ═══════════════════════════════════════════
+                 PANEL 3 — REPAIR FORM (Operator / Maker)
+            ════════════════════════════════════════════ -->
+            <div id="panelRepairForm" visible="false">
+
+                <!-- Page header -->
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">
+                        MICR Repair › <label id="lblRepairBatchId" value=""/> › Repair Entry
+                    </div>
+                    <div sclass="cts-page-title">
+                        🔧 Repair Form — Cheque:
+                        <label id="lblFormChequeNumber" value="" sclass="cts-mono"/>
+                    </div>
+                </div>
+
+                <!-- Back button -->
+                <div style="margin-bottom:14px;">
+                    <button id="btnBackToEntryList"
+                            sclass="cts-btn cts-btn-gray"
+                            label="← Back to Entry List"/>
+                </div>
+
+                <!-- IQA fail alert -->
+                <div sclass="cts-alert cts-alert-error" style="margin-bottom:16px;">
+                    <span sclass="cts-alert-icon">❌</span>
+                    <html><![CDATA[<div>
+                        <strong>IQA FAILED &mdash; MICRRepairFlag=true.</strong>
+                        This cheque failed image quality checks.
+                        Enter the correct MICR data from the physical cheque.
+                        Checker will verify your entry.
+                    </div>]]></html>
+                </div>
+
+                <!-- Two column layout: cheque image panel + repair form -->
+                <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;align-items:start;">
+
+                    <!-- LEFT: Cheque image panel (mock) -->
+                    <div style="background:#1e293b;border-radius:10px;padding:20px;
+                                min-height:200px;display:flex;flex-direction:column;gap:12px;">
+                        <div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600;
+                                    letter-spacing:.5px;text-transform:uppercase;">
+                            Front Image — MICR Band
+                        </div>
+                        <div style="flex:1;background:rgba(255,255,255,.05);border-radius:8px;
+                                    display:flex;align-items:center;justify-content:center;min-height:100px;">
+                            <html><![CDATA[<div style="text-align:center;color:rgba(255,255,255,.3);font-size:13px;">
+                                📄 MICR Band Unreadable<br/>
+                                <span style="font-size:11px;opacity:.6;">Image captured — data entry required</span>
+                            </div>]]></html>
+                        </div>
+                        <div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600;
+                                    letter-spacing:.5px;text-transform:uppercase;margin-top:8px;">
+                            Back Image — Endorsement
+                        </div>
+                        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:16px;
+                                    text-align:center;color:rgba(255,255,255,.25);font-size:12px;">
+                            ✍️ Endorsement stamp visible
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Repair form -->
+                    <div>
+
+                        <!-- READ-ONLY: Original values from XML -->
+                        <div sclass="cts-card" style="margin-bottom:16px;">
+                            <div sclass="cts-card-header">
+                                <span sclass="cts-card-title">Original Values — Auto-filled from XML (Read Only)</span>
+                                <span sclass="cts-badge cts-badge-red">IQA FAIL</span>
+                            </div>
+                            <div sclass="cts-card-body">
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Cheque Number"/>
+                                        <label id="lblOriginalChequeNo" sclass="cts-mono" value=""/>
+                                    </div>
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Bank Name"/>
+                                        <label id="lblOriginalBankName" value=""/>
+                                    </div>
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Original MICR Code"/>
+                                        <label id="lblOriginalMicr" sclass="cts-mono cts-red" value=""/>
+                                    </div>
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Original IFSC Code"/>
+                                        <label id="lblOriginalIfsc" sclass="cts-mono cts-red" value=""/>
+                                    </div>
+                                </div>
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Original Account Number"/>
+                                        <label id="lblOriginalAccount" sclass="cts-mono cts-red" value=""/>
+                                    </div>
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Branch Name"/>
+                                        <label id="lblOriginalBranchName" value=""/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDITABLE: Corrected values — orange highlight like design -->
+                        <div sclass="cts-card">
+                            <div sclass="cts-card-header"
+                                 style="background:var(--orange-lt);border-bottom:1px solid #fed7aa;">
+                                <span sclass="cts-card-title" style="color:var(--orange);">
+                                    ✏️ MICR Repair — Manual Entry by Operator
+                                </span>
+                            </div>
+                            <div sclass="cts-card-body">
+
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Corrected MICR Code (9-digit)"/>
+                                        <textbox id="txtCorrectedMicr"
+                                                 sclass="cts-textbox-edit"
+                                                 placeholder="Enter correct MICR code (9 digits)"
+                                                 maxlength="9"
+                                                 width="100%"/>
+                                    </div>
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Corrected IFSC Code"/>
+                                        <textbox id="txtCorrectedIfsc"
+                                                 sclass="cts-textbox-edit"
+                                                 placeholder="e.g. SBIN0001234"
+                                                 maxlength="11"
+                                                 width="100%"/>
+                                    </div>
+                                </div>
+
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Corrected Account Number"/>
+                                        <textbox id="txtCorrectedAccount"
+                                                 sclass="cts-textbox-edit"
+                                                 placeholder="Enter correct account number"
+                                                 width="100%"/>
+                                    </div>
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Corrected Amount in Figures (₹)"/>
+                                        <textbox id="txtCorrectedAmount"
+                                                 sclass="cts-textbox-edit"
+                                                 placeholder="Leave blank if amount is correct"
+                                                 width="100%"/>
+                                    </div>
+                                </div>
+
+                                <div sclass="cts-form-row">
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="Corrected Cheque Date (if wrong)"/>
+                                        <textbox id="txtCorrectedChequeDate"
+                                                 sclass="cts-textbox-edit"
+                                                 placeholder="e.g. 2025-06-25"
+                                                 width="100%"/>
+                                    </div>
+                                    <div sclass="cts-form-group">
+                                        <label sclass="cts-form-label" value="MICR Repair Flag Reason"/>
+                                        <combobox id="cmbFlagReason"
+                                                  sclass="cts-textbox"
+                                                  width="100%"
+                                                  autocomplete="false">
+                                            <comboitem label="MICR Band Smudged"/>
+                                            <comboitem label="MICR Band Torn"/>
+                                            <comboitem label="Ink Quality Poor"/>
+                                            <comboitem label="Cheque Folded During Scan"/>
+                                            <comboitem label="Scanner Feed Error (Misfeed)"/>
+                                            <comboitem label="MICR Characters Unreadable"/>
+                                        </combobox>
+                                    </div>
+                                </div>
+
+                                <!-- Repair remarks — required -->
+                                <div sclass="cts-form-group" style="margin-top:4px;">
+                                    <label sclass="cts-form-label" value="Repair Remarks (required)"/>
+                                    <textbox id="txtRepairRemarks"
+                                             sclass="cts-textbox-edit"
+                                             multiline="true"
+                                             rows="2"
+                                             placeholder="Describe what was corrected and why..."
+                                             width="100%"/>
+                                </div>
+
+                                <!-- Action buttons -->
+                                <div sclass="cts-action-row" style="margin-top:18px;gap:10px;">
+                                    <button id="btnSubmitRepair"
+                                            sclass="cts-btn cts-btn-primary"
+                                            label="✓ Submit for Checker Verification"/>
+                                    <button id="btnShowFlagForm"
+                                            sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                            label="↩ Cannot Repair — Return to Depositor"/>
+                                </div>
+
+                                <!-- Return to depositor form — hidden by default -->
+                                <div id="divFlagForm" visible="false"
+                                     style="margin-top:16px;padding:16px;
+                                            background:#fff8f8;border:1.5px solid #fecaca;
+                                            border-radius:8px;">
+                                    <div style="font-size:13px;font-weight:700;color:var(--red);
+                                                margin-bottom:10px;">
+                                        ↩ Return to Depositor — Reason Required
+                                    </div>
+                                    <textbox id="txtFlagReason"
+                                             sclass="cts-textbox-edit"
+                                             multiline="true"
+                                             rows="2"
+                                             placeholder="Explain why this cheque cannot be repaired (mandatory)..."
+                                             width="100%"
+                                             style="margin-bottom:10px;"/>
+                                    <div sclass="cts-action-row">
+                                        <button id="btnSubmitFlag"
+                                                sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                                label="Confirm Return to Depositor"/>
+                                        <button id="btnCancelFlag"
+                                                sclass="cts-btn cts-btn-gray cts-btn-sm"
+                                                label="Cancel"/>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- /right repair form -->
+
+                </div>
+                <!-- /two column -->
+
+            </div>
+            <!-- /panelRepairForm -->
+
+
+            <!-- ═══════════════════════════════════════════
+                 PANEL 4 — CHECKER VERIFICATION PANEL
+            ════════════════════════════════════════════ -->
+            <div id="panelCheckerPanel" visible="false">
+
+                <!-- Page header -->
+                <div sclass="cts-page-header">
+                    <div sclass="cts-page-breadcrumb">
+                        MICR Repair › <label id="lblCheckerBatchId" value=""/> › Checker Verify
+                    </div>
+                    <div sclass="cts-page-title">
+                        🔍 Verify Repair — Cheque:
+                        <label id="lblCheckerChequeNo" value="" sclass="cts-mono"/>
+                    </div>
+                    <div sclass="cts-page-desc">
+                        Review the original vs corrected values submitted by the MICR Operator.
+                        Approve if correct, or send back to operator for re-entry.
+                    </div>
+                </div>
+
+                <!-- Back button + submitted by info -->
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                            margin-bottom:16px;background:white;border:1px solid var(--gray-200);
+                            border-radius:10px;padding:10px 16px;">
+                    <button id="btnBackToEntryListFromChecker"
+                            sclass="cts-btn cts-btn-gray"
+                            label="← Back to Entry List"/>
+                    <div style="font-size:13px;color:var(--gray-600);">
+                        Submitted by:
+                        <label id="lblCheckerRepairedBy" value="—"
+                               style="font-weight:700;color:var(--blue-700);"/>
+                        at
+                        <label id="lblCheckerRepairedAt" value="—"
+                               style="font-size:12px;color:var(--gray-500);"/>
+                    </div>
+                </div>
+
+                <!-- COMPARISON TABLE — Original vs Corrected -->
+                <div sclass="cts-card" style="margin-bottom:16px;">
+                    <div sclass="cts-card-header">
+                        <span sclass="cts-card-title">Original vs Corrected — Side by Side</span>
+                    </div>
+                    <div sclass="cts-card-body" style="padding:0;">
+                        <grid id="gridComparison" sclass="cts-table-grid" width="100%">
+                            <columns>
+                                <column label="Field"              width="160px"/>
+                                <column label="Original (from XML)" width="220px"/>
+                                <column label="Operator Corrected"  width="220px"/>
+                                <column label="Match?"              width="120px"/>
+                            </columns>
+                            <rows>
+                                <!-- MICR Code row -->
+                                <row>
+                                    <label value="MICR Code"
+                                           style="font-weight:600;font-size:12px;color:var(--gray-600);"/>
+                                    <label id="cmpOrigMicr" sclass="cts-mono" value="—"/>
+                                    <label id="cmpCorrMicr" sclass="cts-mono"
+                                           style="color:var(--blue-700);font-weight:700;" value="—"/>
+                                    <label id="cmpMatchMicr" value="—"/>
+                                </row>
+                                <!-- IFSC Code row -->
+                                <row>
+                                    <label value="IFSC Code"
+                                           style="font-weight:600;font-size:12px;color:var(--gray-600);"/>
+                                    <label id="cmpOrigIfsc" sclass="cts-mono" value="—"/>
+                                    <label id="cmpCorrIfsc" sclass="cts-mono"
+                                           style="color:var(--blue-700);font-weight:700;" value="—"/>
+                                    <label id="cmpMatchIfsc" value="—"/>
+                                </row>
+                                <!-- Account Number row -->
+                                <row>
+                                    <label value="Account No."
+                                           style="font-weight:600;font-size:12px;color:var(--gray-600);"/>
+                                    <label id="cmpOrigAccount" sclass="cts-mono" value="—"/>
+                                    <label id="cmpCorrAccount" sclass="cts-mono"
+                                           style="color:var(--blue-700);font-weight:700;" value="—"/>
+                                    <label id="cmpMatchAccount" value="—"/>
+                                </row>
+                                <!-- Amount row -->
+                                <row>
+                                    <label value="Amount (₹)"
+                                           style="font-weight:600;font-size:12px;color:var(--gray-600);"/>
+                                    <label id="cmpOrigAmount" sclass="cts-mono" value="—"/>
+                                    <label id="cmpCorrAmount" sclass="cts-mono"
+                                           style="color:var(--blue-700);font-weight:700;" value="—"/>
+                                    <label id="cmpMatchAmount" value="—"/>
+                                </row>
+                                <!-- Cheque Date row -->
+                                <row>
+                                    <label value="Cheque Date"
+                                           style="font-weight:600;font-size:12px;color:var(--gray-600);"/>
+                                    <label id="cmpOrigDate" value="—"/>
+                                    <label id="cmpCorrDate"
+                                           style="color:var(--blue-700);font-weight:700;" value="—"/>
+                                    <label id="cmpMatchDate" value="—"/>
+                                </row>
+                                <!-- Flag Reason row -->
+                                <row>
+                                    <label value="Flag Reason"
+                                           style="font-weight:600;font-size:12px;color:var(--gray-600);"/>
+                                    <label value="—" style="color:var(--gray-400);"/>
+                                    <label id="cmpFlagReason"
+                                           style="color:var(--orange);font-weight:600;" value="—"/>
+                                    <label value="—"/>
+                                </row>
+                            </rows>
+                        </grid>
+                    </div>
+                </div>
+
+                <!-- Operator remarks (if any) -->
+                <div id="divCheckerMakerRemarks" visible="false"
+                     style="background:var(--gray-100);border-radius:8px;padding:12px 16px;
+                            margin-bottom:16px;">
+                    <div style="font-size:11px;font-weight:600;text-transform:uppercase;
+                                letter-spacing:.3px;color:var(--gray-500);margin-bottom:4px;">
+                        Operator Remarks:
+                    </div>
+                    <label id="lblCheckerOperatorRemarks" value="—"
+                           style="font-size:13px;color:var(--gray-700);"/>
+                </div>
+
+                <!-- Already verified banner -->
+                <div id="divAlreadyVerified" visible="false"
+                     sclass="cts-alert cts-alert-success" style="margin-bottom:16px;">
+                    <span sclass="cts-alert-icon">✅</span>
+                    <div>
+                        Verified by <label id="lblVerifiedBy" value="—" style="font-weight:700;"/>
+                        at <label id="lblVerifiedAt" value="—"/>
+                    </div>
+                </div>
+
+                <!-- Checker action block — hidden when already verified -->
+                <div id="divCheckerActions" visible="true">
+                    <div sclass="cts-form-group" style="margin-bottom:14px;">
+                        <label sclass="cts-form-label" value="Checker Remarks (optional)"/>
+                        <textbox id="txtCheckerRemarks"
+                                 sclass="cts-textbox"
+                                 multiline="true"
+                                 rows="2"
+                                 placeholder="Optional remarks for audit log..."
+                                 width="100%"/>
+                    </div>
+                    <div sclass="cts-action-row" style="gap:10px;">
+                        <button id="btnApproveRepair"
+                                sclass="cts-btn cts-btn-success"
+                                label="✅ Approve Repair"/>
+                        <button id="btnRejectRepair"
+                                sclass="cts-btn cts-btn-danger cts-btn-sm"
+                                label="↩ Send Back to Operator"/>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /panelCheckerPanel -->
+
+
+        </div>
+        <!-- /main-content -->
+    </div>
+    <!-- /body -->
+
+</div>
+<!-- /micrApp -->
+</zk>

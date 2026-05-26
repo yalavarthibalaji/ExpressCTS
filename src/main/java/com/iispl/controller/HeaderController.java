@@ -1,5 +1,8 @@
 package com.iispl.controller;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.Sessions;
@@ -10,61 +13,67 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Label;
 
-import com.iispl.model.UserModel;
+import com.iispl.entity.UserModel;
 
 /**
- * HeaderController.java ZK MVC Composer — controls components/header.zul
- *
- * Package : com.iispl.controller Pattern : ZK MVC (SelectorComposer) Role :
- * Reusable header component controller
- *
- * Reads the "loggedInUser" session attribute (UserModel) and populates the
- * header avatar, user name, and role badge. Also handles the Sign Out (logout)
- * button.
+ * HeaderController.java
+ * ZK MVC Composer — controls components/header.zul
+ * Populates avatar, user name, role badge, and datetime.
  */
 public class HeaderController extends SelectorComposer<Component> {
 
-	// ── Wired components from header.zul ──────────────────────────────
-	@Wire("#headerRoleBadge")
-	private Div headerRoleBadge;
-	@Wire("#headerAvatar")
-	private Div headerAvatar;
-	@Wire("#headerUserName")
-	private Label headerUserName;
-	@Wire("#btnHeaderLogout")
-	private org.zkoss.zul.Button btnHeaderLogout;
+    @Wire("#headerRoleBadge")
+    private Div headerRoleBadge;
 
-	// ── Lifecycle ─────────────────────────────────────────────────────
+    @Wire("#headerAvatar")
+    private Div headerAvatar;
 
-	@Override
-	public void doAfterCompose(Component comp) throws Exception {
-		super.doAfterCompose(comp);
+    @Wire("#headerUserName")
+    private Label headerUserName;
 
-		// Read the logged-in user from the ZK session
-		UserModel user = (UserModel) Sessions.getCurrent().getAttribute("loggedInUser");
+    @Wire("#headerDateTime")
+    private Label headerDateTime;
 
-		if (user == null) {
-			// No session — redirect to login
-			Executions.sendRedirect("/zul/login.zul");
-			return;
-		}
+    @Wire("#btnHeaderLogout")
+    private org.zkoss.zul.Button btnHeaderLogout;
 
-		// Populate header fields from the user session object
-		headerAvatar.setStyle("background:#1a3a6e;color:#fff;border-radius:50%;"
-				+ "width:34px;height:34px;display:flex;align-items:center;"
-				+ "justify-content:center;font-weight:700;font-size:14px;");
-		headerAvatar.appendChild(new org.zkoss.zul.Label(user.getRoleInitial()));
-		headerUserName.setValue(user.getUserId());
-		headerRoleBadge.appendChild(new org.zkoss.zul.Label(user.getRoleIcon() + " " + user.getRoleLabel()));
-	}
+    @Override
+    public void doAfterCompose(Component comp) throws Exception {
+        super.doAfterCompose(comp);
 
-	// ── Logout button ─────────────────────────────────────────────────
+        Object sessionObj = Sessions.getCurrent().getAttribute("loggedInUser");
+        System.out.println("DEBUG HeaderController: session object = " + sessionObj);
+        System.out.println("DEBUG HeaderController: session object class = "
+                + (sessionObj == null ? "NULL" : sessionObj.getClass().getName()));
 
-	@Listen("onClick = #btnHeaderLogout")
-	public void onLogout(Event e) {
-		// Invalidate the ZK session — clears all session attributes
-		Sessions.getCurrent().invalidate();
-		// Redirect to login page
-		Executions.sendRedirect("/zul/login.zul");
-	}
+        UserModel user = (UserModel) Sessions.getCurrent().getAttribute("loggedInUser");
+        System.out.println("DEBUG HeaderController: user after cast = " + user);
+
+        if (user == null) {
+            Executions.sendRedirect("/zul/login.zul");
+            return;
+        }
+
+        // Avatar — initials circle
+        headerAvatar.setStyle(
+            "background:#1a3a6e;color:#fff;border-radius:50%;" +
+            "width:32px;height:32px;display:flex;align-items:center;" +
+            "justify-content:center;font-weight:700;font-size:13px;"
+        );
+        headerAvatar.appendChild(new org.zkoss.zul.Label(user.getRoleInitial()));
+
+        // User ID and role label
+        headerUserName.setValue(user.getUserId());
+        headerRoleBadge.appendChild(new org.zkoss.zul.Label(user.getRoleLabel()));
+
+        // Date-time display — e.g. "26 May 2026 10:46:39 am"
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy hh:mm:ss a");
+        headerDateTime.setValue(sdf.format(new Date()));
+    }
+
+    @Listen("onClick = #btnHeaderLogout")
+    public void onLogout(Event e) {
+        Sessions.getCurrent().invalidate();
+        Executions.sendRedirect("/zul/login.zul");
+    }
 }

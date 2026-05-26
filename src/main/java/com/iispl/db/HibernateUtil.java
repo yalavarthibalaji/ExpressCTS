@@ -3,9 +3,13 @@ package com.iispl.db;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+import com.iispl.entity.AuditLog;
+import com.iispl.entity.DemDispatch;
+import com.iispl.entity.MicrRepairEntry;
 import com.iispl.entity.OutwardBatch;
 import com.iispl.entity.OutwardCheque;
 import com.iispl.entity.OutwardChequeStaging;
+import com.iispl.entity.RolePermission;
 import com.iispl.entity.SystemRole;
 import com.iispl.entity.SystemUser;
 import com.iispl.entity.UserRole;
@@ -19,7 +23,10 @@ public class HibernateUtil {
             Configuration cfg = new Configuration();
 
             // PostgreSQL Driver
-            cfg.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
+            cfg.setProperty(
+                "hibernate.connection.driver_class",
+                "org.postgresql.Driver"
+            );
 
             // Supabase Direct Connection
             cfg.setProperty(
@@ -30,25 +37,32 @@ public class HibernateUtil {
             cfg.setProperty("hibernate.connection.username", "postgres");
             cfg.setProperty("hibernate.connection.password", "Expresscts*7674962623");
 
-            // Dialect
-            cfg.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-
+            cfg.setProperty(
+                "hibernate.dialect",
+                "org.hibernate.dialect.PostgreSQLDialect"
+            );
             // Show SQL in console - helpful for debugging
             cfg.setProperty("hibernate.show_sql", "false"); //Changed by giri
             cfg.setProperty("hibernate.format_sql", "true");
 
-            // Tables already created in Supabase manually
+            // tables already created in Supabase
             cfg.setProperty("hibernate.hbm2ddl.auto", "none");
 
-            // ── Outward entities ──────────────────────────────────
-            cfg.addAnnotatedClass(OutwardBatch.class);
-            cfg.addAnnotatedClass(OutwardCheque.class);
-            cfg.addAnnotatedClass(OutwardChequeStaging.class);
-
-            // ── User management entities (Phase 1) ────────────────
+            // ── User management entities ──────────────────────────
             cfg.addAnnotatedClass(SystemUser.class);
             cfg.addAnnotatedClass(SystemRole.class);
             cfg.addAnnotatedClass(UserRole.class);
+            cfg.addAnnotatedClass(RolePermission.class);
+
+            // ── Outward clearing entities ─────────────────────────
+            cfg.addAnnotatedClass(OutwardBatch.class);
+            cfg.addAnnotatedClass(OutwardCheque.class);
+            cfg.addAnnotatedClass(OutwardChequeStaging.class);
+            cfg.addAnnotatedClass(MicrRepairEntry.class);
+            cfg.addAnnotatedClass(DemDispatch.class);
+
+            // ── Audit ─────────────────────────────────────────────
+            cfg.addAnnotatedClass(AuditLog.class);
 
             return cfg.buildSessionFactory();
 
