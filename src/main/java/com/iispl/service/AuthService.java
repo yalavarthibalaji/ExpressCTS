@@ -6,7 +6,7 @@ import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.iispl.dao.UserDao;
 import com.iispl.daoImpl.UserDaoImpl;
 import com.iispl.entity.SystemUser;
-import com.iispl.model.UserModel;
+import com.iispl.entity.UserModel;
 
 /**
  * AuthService.java
@@ -39,31 +39,55 @@ public class AuthService {
      */
     public UserModel authenticate(String userId, String password) {
 
-        if (userId == null || userId.trim().isEmpty()) return null;
-        if (password == null || password.trim().isEmpty()) return null;
+        if (userId == null || userId.trim().isEmpty()) {
+            System.out.println("DEBUG: userId is empty");
+            return null;
+        }
+        if (password == null || password.trim().isEmpty()) {
+            System.out.println("DEBUG: password is empty");
+            return null;
+        }
+
+        System.out.println("DEBUG: Trying to find user → " + userId.trim());
 
         // Step 1: Find user in DB
         SystemUser dbUser = userDao.findByUserId(userId.trim());
-        if (dbUser == null) return null;
+
+        if (dbUser == null) {
+            System.out.println("DEBUG: No user found in DB for userId = " + userId.trim());
+            return null;
+        }
+
+        System.out.println("DEBUG: User found → " + dbUser.getUserId());
+        System.out.println("DEBUG: passwordHash from DB → " + dbUser.getPasswordHash());
 
         // Step 2: Verify BCrypt password
         BCrypt.Result result = BCrypt.verifyer().verify(
             password.trim().toCharArray(),
             dbUser.getPasswordHash()
         );
-        if (!result.verified) return null;
 
-        // Step 3: Get role code from user_roles table
-        String roleCode = userDao.findRoleCodeByUserId(dbUser.getId());
-        if (roleCode == null) {
-            // User has no role assigned — deny login
+        System.out.println("DEBUG: BCrypt verified → " + result.verified);
+
+        if (!result.verified) {
+            System.out.println("DEBUG: Password did not match");
             return null;
         }
 
-        // Step 4: Build UserModel for the ZK session
-        return buildUserModel(dbUser, roleCode);
-    }
+        // Step 3: Get role code
+        String roleCode = userDao.findRoleCodeByUserId(dbUser.getId());
+        System.out.println("DEBUG: roleCode from DB → " + roleCode);
 
+        if (roleCode == null) {
+            System.out.println("DEBUG: No role found for user id = " + dbUser.getId());
+            return null;
+        }
+
+        // Step 4: Build UserModel
+        UserModel model = buildUserModel(dbUser, roleCode);
+        System.out.println("DEBUG: UserModel built → " + model.toString());
+        return model;
+    }
     /**
      * Detect role while user is still typing (used by LoginController onChanging).
      * Same logic as authenticate — only shows role pill if both fields match DB.

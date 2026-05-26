@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    components/micrSidebar.zul
+    ExpressCTS — MICR Operator Sidebar Navigation
+    Usage  : <include src="/zul/components/micrSidebar.zul"/>
+    Pattern: Nav items forward onClick events to MicrRepairController
+-->
+<zk>
+<div sclass="cts-sidebar">
+
+    <div sclass="cts-nav">
+
+        <div sclass="cts-nav-section-label">Main Menu</div>
+
+        <!-- CLEARING section label -->
+        <div sclass="cts-nav-section-label">Clearing</div>
+
+        <!-- Outward Clearing — parent item, click toggles sub-menu -->
+        <div id="navOutwardClearing" sclass="cts-nav-item cts-nav-parent"
+             forward="onClick=onNavOutwardClearing">
+            <span sclass="cts-nav-icon">📤</span>
+            <span sclass="cts-nav-label">Outward Clearing</span>
+            <span id="navClearingArrow" sclass="cts-nav-arrow">▼</span>
+        </div>
+
+        <!-- Sub-menu — shown when Outward Clearing is expanded -->
+        <div id="navSubClearing" sclass="cts-nav-submenu">
+
+            <!-- MICR Repair — active sub-item for this role -->
+            <div id="navMicrRepair" sclass="cts-nav-subitem active"
+                 forward="onClick=onNavMicrRepair">
+                <span sclass="cts-nav-sub-icon">🔧</span>
+                <span sclass="cts-nav-label">MICR Repair</span>
+                <span sclass="cts-nav-role-tag">R</span>
+            </div>
+
+        </div>
+
+        <!-- REPORTS section -->
+        <div sclass="cts-nav-section-label">Reports</div>
+
+        <div id="navReports" sclass="cts-nav-item"
+             forward="onClick=onNavReports">
+            <span sclass="cts-nav-icon">📊</span>
+            <span sclass="cts-nav-label">Outward Reports</span>
+        </div>
+
+        <!-- UTILITIES section -->
+        <div sclass="cts-nav-section-label">Utilities</div>
+
+        <div id="navAuditLog" sclass="cts-nav-item"
+             forward="onClick=onNavAuditLog">
+            <span sclass="cts-nav-icon">📋</span>
+            <span sclass="cts-nav-label">Audit Log</span>
+            <label id="lblAuditCount" sclass="cts-nav-count" value="0"/>
+        </div>
+
+    </div>
+
+</div>
+</zk>

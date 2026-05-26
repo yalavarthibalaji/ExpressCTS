@@ -1,0 +1,13 @@
+Login credentials  : 
+
+
+Maker dashboard  : 
+user id  : 656
+
+Checker dashboard : 
+user id : 642
+
+dashboard
+user id : 654  (maker)
+
+common password  : Test@123
