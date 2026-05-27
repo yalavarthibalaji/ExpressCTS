@@ -1,9 +1,10 @@
 package com.iispl.service;
 
+import java.util.List;
+
 import com.iispl.entity.SystemRole;
 import com.iispl.entity.SystemUser;
-
-import java.util.List;
+import com.iispl.entity.UserRequest;
 
 public interface UserManagementService {
 
@@ -41,5 +42,15 @@ public interface UserManagementService {
 
     // get role code for a user
     String getRoleCodeForUser(String userId);
+
+	//Giri added
+    
+    // 2. Delete a user permanently
+    void deleteUser(String userId, String adminId);
+    
+ // 9. User Request panel methods
+    List<UserRequest> getPendingRequests();
+    void acceptRequest(String requestId, String actionedBy);
+    void declineRequest(String requestId, String actionedBy);
 
 }
