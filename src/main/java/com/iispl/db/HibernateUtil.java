@@ -12,6 +12,7 @@ import com.iispl.entity.OutwardChequeStaging;
 import com.iispl.entity.RolePermission;
 import com.iispl.entity.SystemRole;
 import com.iispl.entity.SystemUser;
+import com.iispl.entity.UserRequest;
 import com.iispl.entity.UserRole;
 
 public class HibernateUtil {
@@ -46,14 +47,14 @@ public class HibernateUtil {
             cfg.setProperty("hibernate.format_sql", "true");
 
             // tables already created in Supabase
-            cfg.setProperty("hibernate.hbm2ddl.auto", "none");
+            cfg.setProperty("hibernate.hbm2ddl.auto", "update");
 
             // ── User management entities ──────────────────────────
             cfg.addAnnotatedClass(SystemUser.class);
             cfg.addAnnotatedClass(SystemRole.class);
             cfg.addAnnotatedClass(UserRole.class);
             cfg.addAnnotatedClass(RolePermission.class);
-
+            cfg.addAnnotatedClass(UserRequest.class);
             // ── Outward clearing entities ─────────────────────────
             cfg.addAnnotatedClass(OutwardBatch.class);
             cfg.addAnnotatedClass(OutwardCheque.class);
