@@ -1,11 +1,11 @@
 package com.iispl.dao;
 
-import com.iispl.entity.SystemRole;
-
-import com.iispl.entity.SystemUser;
-import com.iispl.entity.UserRole;
-
 import java.util.List;
+
+import com.iispl.entity.SystemRole;
+import com.iispl.entity.SystemUser;
+import com.iispl.entity.UserRequest;
+import com.iispl.entity.UserRole;
 
 public interface UserManagementDao {
 
@@ -30,8 +30,16 @@ public interface UserManagementDao {
 	SystemRole findRoleById(Long id);
 
 	UserRole findUserRole(Long systemUserId);
-
+ 
 	void updateUserRole(Long systemUserId, Long newRoleId);
 
 	boolean userIdExists(String userId);
+	
+	//Added by Giri
+	
+	void deleteUser(String userId);
+	void saveRequest(UserRequest request);
+	void updateRequest(UserRequest request);
+	List<UserRequest> getPendingRequests();
+	UserRequest findRequestById(String requestId);
 }
