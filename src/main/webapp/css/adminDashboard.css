@@ -1,0 +1,275 @@
+.cts-admin-wrap {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	font-family: Arial, sans-serif;
+	font-size: 13px;
+	background: #f0f0f0;
+}
+
+/* ── Top Header Bar ── */
+.cts-topbar {
+	background: #4a6fa5;
+	color: white;
+	padding: 0 16px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-shrink: 0;
+}
+
+.cts-topbar-title {
+	font-size: 15px;
+	font-weight: bold;
+	color: white;
+}
+
+.cts-topbar-right {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.cts-topbar-user {
+	font-size: 12px;
+	color: #dce8ff;
+}
+
+/* ── Tab Bar ── */
+.cts-tabbar {
+	background: #d9d9d9;
+	border-bottom: 1px solid #b0b0b0;
+	display: flex;
+	align-items: center;
+	padding: 0 8px;
+	height: 28px;
+	flex-shrink: 0;
+}
+
+.cts-tab {
+	background: white;
+	border: 1px solid #b0b0b0;
+	border-bottom: none;
+	padding: 4px 12px;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 24px;
+	margin-right: 2px;
+	border-radius: 3px 3px 0 0;
+}
+
+/* ── Main Body ── */
+.cts-body {
+	display: flex;
+	flex: 1;
+	overflow: hidden;
+}
+
+/* ── Left Sidebar ── */
+.cts-sidebar {
+	width: 170px;
+	background: #e8e8e8;
+	border-right: 1px solid #c0c0c0;
+	overflow-y: auto;
+	flex-shrink: 0;
+}
+
+.cts-menu-group {
+	border-bottom: 1px solid #c8c8c8;
+}
+
+.cts-menu-header {
+	background: #c5d0e0;
+	padding: 7px 10px;
+	font-weight: bold;
+	font-size: 12px;
+	color: #2a3a5a;
+	border-bottom: 1px solid #b0bcd0;
+	user-select: none;
+}
+
+.cts-menu-item {
+	padding: 6px 10px 6px 18px;
+	font-size: 12px;
+	cursor: pointer;
+	color: #333;
+	border-bottom: 1px solid #ddd;
+	background: white;
+}
+
+.cts-menu-item:hover {
+	background: #dce8f8;
+	color: #1a3a6a;
+}
+
+.cts-menu-item-active {
+	background: #4a6fa5 !important;
+	color: white !important;
+	font-weight: bold;
+}
+
+/* ── Content Area ── */
+.cts-content {
+	flex: 1;
+	overflow-y: auto;
+	background: #f5f5f5;
+}
+
+/* ── Panel ── */
+.cts-panel {
+	background: white;
+	border: 1px solid #c8c8c8;
+	margin: 8px;
+	border-radius: 2px;
+}
+
+.cts-panel-title {
+	background: #dce4f0;
+	border-bottom: 1px solid #b8c4d8;
+	padding: 7px 12px;
+	font-weight: bold;
+	font-size: 13px;
+	color: #1a3a6a;
+}
+
+.cts-panel-body {
+	padding: 16px;
+}
+
+.cts-section-header {
+	background: #eef2f8;
+	border: 1px solid #c8d4e8;
+	padding: 5px 10px;
+	font-weight: bold;
+	font-size: 12px;
+	color: #2a3a5a;
+	margin-bottom: 14px;
+	border-radius: 2px;
+}
+
+/* ── Form ── */
+.cts-form-row {
+	display: flex;
+	align-items: center;
+	margin-bottom: 9px;
+	gap: 8px;
+}
+
+.cts-form-label {
+	width: 140px;
+	font-size: 12px;
+	color: #333;
+	flex-shrink: 0;
+	text-align: right;
+	padding-right: 8px;
+}
+
+.cts-form-label-required::after {
+	content: " *";
+	color: red;
+}
+
+.cts-input-wrap {
+	flex: 1;
+	max-width: 280px;
+}
+
+/* ── Buttons ── */
+.cts-btn {
+	padding: 5px 16px;
+	font-size: 12px;
+	border: 1px solid #b0b0b0;
+	background: #f0f0f0;
+	cursor: pointer;
+	border-radius: 2px;
+	color: #333;
+}
+
+.cts-btn:hover {
+	background: #e0e0e0;
+}
+
+.cts-btn-primary {
+	background: #4a6fa5;
+	color: white;
+	border-color: #3a5a8a;
+}
+
+.cts-btn-primary:hover {
+	background: #3a5a8a;
+}
+
+.cts-btn-danger {
+	background: #c62828;
+	color: white;
+	border-color: #a02020;
+}
+
+.cts-btn-danger:hover {
+	background: #a02020;
+}
+
+.cts-btn-warn {
+	background: #e65100;
+	color: white;
+	border-color: #bf360c;
+}
+
+.cts-btn-warn:hover {
+	background: #bf360c;
+}
+
+/* ── Messages ── */
+.cts-msg-success {
+	color: #2e7d32;
+	font-size: 12px;
+}
+
+.cts-msg-error {
+	color: #c62828;
+	font-size: 12px;
+}
+
+/* ── Count Badge ── */
+.cts-count-box {
+	display: inline-block;
+	background: #4a6fa5;
+	color: white;
+	font-size: 13px;
+	font-weight: bold;
+	padding: 6px 18px;
+	border-radius: 4px;
+	margin-right: 16px;
+	min-width: 80px;
+	text-align: center;
+}
+
+.cts-count-label {
+	font-size: 11px;
+	display: block;
+	font-weight: normal;
+}
+
+/* ── Request action buttons ── */
+.cts-req-accept {
+	background: #2e7d32;
+	color: white;
+	border: none;
+	padding: 3px 10px;
+	border-radius: 2px;
+	cursor: pointer;
+	font-size: 11px;
+}
+
+.cts-req-decline {
+	background: #c62828;
+	color: white;
+	border: none;
+	padding: 3px 10px;
+	border-radius: 2px;
+	cursor: pointer;
+	font-size: 11px;
+}

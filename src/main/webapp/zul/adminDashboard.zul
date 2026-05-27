@@ -1,239 +1,334 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?page title="CTS Admin Dashboard"?>
+<?link rel="stylesheet" type="text/css" href="/css/adminDashboard.css"?>
 <zk>
-<div apply="com.iispl.controller.AdminDashboardController"
-     style="font-family: sans-serif; padding: 20px; background: #f5f5f5; min-height: 100vh;">
 
-    <!-- Header -->
-    <div style="background: #1a237e; color: white; padding: 15px 20px;
-                border-radius: 8px; margin-bottom: 20px;
-                display: flex; justify-content: space-between; align-items: center;">
-        <label style="font-size: 20px; font-weight: bold;">
-            CTS Admin — User Management
-        </label>
-        <button id="btnLogout"
-                style="background: #ef5350; color: white; border: none;
-                       padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-            Logout
-        </button>
-    </div>
+<div apply="com.iispl.controller.AdminDashboardController" class="cts-admin-wrap">
 
-    <!-- ── ADD NEW USER ──────────────────────────────────── -->
-    <div style="background: white; padding: 20px; border-radius: 8px;
-                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-        <label style="font-size: 16px; font-weight: bold;
-                      color: #1a237e; display: block; margin-bottom: 15px;">
-            Add New User
-        </label>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <label>User ID *</label>
-                <textbox id="txtNewUserId" width="100%"
-                         placeholder="e.g. maker02"/>
-            </div>
-            <div>
-                <label>Full Name *</label>
-                <textbox id="txtNewFullName" width="100%"
-                         placeholder="e.g. Rajesh Kumar"/>
-            </div>
-            <div>
-                <label>Branch Code *</label>
-                <textbox id="txtNewBranchCode" width="100%"
-                         placeholder="e.g. BR001"/>
-            </div>
-            <div>
-                <label>Initial</label>
-                <textbox id="txtNewInitial" width="100%"
-                         placeholder="e.g. RK"/>
-            </div>
-            <div>
-                <label>Role *</label>
-                <combobox id="cmbNewRole" width="100%"
-                          readonly="true" placeholder="Select Role"/>
-            </div>
-        </div>
-
-        <div style="margin-top: 12px;">
-            <button id="btnAddUser"
-                    style="background: #1a237e; color: white; border: none;
-                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
-                Create User
+    <!-- ── TOP HEADER ─────────────────────────────────── -->
+    <div class="cts-topbar">
+        <label class="cts-topbar-title">ExpressClear — CTS Admin</label>
+        <div class="cts-topbar-right">
+            <label id="lblLoggedInUser" class="cts-topbar-user">Admin</label>
+            <button id="btnLogout" class="cts-btn"
+                    style="background:#ef5350; color:white; border-color:#c62828; font-size:12px;">
+                Logout
             </button>
         </div>
-        <label id="lblAddUserMsg" style="display: block; margin-top: 8px;"/>
     </div>
 
-    <!-- ── MODIFY USER ───────────────────────────────────── -->
-    <div style="background: white; padding: 20px; border-radius: 8px;
-                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-        <label style="font-size: 16px; font-weight: bold;
-                      color: #1a237e; display: block; margin-bottom: 15px;">
-            Modify User
-        </label>
-
-        <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end;">
-            <div style="flex: 1;">
-                <label>User ID</label>
-                <textbox id="txtModifyUserId" width="100%"
-                         placeholder="Enter User ID to load"/>
-            </div>
-            <button id="btnLoadModifyUser"
-                    style="background: #455a64; color: white; border: none;
-                           padding: 10px 16px; border-radius: 4px; cursor: pointer;">
-                Load User
-            </button>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <label>Full Name</label>
-                <textbox id="txtModifyFullName" width="100%"/>
-            </div>
-            <div>
-                <label>Branch Code</label>
-                <textbox id="txtModifyBranchCode" width="100%"/>
-            </div>
-            <div>
-                <label>Initial</label>
-                <textbox id="txtModifyInitial" width="100%"/>
-            </div>
-        </div>
-
-        <div style="margin-top: 12px;">
-            <button id="btnSaveModifyUser"
-                    style="background: #1a237e; color: white; border: none;
-                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
-                Save Changes
-            </button>
-        </div>
-        <label id="lblModifyMsg" style="display: block; margin-top: 8px;"/>
+    <!-- ── TAB BAR ────────────────────────────────────── -->
+    <div class="cts-tabbar">
+        <div class="cts-tab">User Management</div>
     </div>
 
-    <!-- ── ENABLE / DISABLE ──────────────────────────────── -->
-    <div style="background: white; padding: 20px; border-radius: 8px;
-                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-                display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- ── MAIN BODY ──────────────────────────────────── -->
+    <div class="cts-body">
 
-        <!-- Enable -->
-        <div>
-            <label style="font-size: 16px; font-weight: bold;
-                          color: #2e7d32; display: block; margin-bottom: 12px;">
-                Enable User
-            </label>
-            <label>User ID</label>
-            <textbox id="txtEnableUserId" width="100%"
-                     placeholder="Enter User ID"/>
-            <div style="margin-top: 10px;">
-                <button id="btnEnableUser"
-                        style="background: #2e7d32; color: white; border: none;
-                               padding: 10px 24px; border-radius: 4px; cursor: pointer;">
-                    Enable
-                </button>
-            </div>
-            <label id="lblEnableMsg" style="display: block; margin-top: 8px;"/>
-        </div>
-
-        <!-- Disable -->
-        <div>
-            <label style="font-size: 16px; font-weight: bold;
-                          color: #c62828; display: block; margin-bottom: 12px;">
-                Disable User
-            </label>
-            <label>User ID</label>
-            <textbox id="txtDisableUserId" width="100%"
-                     placeholder="Enter User ID"/>
-            <div style="margin-top: 10px;">
-                <button id="btnDisableUser"
-                        style="background: #c62828; color: white; border: none;
-                               padding: 10px 24px; border-radius: 4px; cursor: pointer;">
-                    Disable
-                </button>
-            </div>
-            <label id="lblDisableMsg" style="display: block; margin-top: 8px;"/>
-        </div>
-    </div>
-
-    <!-- ── ROLE MAPPING ──────────────────────────────────── -->
-    <div style="background: white; padding: 20px; border-radius: 8px;
-                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-        <label style="font-size: 16px; font-weight: bold;
-                      color: #1a237e; display: block; margin-bottom: 15px;">
-            Change User Role
-        </label>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <label>User ID</label>
-                <textbox id="txtRoleUserId" width="100%"
-                         placeholder="Enter User ID"/>
-            </div>
-            <div>
-                <label>New Role</label>
-                <combobox id="cmbRoleSelect" width="100%"
-                          readonly="true" placeholder="Select Role"/>
+        <!-- ── LEFT SIDEBAR ─────────────────────────── -->
+        <div class="cts-sidebar">
+            <div class="cts-menu-group">
+                <div class="cts-menu-header">User Management</div>
+                <div id="menuAddUser"      class="cts-menu-item cts-menu-item-active">Add User</div>
+                <div id="menuDeleteUser"   class="cts-menu-item">Delete User</div>
+                <div id="menuEnableUser"   class="cts-menu-item">Enable User</div>
+                <div id="menuDisableUser"  class="cts-menu-item">Disable User</div>
+                <div id="menuUpdateUser"   class="cts-menu-item">Update User</div>
+                <div id="menuChangeRole"   class="cts-menu-item">Change Role</div>
+                <div id="menuResetPwd"     class="cts-menu-item">Reset Password</div>
+                <div id="menuAllUsers"     class="cts-menu-item">Show All Users</div>
+                <div id="menuUserRequest"  class="cts-menu-item">User Request</div>
             </div>
         </div>
 
-        <div style="margin-top: 12px;">
-            <button id="btnChangeRole"
-                    style="background: #1a237e; color: white; border: none;
-                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
-                Update Role
-            </button>
-        </div>
-        <label id="lblRoleMsg" style="display: block; margin-top: 8px;"/>
-    </div>
+        <!-- ── CONTENT AREA ──────────────────────────── -->
+        <div class="cts-content">
 
-    <!-- ── RESET PASSWORD ────────────────────────────────── -->
-    <div style="background: white; padding: 20px; border-radius: 8px;
-                margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-        <label style="font-size: 16px; font-weight: bold;
-                      color: #1a237e; display: block; margin-bottom: 15px;">
-            Reset Password
-        </label>
+            <!-- ══ 1. ADD USER ═══════════════════════════ -->
+            <div id="panelAddUser" class="cts-panel">
+                <div class="cts-panel-title">Add User</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Create New User Account</div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <label>User ID</label>
-                <textbox id="txtResetUserId" width="100%"
-                         placeholder="Enter User ID"/>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtNewUserId" width="200px" placeholder="e.g. maker02"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">Full Name</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtNewFullName" width="200px" placeholder="e.g. Rajesh Kumar"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">Branch Code</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtNewBranchCode" width="200px" placeholder="e.g. BR001"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label">Initial</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtNewInitial" width="80px" placeholder="e.g. RK"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">Role</label>
+                        <div class="cts-input-wrap">
+                            <combobox id="cmbNewRole" width="100%" readonly="true" placeholder="— select role —"/>
+                        </div>
+                    </div>
+
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnAddUser" class="cts-btn cts-btn-primary">Create User</button>
+                    </div>
+                    <label id="lblAddUserMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+                </div>
             </div>
-            <div>
-                <label>New Password</label>
-                <textbox id="txtNewPassword" width="100%"
-                         type="password" placeholder="Min 6 characters"/>
+
+            <!-- ══ 2. DELETE USER ════════════════════════ -->
+            <div id="panelDeleteUser" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Delete User</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Permanently Remove User Account</div>
+
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtDeleteUserId" width="200px" placeholder="Enter User ID"/>
+                        </div>
+                    </div>
+
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnDeleteUser" class="cts-btn cts-btn-danger">Delete User</button>
+                    </div>
+                    <label id="lblDeleteUserMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+                </div>
             </div>
-        </div>
 
-        <div style="margin-top: 12px;">
-            <button id="btnResetPassword"
-                    style="background: #e65100; color: white; border: none;
-                           padding: 10px 24px; border-radius: 4px; cursor: pointer;">
-                Reset Password
-            </button>
-        </div>
-        <label id="lblResetMsg" style="display: block; margin-top: 8px;"/>
-    </div>
+            <!-- ══ 3. ENABLE USER ════════════════════════ -->
+            <div id="panelEnableUser" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Enable User</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Activate User Account</div>
 
-    <!-- ── USER LIST ─────────────────────────────────────── -->
-    <div style="background: white; padding: 20px; border-radius: 8px;
-                box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-        <label style="font-size: 16px; font-weight: bold;
-                      color: #1a237e; display: block; margin-bottom: 15px;">
-            All Users
-        </label>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtEnableUserId" width="200px" placeholder="Enter User ID"/>
+                        </div>
+                    </div>
 
-        <listbox id="lstUsers" width="100%">
-            <listhead>
-                <listheader label="User ID"    width="150px"/>
-                <listheader label="Full Name"  width="200px"/>
-                <listheader label="Branch"     width="100px"/>
-                <listheader label="Role"       width="150px"/>
-                <listheader label="Status"     width="100px"/>
-            </listhead>
-        </listbox>
-    </div>
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnEnableUser" class="cts-btn cts-btn-primary">Enable User</button>
+                    </div>
+                    <label id="lblEnableMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+
+                    <!-- Enabled Users List -->
+                    <div class="cts-section-header" style="margin-top:20px;">Enabled Users</div>
+                    <listbox id="lstEnabledUsers" width="100%">
+                        <listhead>
+                            <listheader label="User ID"   width="150px"/>
+                            <listheader label="Full Name" width="200px"/>
+                            <listheader label="Branch"    width="100px"/>
+                            <listheader label="Role"      width="150px"/>
+                        </listhead>
+                    </listbox>
+                </div>
+            </div>
+
+            <!-- ══ 4. DISABLE USER ═══════════════════════ -->
+            <div id="panelDisableUser" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Disable User</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Deactivate User Account</div>
+
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtDisableUserId" width="200px" placeholder="Enter User ID"/>
+                        </div>
+                    </div>
+
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnDisableUser" class="cts-btn cts-btn-danger">Disable User</button>
+                    </div>
+                    <label id="lblDisableMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+
+                    <!-- Disabled Users List -->
+                    <div class="cts-section-header" style="margin-top:20px;">Disabled Users</div>
+                    <listbox id="lstDisabledUsers" width="100%">
+                        <listhead>
+                            <listheader label="User ID"   width="150px"/>
+                            <listheader label="Full Name" width="200px"/>
+                            <listheader label="Branch"    width="100px"/>
+                            <listheader label="Role"      width="150px"/>
+                        </listhead>
+                    </listbox>
+                </div>
+            </div>
+
+            <!-- ══ 5. UPDATE USER ════════════════════════ -->
+            <div id="panelUpdateUser" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Update User</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Modify User Details</div>
+
+                    <!-- Step 1: Enter User ID and load -->
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap" style="display:flex; gap:8px;">
+                            <textbox id="txtModifyUserId" width="160px" placeholder="Enter User ID"/>
+                            <button id="btnLoadModifyUser" class="cts-btn">Load User</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Edit fields after load -->
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">Full Name</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtModifyFullName" width="200px"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">Branch Code</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtModifyBranchCode" width="200px"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label">Initial</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtModifyInitial" width="80px"/>
+                        </div>
+                    </div>
+
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnSaveModifyUser" class="cts-btn cts-btn-primary">Save Changes</button>
+                    </div>
+                    <label id="lblModifyMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+                </div>
+            </div>
+
+            <!-- ══ 6. CHANGE ROLE ════════════════════════ -->
+            <div id="panelChangeRole" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Change Role</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Update User Role</div>
+
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtRoleUserId" width="200px" placeholder="Enter User ID"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">New Role</label>
+                        <div class="cts-input-wrap">
+                            <combobox id="cmbRoleSelect" width="100%" readonly="true" placeholder="— select role —"/>
+                        </div>
+                    </div>
+
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnChangeRole" class="cts-btn cts-btn-primary">Update Role</button>
+                    </div>
+                    <label id="lblRoleMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+                </div>
+            </div>
+
+            <!-- ══ 7. RESET PASSWORD ═════════════════════ -->
+            <div id="panelResetPwd" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Reset Password</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Set New Password for User</div>
+
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">User ID</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtResetUserId" width="200px" placeholder="Enter User ID"/>
+                        </div>
+                    </div>
+                    <div class="cts-form-row">
+                        <label class="cts-form-label cts-form-label-required">New Password</label>
+                        <div class="cts-input-wrap">
+                            <textbox id="txtNewPassword" width="200px" type="password" placeholder="Min 6 characters"/>
+                        </div>
+                    </div>
+
+                    <div class="cts-form-row" style="margin-top:14px;">
+                        <label class="cts-form-label"/>
+                        <button id="btnResetPassword" class="cts-btn cts-btn-warn">Reset Password</button>
+                    </div>
+                    <label id="lblResetMsg" style="display:block; margin-top:6px; font-size:12px;"/>
+                </div>
+            </div>
+
+            <!-- ══ 8. SHOW ALL USERS ═════════════════════ -->
+            <div id="panelAllUsers" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">Show All Users</div>
+                <div class="cts-panel-body">
+
+                    <!-- Count badges row -->
+                    <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                        <div class="cts-count-box" style="background:#4a6fa5;">
+                            <span class="cts-count-label">Total Users</span>
+                            <label id="lblCountTotal">0</label>
+                        </div>
+                        <div class="cts-count-box" style="background:#2e7d32;">
+                            <span class="cts-count-label">Active</span>
+                            <label id="lblCountActive">0</label>
+                        </div>
+                        <div class="cts-count-box" style="background:#c62828;">
+                            <span class="cts-count-label">Inactive</span>
+                            <label id="lblCountInactive">0</label>
+                        </div>
+                    </div>
+
+                    <div class="cts-section-header">All Users</div>
+                    <listbox id="lstAllUsers" width="100%">
+                        <listhead>
+                            <listheader label="User ID"   width="140px"/>
+                            <listheader label="Full Name" width="180px"/>
+                            <listheader label="Branch"    width="100px"/>
+                            <listheader label="Role"      width="130px"/>
+                            <listheader label="Status"    width="90px"/>
+                        </listhead>
+                    </listbox>
+                </div>
+            </div>
+
+            <!-- ══ 9. USER REQUEST ═══════════════════════ -->
+            <div id="panelUserRequest" class="cts-panel" style="display:none;">
+                <div class="cts-panel-title">User Request</div>
+                <div class="cts-panel-body">
+                    <div class="cts-section-header">Pending Requests — Accept or Decline</div>
+
+                    <listbox id="lstRequests" width="100%">
+                        <listhead>
+                            <listheader label="Request ID"   width="110px"/>
+                            <listheader label="Type"         width="110px"/>
+                            <listheader label="User ID"      width="110px"/>
+                            <listheader label="Requested By" width="130px"/>
+                            <listheader label="Details"      width="200px"/>
+                            <listheader label="Date"         width="120px"/>
+                            <listheader label="Action"       width="160px"/>
+                        </listhead>
+                    </listbox>
+
+                    <label id="lblRequestMsg" style="display:block; margin-top:8px; font-size:12px;"/>
+                </div>
+            </div>
+
+        </div><!-- end cts-content -->
+    </div><!-- end cts-body -->
 
 </div>
 </zk>

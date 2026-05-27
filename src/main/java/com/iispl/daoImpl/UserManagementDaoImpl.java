@@ -1,16 +1,17 @@
 package com.iispl.daoImpl;
 
-import com.iispl.dao.UserManagementDao;
-import com.iispl.db.HibernateUtil;
-import com.iispl.entity.SystemRole;
-import com.iispl.entity.SystemUser;
-import com.iispl.entity.UserRole;
+import java.util.List;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
-import java.util.List;
+import com.iispl.dao.UserManagementDao;
+import com.iispl.db.HibernateUtil;
+import com.iispl.entity.SystemRole;
+import com.iispl.entity.SystemUser;
+import com.iispl.entity.UserRequest;
+import com.iispl.entity.UserRole;
 
 public class UserManagementDaoImpl implements UserManagementDao {
 
@@ -192,6 +193,94 @@ public class UserManagementDaoImpl implements UserManagementDao {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to check userId: " + e.getMessage());
+        }
+    }
+    
+    
+    //Giri added
+    
+    @Override
+    public void deleteUser(String userId) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+ 
+            // Step 1: delete the UserRole mapping first
+            // (must delete child before parent to avoid FK constraint error)
+            Query<?> deleteRoleQuery = session.createQuery(
+                "DELETE FROM UserRole ur WHERE ur.systemUser.userId = :userId");
+            deleteRoleQuery.setParameter("userId", userId);
+            deleteRoleQuery.executeUpdate();
+ 
+            // Step 2: delete the user itself
+            Query<?> deleteUserQuery = session.createQuery(
+                "DELETE FROM SystemUser u WHERE u.userId = :userId");
+            deleteUserQuery.setParameter("userId", userId);
+            deleteUserQuery.executeUpdate();
+ 
+            transaction.commit();
+            System.out.println("User deleted: " + userId);
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete user: " + e.getMessage());
+        }
+    }
+ 
+    @Override
+    public void saveRequest(UserRequest request) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(request);
+            transaction.commit();
+            System.out.println("Request saved: " + request.getRequestId());
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+            throw new RuntimeException("Failed to save request: " + e.getMessage());
+        }
+    }
+ 
+    @Override
+    public void updateRequest(UserRequest request) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.merge(request);
+            transaction.commit();
+            System.out.println("Request updated: " + request.getRequestId()
+                + " status: " + request.getStatus());
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update request: " + e.getMessage());
+        }
+    }
+ 
+    @Override
+    public List<UserRequest> getPendingRequests() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<UserRequest> query = session.createQuery(
+                "FROM UserRequest WHERE status = 'PENDING' ORDER BY requestDate DESC",
+                UserRequest.class);
+            return query.getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to get pending requests: " + e.getMessage());
+        }
+    }
+ 
+    @Override
+    public UserRequest findRequestById(String requestId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<UserRequest> query = session.createQuery(
+                "FROM UserRequest WHERE requestId = :requestId", UserRequest.class);
+            query.setParameter("requestId", requestId);
+            return query.uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to find request: " + e.getMessage());
         }
     }
 }
