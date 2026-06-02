@@ -1,21 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
-         version="2.5">
-
-    <display-name>Reusable Components</display-name>
-    
-    <!-- Added by Giri -->
-    <!-- Session Filter — ADD THIS BLOCK -->
-	<filter>
-		<filter-name>SessionManagement</filter-name>
-		<filter-class>com.iispl.sessionManagement.SessionManagement</filter-class>
-	</filter>
-
-	<filter-mapping>
-		<filter-name>SessionManagement</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping>
-
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+    version="6.0">
+  
     <!-- ZK Loader -->
     <servlet>
         <servlet-name>zkLoader</servlet-name>
@@ -26,30 +11,21 @@
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
-
     <servlet-mapping>
         <servlet-name>zkLoader</servlet-name>
         <url-pattern>*.zul</url-pattern>
     </servlet-mapping>
-
     <!-- ZK AU Engine -->
     <servlet>
         <servlet-name>auEngine</servlet-name>
         <servlet-class>org.zkoss.zk.au.http.DHtmlUpdateServlet</servlet-class>
     </servlet>
-
     <servlet-mapping>
         <servlet-name>auEngine</servlet-name>
         <url-pattern>/zkau/*</url-pattern>
     </servlet-mapping>
-    
-    <session-config>
-<session-timeout>30</session-timeout>
-</session-config>
-
-    <!-- Default page -->
+    <!-- Welcome Page -->
     <welcome-file-list>
-        <welcome-file>/zul/login.zul</welcome-file>
+        <welcome-file>login.zul</welcome-file>
     </welcome-file-list>
-
 </web-app>
