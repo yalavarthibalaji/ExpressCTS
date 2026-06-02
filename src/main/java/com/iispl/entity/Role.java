@@ -1,18 +1,17 @@
 package com.iispl.entity;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
-
-import com.iispl.enums.Status;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -20,107 +19,45 @@ import jakarta.persistence.Table;
 public class Role {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    @Column(name = "role_name", nullable = false, unique = true)
+    @Column(name = "role_code", nullable = false, unique = true, length = 50)
+    private String roleCode;
+
+    @Column(name = "role_name", nullable = false, length = 100)
     private String roleName;
 
-    @Column(name = "description")
-    private String description;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
 
-    @Column(name = "can_create_batch")
-    private boolean canCreateBatch;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "can_approve_outward")
-    private boolean canApproveOutward;
+    // Two-way: Role has many Users
+    @OneToMany(mappedBy = "role", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    private List<User> users;
 
-    @Column(name = "can_approve_inward")
-    private boolean canApproveInward;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private Status status;
-
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    private List<User> users = new ArrayList<>();
-
-    public Role() {
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
     }
 
-    public Role(String id, String roleName, String description, boolean canCreateBatch, boolean canApproveOutward,
-            boolean canApproveInward, Status status) {
-        this.id = id;
-        this.roleName = roleName;
-        this.description = description;
-        this.canCreateBatch = canCreateBatch;
-        this.canApproveOutward = canApproveOutward;
-        this.canApproveInward = canApproveInward;
-        this.status = status;
-    }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
-    public String getId() {
-        return id;
-    }
+    public String getRoleCode() { return roleCode; }
+    public void setRoleCode(String roleCode) { this.roleCode = roleCode; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getRoleName() { return roleName; }
+    public void setRoleName(String roleName) { this.roleName = roleName; }
 
-    public String getRoleName() {
-        return roleName;
-    }
+    public boolean isActive() { return isActive; }
+    public void setActive(boolean active) { isActive = active; }
 
-    public void setRoleName(String n) {
-        this.roleName = n;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String d) {
-        this.description = d;
-    }
-
-    public boolean isCanCreateBatch() {
-        return canCreateBatch;
-    }
-
-    public void setCanCreateBatch(boolean b) {
-        this.canCreateBatch = b;
-    }
-
-    public boolean isCanApproveOutward() {
-        return canApproveOutward;
-    }
-
-    public void setCanApproveOutward(boolean b) {
-        this.canApproveOutward = b;
-    }
-
-    public boolean isCanApproveInward() {
-        return canApproveInward;
-    }
-
-    public void setCanApproveInward(boolean b) {
-        this.canApproveInward = b;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status s) {
-        this.status = s;
-    }
-
-    public List<User> getUsers() {
-        return users;
-    }
-
-    public void setUsers(List<User> u) {
-        this.users = u;
-    }
+    public List<User> getUsers() { return users; }
+    public void setUsers(List<User> users) { this.users = users; }
 }
-
