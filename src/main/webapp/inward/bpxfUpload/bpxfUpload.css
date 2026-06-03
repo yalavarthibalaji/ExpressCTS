@@ -1,0 +1,9 @@
+/*
+ * File: inward/bpxfUpload/bpxfUpload.css
+ * Purpose: Page-specific styles for Inward File Processing.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for file table, batch detail panel
+ */
+
+/* Add bpxfUpload-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

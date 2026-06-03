@@ -1,0 +1,9 @@
+/*
+ * File: outward/micrRepair/micrRepair.css
+ * Purpose: Page-specific styles for MICR Repair.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for split layout, field-changed highlights
+ */
+
+/* Add micrRepair-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

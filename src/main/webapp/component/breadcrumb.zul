@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    File    : component/breadcrumb.zul
+    Purpose : Reusable breadcrumb bar showing current page location.
+              Updated by MainComposer whenever the page changes.
+-->
+
+<div id="breadbar" sclass="breadbar" xmlns="http://www.zkoss.org/2005/zul">
+    <label id="breadParent" sclass="par" value="Home" />
+    <label sclass="sep"     value="›" />
+    <label id="breadCurrent" sclass="cur" value="Dashboard" />
+</div>

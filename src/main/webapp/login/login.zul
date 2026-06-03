@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressClear CTS — Login" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/login/login.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+
+    <div apply="com.iispl.composer.LoginComposer" sclass="login-screen">
+
+        <div sclass="lcard">
+
+            <div sclass="ltop">
+                <label sclass="app-name">ExpressClear CTS</label>
+                <label sclass="app-sub">Cheque Truncation System</label>
+            </div>
+
+            <separator bar="true" sclass="ldiv" />
+
+            <label id="errorLabel" sclass="lerr" value="" />
+
+            <div sclass="lfield">
+                <label value="User ID" />
+                <textbox id="userIdBox"
+                         placeholder="Enter User ID"
+                         sclass="lf-input"
+                         maxlength="50" />
+            </div>
+
+            <div sclass="lfield">
+                <label value="Password" />
+                <textbox id="passwordBox"
+                         placeholder="Enter Password"
+                         type="password"
+                         sclass="lf-input"
+                         maxlength="100" />
+            </div>
+
+            <button id="loginBtn" label="LOGIN" sclass="lbtn" />
+
+        </div>
+
+    </div>
+
+</zk>

@@ -1,7 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-    version="6.0">
-  
-    <!-- ZK Loader -->
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee 
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
+
+    <display-name>ExpressClear CTS</display-name>
+
+    <!-- ════════════════════════════════════════════
+         ZK FRAMEWORK SERVLETS
+         ════════════════════════════════════════════ -->
+
+    <!-- ZK session listener — tracks user sessions -->
+    <listener>
+        <listener-class>org.zkoss.zk.ui.http.HttpSessionListener</listener-class>
+    </listener>
+
+    <!-- ZK Loader — handles all .zul file requests -->
     <servlet>
         <servlet-name>zkLoader</servlet-name>
         <servlet-class>org.zkoss.zk.ui.http.DHtmlLayoutServlet</servlet-class>
@@ -15,7 +30,12 @@
         <servlet-name>zkLoader</servlet-name>
         <url-pattern>*.zul</url-pattern>
     </servlet-mapping>
-    <!-- ZK AU Engine -->
+    <servlet-mapping>
+        <servlet-name>zkLoader</servlet-name>
+        <url-pattern>*.zhtml</url-pattern>
+    </servlet-mapping>
+
+    <!-- ZK Async Update Engine — handles AJAX/UI events -->
     <servlet>
         <servlet-name>auEngine</servlet-name>
         <servlet-class>org.zkoss.zk.au.http.DHtmlUpdateServlet</servlet-class>
@@ -24,8 +44,22 @@
         <servlet-name>auEngine</servlet-name>
         <url-pattern>/zkau/*</url-pattern>
     </servlet-mapping>
-    <!-- Welcome Page -->
+
+    <!-- ════════════════════════════════════════════
+         SESSION CONFIG
+         ════════════════════════════════════════════ -->
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+
+    <!-- ════════════════════════════════════════════
+         WELCOME PAGE  (when user hits /CTS-SYSTEM/)
+         ════════════════════════════════════════════ -->
+
     <welcome-file-list>
-        <welcome-file>login.zul</welcome-file>
+        <welcome-file>index.html</welcome-file>
+        <welcome-file>index.zul</welcome-file>
     </welcome-file-list>
+
 </web-app>

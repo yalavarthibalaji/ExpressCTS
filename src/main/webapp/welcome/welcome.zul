@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressClear CTS — Welcome" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/welcome/welcome.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+    <div sclass="welcome-screen" apply="com.iispl.composer.WelcomeComposer">
+
+        <div sclass="wcard">
+            <div sclass="wtop">
+                <label sclass="wtitle" value="✓ Login Successful" />
+                <label sclass="wsub"   value="ExpressClear CTS — Test Welcome Page" />
+            </div>
+
+            <separator bar="true" sclass="ldiv" />
+
+            <div sclass="wrow">
+                <label sclass="wlbl" value="User ID:" />
+                <label id="wUserId" sclass="wval" />
+            </div>
+            <div sclass="wrow">
+                <label sclass="wlbl" value="Full Name:" />
+                <label id="wFullName" sclass="wval" />
+            </div>
+            <div sclass="wrow">
+                <label sclass="wlbl" value="Role:" />
+                <label id="wRole" sclass="wval" />
+            </div>
+            <div sclass="wrow">
+                <label sclass="wlbl" value="Email:" />
+                <label id="wEmail" sclass="wval" />
+            </div>
+
+            <button id="logoutBtn" label="Logout" sclass="lbtn" />
+        </div>
+
+    </div>
+</zk>
