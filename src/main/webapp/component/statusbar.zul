@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    File    : component/statusbar.zul
+    Purpose : Reusable bottom status bar showing system info and session context.
+-->
+
+<div sclass="statusbar" xmlns="http://www.zkoss.org/2005/zul">
+    <div sclass="sitem" style="margin-left:auto;opacity:.5;font-size:10px">
+        ExpressClear CTS · IISPL
+    </div>
+</div>

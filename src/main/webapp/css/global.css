@@ -1,0 +1,83 @@
+/*
+ * File: global.css
+ * Purpose: CSS variables (design tokens) and base reset for ExpressClear CTS.
+ *          Import this first in every page and component.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Brand */
+  --primary:        #1A3C6E;
+  --primary-light:  #2B5BA8;
+
+  /* Sidebar */
+  --sidebar:        #0F2748;
+  --sidebar-hover:  #1E4580;
+  --sidebar-active: #1A3C6E;
+  --sidebar-text:   #C8D6E8;
+  --accent:         #4FC3F7;
+
+  /* Page */
+  --bg:       #F4F6F9;
+  --surface:  #ffffff;
+  --alt:      #EEF2F7;
+
+  /* Borders */
+  --border:   #D0D7E3;
+  --border-s: #A8B4C8;
+
+  /* Semantic */
+  --success:    #1A7A4A;
+  --success-bg: #EAF5EF;
+  --success-b:  #81C995;
+
+  --warning:    #B86F00;
+  --warning-bg: #FFF4E0;
+  --warning-b:  #F5C842;
+
+  --danger:     #C0392B;
+  --danger-bg:  #FDECEA;
+  --danger-b:   #EF9A9A;
+
+  --info:       #1565C0;
+  --info-bg:    #E8F0FE;
+  --info-b:     #90B4F5;
+
+  /* Text */
+  --t1: #1A2332;
+  --t2: #4A5568;
+  --tm: #7A8BA0;
+
+  /* Radius */
+  --r4: 4px;
+  --r6: 6px;
+  --r8: 8px;
+
+  /* Fonts */
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--t1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+button, input, select, textarea {
+  font-family: var(--font);
+}
+
+button {
+  cursor: pointer;
+}
