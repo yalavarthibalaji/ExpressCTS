@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressClear CTS" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+
+<!--
+    File    : main.zul
+    Purpose : Master shell layout loaded after login.
+              Contains topbar, sidebar, breadcrumb, page content area, statusbar.
+              Page content is swapped dynamically by MainComposer using <include>.
+    Composer: com.iispl.composer.MainComposer
+-->
+
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.zkoss.org/2005/zul http://www.zkoss.org/2005/zul/zul.xsd">
+
+    <div id="shellLayout" sclass="shell-layout"
+         apply="com.iispl.composer.MainComposer">
+
+        <!-- Topbar -->
+        <include src="/component/topbar.zul" />
+
+        <!-- Body: Sidebar + Main -->
+        <div sclass="body-row">
+
+            <!-- Sidebar -->
+            <include src="/component/sidebar.zul" />
+
+            <!-- Main content area -->
+            <div sclass="main">
+
+                <!-- Breadcrumb -->
+                <include src="/component/breadcrumb.zul" />
+
+                <!-- Dynamic page content -->
+                <div id="pageContent" sclass="page" />
+
+            </div>
+        </div>
+
+        <!-- Status bar -->
+        <include src="/component/statusbar.zul" />
+
+    </div>
+
+</zk>

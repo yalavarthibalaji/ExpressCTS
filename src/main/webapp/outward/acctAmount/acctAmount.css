@@ -1,0 +1,9 @@
+/*
+ * File: outward/acctAmount/acctAmount.css
+ * Purpose: Page-specific styles for Account and Amount Entry.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for progress bar, validation result cards
+ */
+
+/* Add acctAmount-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

@@ -1,0 +1,9 @@
+/*
+ * File: outward/checkerQueue/checkerQueue.css
+ * Purpose: Page-specific styles for Checker Queue.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for action panels, reject panel
+ */
+
+/* Add checkerQueue-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

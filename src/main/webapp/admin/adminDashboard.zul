@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Admin Dashboard — ExpressCTS" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/admin/adminDashboard.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
+
+    <!-- Topbar -->
+    <div sclass="topbar">
+        <div sclass="logo">
+            <div sclass="logo-box">EC</div>
+            <label sclass="logo-txt" value="ExpressClear CTS" />
+        </div>
+        <div sclass="topbar-right">
+            <label id="userAvatar" sclass="uavatar" value="--" />
+            <vlayout spacing="0">
+                <label id="userName" sclass="uname" value="—" />
+                <label id="userRole" sclass="urole" value="—" />
+            </vlayout>
+            <button id="logoutBtn" label="↩ Logout" sclass="logbtn" />
+        </div>
+    </div>
+
+    <!-- Body: Sidebar + Main -->
+    <div sclass="body-row">
+
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="dash-main">
+
+                <div sclass="welcome-block">
+                    <label sclass="welcome-title" value="Welcome, Administrator" />
+                    <label sclass="welcome-sub"   value="Manage users, view system activity, and oversee operations." />
+                </div>
+
+                <div sclass="quick-cards">
+                    <div sclass="qcard qcard-primary" id="userMgmtBtn">
+                        <div sclass="qicon">👥</div>
+                        <div sclass="qtitle">User Management</div>
+                        <div sclass="qdesc">Create users, assign roles, manage access</div>
+                    </div>
+                    <div sclass="qcard qcard-disabled">
+                        <div sclass="qicon">📊</div>
+                        <div sclass="qtitle">View All Batches</div>
+                        <div sclass="qdesc">Coming soon</div>
+                    </div>
+                    <div sclass="qcard qcard-disabled">
+                        <div sclass="qicon">📈</div>
+                        <div sclass="qtitle">Reports</div>
+                        <div sclass="qdesc">Coming soon</div>
+                    </div>
+                    <div sclass="qcard qcard-disabled">
+                        <div sclass="qicon">🛡</div>
+                        <div sclass="qtitle">Audit Logs</div>
+                        <div sclass="qdesc">Coming soon</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</zk>

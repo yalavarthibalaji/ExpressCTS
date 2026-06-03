@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/bpxfUpload/bpxfUpload.css"?>
+
+<!--
+    File    : inward/bpxfUpload/bpxfUpload.zul
+    Purpose : Inward File Processing — Upload incoming CTS cheque files. One file per batch.
+    Composer: com.iispl.composer.BpxfUploadComposer
+-->
+
+<div xmlns="http://www.zkoss.org/2005/zul"
+     apply="com.iispl.composer.BpxfUploadComposer">
+
+    <!-- Page Header -->
+    <div sclass="page-hdr">
+        <div>
+            <div sclass="page-title">Inward File Processing</div>
+            <div sclass="page-sub">Upload incoming CTS cheque files. One file per batch.</div>
+        </div>
+    </div>
+
+    <!-- Page content goes here -->
+
+</div>

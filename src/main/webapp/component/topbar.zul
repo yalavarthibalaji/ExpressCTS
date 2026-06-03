@@ -1,0 +1,30 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    File    : component/topbar.zul
+    Purpose : Reusable top navigation bar with logo, user info and logout.
+              Used by: main.zul (shell). Included via <include> or <apply>.
+    Composer: com.iispl.composer.TopbarComposer
+-->
+
+<div sclass="topbar" apply="com.iispl.composer.TopbarComposer"
+     xmlns="http://www.zkoss.org/2005/zul">
+
+    <!-- Logo -->
+    <div sclass="logo">
+        <div sclass="logo-box">EC</div>
+        <div sclass="logo-txt">Express<span>Clear</span> CTS</div>
+    </div>
+
+    <!-- Right side: user info + logout -->
+    <div sclass="topbar-right">
+        <div id="userAvatar" sclass="uavatar">--</div>
+        <div>
+            <div id="userName" sclass="uname">—</div>
+            <div id="userRole" sclass="urole">—</div>
+        </div>
+        <button id="logoutBtn" label="↩ Logout" sclass="logbtn"
+                onClick="topbarComposer.doLogout()" />
+    </div>
+
+</div>

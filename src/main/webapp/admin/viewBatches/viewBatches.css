@@ -1,0 +1,9 @@
+/*
+ * File: admin/viewBatches/viewBatches.css
+ * Purpose: Page-specific styles for View Batches.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for batch detail panel, cheque list
+ */
+
+/* Add viewBatches-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

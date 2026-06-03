@@ -1,0 +1,9 @@
+/*
+ * File: reports/reports.css
+ * Purpose: Page-specific styles for Reports.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for report table, download buttons
+ */
+
+/* Add reports-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */
