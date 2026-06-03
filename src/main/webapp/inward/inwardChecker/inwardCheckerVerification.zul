@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Checker Inward Verification — ExpressClear CTS" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardChecker/inwardCheckerVerification.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+	<div sclass="dash-shell"
+		apply="com.iispl.composer.CheckerInwardVerificationComposer">
+
+		<!-- ── TOPBAR — inlined, same pattern as dashboard ── -->
+		<include src="/component/topbar.zul" />
+
+		<div sclass="body-row">
+
+			<!-- ── SIDEBAR — reusable component ── -->
+			<include src="/component/sidebar.zul" />
+
+			<div sclass="main">
+
+				<!-- ── BREADCRUMB — reusable component ── -->
+				<include src="/component/breadcrumb.zul" />
+
+				<div sclass="dash-main">
+
+					<div sclass="card">
+						<div class="card-body">
+
+							<div sclass="page-hdr">
+								<div>
+									<div sclass="page-title">
+										Checker Inward Verification
+									</div>
+
+									<div sclass="page-sub">
+										CBS Validation + Accept or
+										Return. Generates RRF.xml
+										(returns) and ACK.xml
+										(accepted).
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+
+					<!-- ── Tab Panel ── -->
+					<div sclass="card">
+
+						<tabbox id="inwardTabbox" sclass="ci-tabbox">
+							<tabs>
+								<tab id="tabPending"
+									label="Pending Batches" />
+								<tab id="tabCleared"
+									label="Cleared Batches" />
+								<tab id="tabFailed"
+									label="Failed / Returned" />
+							</tabs>
+
+							<tabpanels>
+
+								<!-- ══════════ TAB 1: Pending Batches ══════════ -->
+								<tabpanel sclass="ci-tabpanel">
+
+									<hbox sclass="ci-filter-bar"
+										align="center">
+										<textbox id="txtSearchPending"
+											placeholder="Search batch..." sclass="ci-search-box"
+											onChanging="onSearchPending()" />
+									</hbox>
+
+									<grid id="gridPending" sclass="dt"
+										emptyMessage="No pending batches yet.">
+										<columns
+											sclass="ci-grid-head">
+											<column label="BATCH ID" />
+											<column label="COUNT"
+												width="90px" />
+											<column label="MICR ERRORS"
+												width="140px" />
+											<column
+												label="PRESENTING BANKS" hflex="1" />
+											<column label="STATUS"
+												width="120px" />
+											<column label="ACTION"
+												width="110px" />
+										</columns>
+										<rows id="rowsPending" />
+									</grid>
+
+								</tabpanel>
+
+								<!-- ══════════ TAB 2: Cleared Batches ══════════ -->
+								<tabpanel sclass="ci-tabpanel">
+
+									<hbox sclass="ci-filter-bar"
+										align="center">
+
+										<textbox id="txtSearchCleared"
+											placeholder="Search batch..."
+											sclass="ci-search-box ci-search-wide"
+											onChanging="onSearchCleared()" />
+
+										<hbox align="center"
+											spacing="6px">
+											<label value="FROM DATE"
+												sclass="ci-date-label" />
+											<datebox id="dtFromCleared"
+												format="dd/MM/yyyy" sclass="ci-datebox"
+												onChange="onSearchCleared()" />
+										</hbox>
+
+										<hbox align="center"
+											spacing="6px">
+											<label value="TO DATE"
+												sclass="ci-date-label" />
+											<datebox id="dtToCleared"
+												format="dd/MM/yyyy" sclass="ci-datebox"
+												onChange="onSearchCleared()" />
+										</hbox>
+
+									</hbox>
+
+									<grid id="gridCleared" sclass="dt"
+										emptyMessage="No cleared batches yet.">
+										<columns
+											sclass="ci-grid-head">
+											<column label="BATCH ID" />
+											<column label="TOTAL"
+												width="90px" />
+											<column label="ACCEPTED"
+												width="130px" />
+											<column label="RETURNED"
+												width="130px" />
+											<column label="CLEARED BY"
+												width="150px" />
+											<column label="CLEARED AT"
+												hflex="1" />
+										</columns>
+										<rows id="rowsCleared" />
+									</grid>
+
+								</tabpanel>
+
+								<!-- ══════════ TAB 3: Failed / Returned ══════════ -->
+								<tabpanel sclass="ci-tabpanel">
+
+									<hbox sclass="ci-filter-bar"
+										align="center">
+
+										<textbox id="txtSearchFailed"
+											placeholder="Search cheques..." sclass="ci-search-box"
+											onChanging="onSearchFailed()" />
+
+										<hbox align="center"
+											spacing="6px">
+											<label value="FROM DATE"
+												sclass="ci-date-label" />
+											<datebox id="dtFromFailed"
+												format="dd/MM/yyyy" sclass="ci-datebox"
+												onChange="onSearchFailed()" />
+										</hbox>
+
+										<hbox align="center"
+											spacing="6px">
+											<label value="TO DATE"
+												sclass="ci-date-label" />
+											<datebox id="dtToFailed"
+												format="dd/MM/yyyy" sclass="ci-datebox"
+												onChange="onSearchFailed()" />
+										</hbox>
+
+										<hbox align="center"
+											spacing="6px">
+											<label value="BATCH ID"
+												sclass="ci-date-label" />
+											<textbox
+												id="txtBatchIdFilter" placeholder="Filter by batch..."
+												sclass="ci-batchid-filter" onChanging="onSearchFailed()" />
+										</hbox>
+
+									</hbox>
+
+									<grid id="gridFailed" sclass="dt"
+										emptyMessage="No returned cheques yet.">
+										<columns
+											sclass="ci-grid-head">
+											<column label="BATCH ID" />
+											<column label="CHEQUE NO"
+												width="130px" />
+											<column label="AMOUNT"
+												width="120px" />
+											<column
+												label="PRESENTING BANK" hflex="1" />
+											<column
+												label="RETURN REASON" width="180px" />
+											<column label="RETURNED BY"
+												width="140px" />
+											<column label="TIME"
+												width="140px" />
+										</columns>
+										<rows id="rowsFailed" />
+									</grid>
+
+								</tabpanel>
+
+							</tabpanels>
+						</tabbox>
+
+					</div><!-- end card -->
+
+				</div><!-- end dash-main -->
+
+				<!-- ── STATUSBAR — reusable component ── -->
+				<include src="/component/statusbar.zul" />
+
+			</div><!-- end .main -->
+		</div><!-- end .body-row -->
+
+	</div>
+</zk>

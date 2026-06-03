@@ -24,6 +24,8 @@ import org.zkoss.zul.Rows;
 import java.util.List;
 
 /**
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
  * File    : com/iispl/composer/CheckerInwardDashboardComposer.java
  * Purpose : Checker Inward Dashboard page composer.
  *           - Role guard (CHECKER_INWARD only)
@@ -60,7 +62,7 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
 
     @Listen("onClick = #goVerificationBtn")
     public void goToVerification() {
-        Executions.sendRedirect("/inward/inwardChecker/inwardChecker.zul");
+        Executions.sendRedirect("/inward/inwardChecker/inwardCheckerVerification.zul");
     }
 
     @Listen("onClick = #goReportsBtn")
@@ -108,7 +110,7 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
                 @Override
                 public void onEvent(Event e) {
                     Sessions.getCurrent().setAttribute("selectedInwardBatchId", batchId);
-                    Executions.sendRedirect("/inward/inwardChecker/inwardChecker.zul");
+                    Executions.sendRedirect("/inward/inwardChecker/inwardCheckerVerification.zul");
                 }
             });
             Div ac = new Div();
@@ -119,4 +121,5 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
             pendingBatchRows.appendChild(row);
         }
     }
+
 }
