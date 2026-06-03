@@ -13,13 +13,10 @@
 <div xmlns="http://www.zkoss.org/2005/zul"
      apply="com.iispl.composer.BpxfUploadComposer">
 
-    <!-- Page Header -->
-    <div sclass="page-hdr">
-        <div>
-            <div sclass="page-title">Inward File Processing</div>
-            <div sclass="page-sub">Upload incoming CTS cheque files. One file per batch.</div>
-        </div>
-    </div>
+  <div class="">
+  	 <include src="/component/topbar.zul" />
+  </div>
+  
 
     <!-- Page content goes here -->
 

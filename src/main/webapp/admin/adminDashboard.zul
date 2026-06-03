@@ -11,18 +11,7 @@
 
     <!-- Topbar -->
     <div sclass="topbar">
-        <div sclass="logo">
-            <div sclass="logo-box">EC</div>
-            <label sclass="logo-txt" value="ExpressClear CTS" />
-        </div>
-        <div sclass="topbar-right">
-            <label id="userAvatar" sclass="uavatar" value="--" />
-            <vlayout spacing="0">
-                <label id="userName" sclass="uname" value="—" />
-                <label id="userRole" sclass="urole" value="—" />
-            </vlayout>
-            <button id="logoutBtn" label="↩ Logout" sclass="logbtn" />
-        </div>
+       <include src="/component/topbar.zul" />
     </div>
 
     <!-- Body: Sidebar + Main -->

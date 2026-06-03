@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     File    : component/topbar.zul
@@ -20,11 +19,10 @@
     <div sclass="topbar-right">
         <div id="userAvatar" sclass="uavatar">--</div>
         <div>
-            <div id="userName" sclass="uname">—</div>
-            <div id="userRole" sclass="urole">—</div>
+            <label id="userName" sclass="uname" value="—" />
+            <label id="userRole" sclass="urole" value="—" />
         </div>
-        <button id="logoutBtn" label="↩ Logout" sclass="logbtn"
-                onClick="topbarComposer.doLogout()" />
+        <button id="logoutBtn" label="↩ Logout" sclass="logbtn" />
     </div>
 
 </div>
