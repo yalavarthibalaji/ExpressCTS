@@ -1,9 +1,8 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     File    : component/topbar.zul
     Purpose : Reusable top navigation bar with logo, user info and logout.
-              Used by: main.zul (shell). Included via <include> or <apply>.
+              Used by all dashboards via <include src="/component/topbar.zul" />
     Composer: com.iispl.composer.TopbarComposer
 -->
 
@@ -18,13 +17,12 @@
 
     <!-- Right side: user info + logout -->
     <div sclass="topbar-right">
-        <div id="userAvatar" sclass="uavatar">--</div>
+        <div id="userAvatar" sclass="uavatar" />
         <div>
-            <div id="userName" sclass="uname">—</div>
-            <div id="userRole" sclass="urole">—</div>
+            <label id="userName" sclass="uname" value="—" />
+            <label id="userRole" sclass="urole" value="—" />
         </div>
-        <button id="logoutBtn" label="↩ Logout" sclass="logbtn"
-                onClick="topbarComposer.doLogout()" />
+        <button id="logoutBtn" label="↩ Logout" sclass="logbtn" />
     </div>
 
 </div>
