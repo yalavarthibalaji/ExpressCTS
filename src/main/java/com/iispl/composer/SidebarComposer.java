@@ -56,41 +56,41 @@ public class SidebarComposer extends SelectorComposer<Component> {
 
     private void renderAdminNav() {
         addSectionTitle("ADMINISTRATION");
-        addNavItem("🏠", "Dashboard",        "/admin/adminDashboard.zul");
-        addNavItem("👥", "User Management",  "/admin/userManagement/userManagement.zul");
-        addNavItem("📁", "View Batches",     null);
-        addNavItem("📈", "Reports",          null);
-        addNavItem("🛡", "Audit Logs",       null);
+        addNavItem("Dashboard",        "/admin/adminDashboard.zul");
+        addNavItem("User Management",  "/admin/userManagement/userManagement.zul");
+        addNavItem("View Batches",     null);
+        addNavItem("Reports",          null);
+        addNavItem("Audit Logs",       null);
     }
 
     private void renderMakerOutwardNav() {
         addSectionTitle("OUTWARD");
-        addNavItem("🏠", "Dashboard",        "/dashboard/makerOutward/makerOutwardDashboard.zul");
-        addNavItem("📤", "Batch Upload",     null);
-        addNavItem("🔧", "MICR Repair",      null);
-        addNavItem("📝", "Account & Amount", null);
+        addNavItem("Dashboard",        "/dashboard/makerOutward/makerOutwardDashboard.zul");
+        addNavItem("Batch Upload",     null);
+        addNavItem("MICR Repair",      null);
+        addNavItem("Account & Amount", null);
     }
 
     private void renderCheckerOutwardNav() {
         addSectionTitle("OUTWARD");
-        addNavItem("🏠", "Dashboard",            "/dashboard/checkerOutward/checkerOutwardDashboard.zul");
-        addNavItem("✓",  "Verification Queue",   null);
-        addNavItem("📦", "DEM Export",           null);
-        addNavItem("📈", "Reports",              null);
+        addNavItem("Dashboard",            "/dashboard/checkerOutward/checkerOutwardDashboard.zul");
+        addNavItem("Verification Queue",   null);
+        addNavItem("DEM Export",           null);
+        addNavItem("Reports",              null);
     }
 
     private void renderMakerInwardNav() {
         addSectionTitle("INWARD");
-        addNavItem("🏠", "Dashboard",          "/dashboard/makerInward/makerInwardDashboard.zul");
-        addNavItem("📥", "File Processing",    null);
-        addNavItem("🔧", "Inward Correction",  null);
+        addNavItem("Dashboard",          "/dashboard/makerInward/makerInwardDashboard.zul");
+        addNavItem("File Processing",    null);
+        addNavItem("Inward Correction",  null);
     }
 
     private void renderCheckerInwardNav() {
         addSectionTitle("INWARD");
-        addNavItem("🏠", "Dashboard",          "/dashboard/checkerInward/checkerInwardDashboard.zul");
-        addNavItem("✓",  "Verification Queue", null);
-        addNavItem("📈", "Reports",            null);
+        addNavItem("Dashboard",          "/dashboard/checkerInward/checkerInwardDashboard.zul");
+        addNavItem("Verification Queue", null);
+        addNavItem("Reports",            null);
     }
 
     // ════════════════════════════════════════════
@@ -109,7 +109,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
      * Creates a single clickable navigation item.
      * If targetUrl is null, the item is rendered as disabled (Coming Soon).
      */
-    private void addNavItem(String icon, String label, String targetUrl) {
+    private void addNavItem(String label, String targetUrl) {
         boolean disabled = (targetUrl == null);
         boolean active   = !disabled && targetUrl.equals(currentPath);
 
@@ -124,7 +124,6 @@ public class SidebarComposer extends SelectorComposer<Component> {
         // Icon wrapper
         Div iconWrap = new Div();
         iconWrap.setSclass("nav-icon");
-        iconWrap.appendChild(new Label(icon));
         item.appendChild(iconWrap);
 
         // Label
