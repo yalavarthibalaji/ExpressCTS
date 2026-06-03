@@ -1,37 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page title="Maker Inward Dashboard" contentType="text/html;charset=UTF-8"?>
+<?page title="Inward Dashboard" contentType="text/html;charset=UTF-8"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
-<?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/makerInward/makerInwardDashboard.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
     <!-- Topbar -->
     <div sclass="topbar">
-       <include src="/component/topbar.zul" />
+        <include src="/component/topbar.zul" />
     </div>
 
     <!-- Body: Sidebar + Main -->
     <div sclass="body-row">
         <include src="/component/sidebar.zul" />
+
         <div sclass="main">
             <div sclass="dash-main">
 
-                <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Maker Inward Dashboard" />
-                    <label sclass="welcome-sub"   value="Inward processing — File upload, MICR repair, Payee entry" />
+                <!-- Breadcrumb -->
+                <div sclass="breadcrumb">
+                    <label sclass="breadcrumb-home" value="Home" />
+                    <span sclass="breadcrumb-sep">›</span>
+                    <label sclass="breadcrumb-current" value="Dashboard" />
                 </div>
 
-                <div sclass="placeholder-card">
-                    <div sclass="ph-icon">📥</div>
-                    <div sclass="ph-title">Coming Soon</div>
-                    <div sclass="ph-desc">Inward maker processing features will be available in the next phase.</div>
+                <!-- Page Title -->
+                <div sclass="page-title-block">
+                    <label sclass="page-title" value="Dashboard" />
+                </div>
+
+                <!-- Action Cards Row -->
+                <div sclass="action-cards-row">
+
+                    <!-- File Processing Card -->
+                    <div sclass="action-card">
+                        <div sclass="card-left">
+                            <div sclass="card-icon file-icon">&#x2191;</div>
+                            <div sclass="card-text">
+                                <label sclass="card-title" value="File Processing" />
+                                <label sclass="card-desc"  value="Upload inward cheque files" />
+                            </div>
+                        </div>
+                        <button sclass="go-btn go-btn-blue"
+                                label="Go →"
+                                id="btnFileProcessing" />
+                    </div>
+
+                    <!-- Reject and Repair Card -->
+                    <div sclass="action-card">
+                        <div sclass="card-left">
+                            <div sclass="card-icon repair-icon">&#x1F527;</div>
+                            <div sclass="card-text">
+                                <label sclass="card-title" value="Reject &amp; Repair" />
+                                <label sclass="card-desc"  value="Fix MICR errors in inward cheques" />
+                            </div>
+                        </div>
+                        <button sclass="go-btn go-btn-gold"
+                                label="Go →"
+                                id="btnRejectRepair" />
+                    </div>
+
+                </div>
+
+                <!-- Inward Batches Section -->
+                <div sclass="batches-section">
+                    <div sclass="batches-header">
+                        <label sclass="batches-title" value="Inward Batches" />
+                    </div>
+                    <div sclass="batches-body">
+                        <div sclass="batches-empty" id="emptyBatchesMsg">
+                            <label value="No inward batches yet." />
+                        </div>
+                        <listbox id="batchListbox" sclass="batch-listbox" visible="false"
+                                 emptyMessage="No inward batches yet.">
+                            <listhead>
+                                <listheader label="Batch ID"      width="150px" />
+                                <listheader label="File Name"     hflex="1"    />
+                                <listheader label="Date"          width="150px" />
+                                <listheader label="Status"        width="120px" />
+                                <listheader label="Total Cheques" width="140px" />
+                            </listhead>
+                        </listbox>
+                    </div>
                 </div>
 
             </div>
         </div>
+    </div>
+
+    <!-- Footer -->
+    <div sclass="dash-footer">
+        <label value="ExpressClear CTS - IISPL" />
     </div>
 
 </div>
