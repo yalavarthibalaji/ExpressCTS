@@ -9,29 +9,17 @@
 <zk xmlns="http://www.zkoss.org/2005/zul">
 <div sclass="dash-shell" apply="com.iispl.composer.CheckerInwardDashboardComposer">
 
-    <!--
-        TOPBAR — inlined (not <include>) because TopbarComposer does not exist yet.
-        Same pattern used by every other dashboard page in this project.
-        Wired by CheckerInwardDashboardComposer: userAvatar, userName, userRole, logoutBtn.
-    -->
-    <div sclass="topbar">
-        <include src="/component/topbar.zul" />
-    </div>
+    <!-- ① Reusable topbar — TopbarComposer wires avatar, name, role, logout -->
+    <include src="/component/topbar.zul" />
 
     <div sclass="body-row">
 
-        <!--
-            SIDEBAR — reusable component via <include>.
-            SidebarComposer reads CHECKER_INWARD role and renders MAIN + INWARD nav.
-        -->
+        <!-- ② Reusable sidebar — SidebarComposer renders MAIN + INWARD nav -->
         <include src="/component/sidebar.zul" />
 
         <div sclass="main">
 
-            <!--
-                BREADCRUMB — reusable component via <include>.
-                Pure markup, no composer needed. Already shows Home › Dashboard.
-            -->
+            <!-- ③ Reusable breadcrumb — shows Home › Dashboard -->
             <include src="/component/breadcrumb.zul" />
 
             <div sclass="dash-main">
@@ -43,7 +31,7 @@
                     </div>
                 </div>
 
-                <!-- Action cards — .card .card-body .card-title .page-sub .btn .bp .bo from components.css -->
+                <!-- Action cards — .card .card-body .card-title .page-sub .btn .bp .bo -->
                 <div sclass="ci-action-row">
 
                     <div sclass="card ci-action-card">
@@ -70,7 +58,7 @@
 
                 </div>
 
-                <!-- Pending Batches — ZK grid (.dt from components.css), rows wired to pendingBatchRows -->
+                <!-- Pending Batches — ZK grid, rows populated by CheckerInwardDashboardComposer -->
                 <div sclass="card">
                     <div sclass="card-hdr">
                         <div sclass="card-title">Inward Batches Pending</div>
@@ -87,10 +75,7 @@
 
             </div><!-- end dash-main -->
 
-            <!--
-                STATUSBAR — reusable component via <include>.
-                Pure markup, no composer needed.
-            -->
+            <!-- ④ Reusable statusbar -->
             <include src="/component/statusbar.zul" />
 
         </div><!-- end .main -->
