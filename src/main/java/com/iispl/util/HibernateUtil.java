@@ -37,7 +37,7 @@ public class HibernateUtil {
             // Hibernate settings
             cfg.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
             cfg.setProperty("hibernate.show_sql", "true");
-            cfg.setProperty("hibernate.format_sql", "true");
+            cfg.setProperty("hibernate.format_sql", "false");
             cfg.setProperty("hibernate.hbm2ddl.auto", "update");
 
             // User Management

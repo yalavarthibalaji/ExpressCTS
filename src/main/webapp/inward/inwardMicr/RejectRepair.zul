@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Inward Correction — Maker" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardMicr/RejectRepair.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell" apply="com.iispl.composer.RejectRepairComposer">
+
+    <!-- Topbar -->
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
+
+    <!-- Body: Sidebar + Main -->
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="rr-main">
+
+                <!-- Breadcrumb -->
+                <div sclass="breadcrumb">
+                    <label sclass="breadcrumb-parent" value="Inward" />
+                    <span sclass="breadcrumb-sep">›</span>
+                    <label sclass="breadcrumb-current" value="Reject &amp; Repair" />
+                </div>
+
+                <!-- Page Title -->
+                <div sclass="page-title-block">
+                    <label sclass="page-title" value="Inward Correction — Maker" />
+                    <label sclass="page-subtitle"
+                           value="OCR Reject &amp; Repair: Step 1 Reject &amp; Repair · Step 2 Date &amp; Amount · Step 3 Payee Name &amp; Account" />
+                </div>
+
+                <!-- Step Wizard -->
+                <div sclass="wizard-bar">
+
+                    <!-- Step 1 — active -->
+                    <div sclass="wizard-step active" id="wizStep1">
+                        <div sclass="step-circle active">
+                            <span sclass="step-icon">&#x1F527;</span>
+                        </div>
+                        <div sclass="step-connector filled" />
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num active" value="Step 1" />
+                            <label sclass="step-desc"       value="Reject &amp; Repair" />
+                        </div>
+                    </div>
+
+                    <!-- Step 2 — inactive -->
+                    <div sclass="wizard-step" id="wizStep2">
+                        <div sclass="step-circle">
+                            <span sclass="step-icon">&#x1F4C5;</span>
+                        </div>
+                        <div sclass="step-connector" />
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num" value="Step 2" />
+                            <label sclass="step-desc" value="Date &amp; Amount" />
+                        </div>
+                    </div>
+
+                    <!-- Step 3 — inactive -->
+                    <div sclass="wizard-step last" id="wizStep3">
+                        <div sclass="step-circle">
+                            <span sclass="step-icon">&#x1F464;</span>
+                        </div>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num" value="Step 3" />
+                            <label sclass="step-desc" value="Payee &amp; Account" />
+                        </div>
+                    </div>
+
+                </div><!-- /wizard-bar -->
+
+                <!-- Content Panel -->
+                <div sclass="content-panel" id="contentPanel">
+
+                    <!-- Empty State (shown when no batches) -->
+                    <div sclass="empty-state" id="emptyState">
+                        <div sclass="empty-icon">&#x1F4CB;</div>
+                        <div sclass="empty-title">No Inward Batches Available</div>
+                        <div sclass="empty-desc">
+                            Upload and parse cheque files in File Processing first.
+                        </div>
+                        <button sclass="btn-goto-fp"
+                                id="btnGoToFileProcessing"
+                                label="Go to File Processing" />
+                    </div>
+
+                    <!-- Batch list (shown when batches exist) -->
+                    <div sclass="batch-list-wrap" id="batchListWrap" visible="false">
+                        <listbox id="batchListbox" sclass="rr-listbox"
+                                 emptyMessage="No batches found.">
+                            <listhead>
+                                <listheader label="Batch ID"       width="150px" />
+                                <listheader label="File Name"      hflex="1"    />
+                                <listheader label="Batch Date"     width="130px" />
+                                <listheader label="Total Cheques"  width="130px" />
+                                <listheader label="MICR Errors"    width="120px" />
+                                <listheader label="Status"         width="120px" />
+                                <listheader label="Repair Status"  width="130px" />
+                                <listheader label="Action"         width="100px" />
+                            </listhead>
+                        </listbox>
+                    </div>
+
+                </div><!-- /content-panel -->
+
+            </div><!-- /rr-main -->
+        </div><!-- /main -->
+    </div><!-- /body-row -->
+
+    <!-- Footer -->
+    <div sclass="dash-footer">
+        <label value="ExpressClear CTS - IISPL" />
+    </div>
+
+</div>
+</zk>
