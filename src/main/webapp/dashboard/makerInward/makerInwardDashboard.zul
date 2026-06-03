@@ -6,7 +6,7 @@
 <?link rel="stylesheet" type="text/css" href="/dashboard/makerInward/makerInwardDashboard.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
-<div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
+<div sclass="dash-shell" apply="com.iispl.composer.MakerInwardDashboardComposer">
 
     <!-- Topbar -->
     <div sclass="topbar">
@@ -95,6 +95,7 @@
     <div sclass="dash-footer">
         <label value="ExpressClear CTS - IISPL" />
     </div>
+    
 
 </div>
 </zk>

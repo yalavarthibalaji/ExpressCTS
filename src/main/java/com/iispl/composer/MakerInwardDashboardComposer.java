@@ -22,12 +22,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
     private static final long serialVersionUID = 1L;
 
     // ── Wired ZUL components ──────────────────────────────────────────────
-    // FIX #4: Use explicit #id selectors so ZK wiring is unambiguous
-    @Wire("#btnFileProcessing")
-    private Button btnFileProcessing;
-
-    @Wire("#btnRejectRepair")
-    private Button btnRejectRepair;
+    
 
     @Wire("#batchListbox")
     private Listbox batchListbox;
@@ -81,7 +76,8 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
     @Listen("onClick = #btnFileProcessing")
     public void onFileProcessing() {
         // FIX: getCurrent() is required; Executions.sendRedirect() does not exist
-        Executions.getCurrent().sendRedirect("/inward/bpxfUpload/bpxfUpload.zul");
+//        Executions.getCurrent().sendRedirect("/inward/bpxfUpload/bpxfUpload.zul");
+    	Executions.getCurrent().sendRedirect("/inward/bpxfUpload/bpxfUpload.zul");
     }
 
     /**
@@ -89,6 +85,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
      */
     @Listen("onClick = #btnRejectRepair")
     public void onRejectRepair() {
-        Executions.getCurrent().sendRedirect("/rejectrepair/repair.zul");
+        Executions.getCurrent().sendRedirect("/inward/bpxfUpload/bpxfUpload.zul");
     }
+    
 }
