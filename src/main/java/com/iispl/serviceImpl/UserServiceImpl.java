@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
         }
 
         LoginDTO dto = new LoginDTO();
-        dto.setUserId(user.getId());
+        dto.setUserId(user.getUserLoginId());
         dto.setUserLoginId(user.getUserLoginId());
         dto.setFullName(user.getFullName());
         dto.setEmail(user.getEmail());
