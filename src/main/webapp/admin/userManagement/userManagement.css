@@ -1,0 +1,13 @@
+.user-modal .z-window-header { background: var(--primary); color: #fff; }
+.user-modal .z-window-content { padding: 0; }
+
+.lerr {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-b);
+    border-radius: var(--r4);
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--danger);
+}
+
+#mRole .z-combobox-input { cursor: pointer; }

@@ -1,0 +1,31 @@
+.quick-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+}
+.qcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r8);
+    padding: 26px 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.qcard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,.1);
+    border-color: var(--primary-light);
+}
+.qcard-primary {
+    border-left: 4px solid var(--primary);
+}
+.qcard-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.qcard-disabled:hover { transform: none; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+
+.qicon  { font-size: 30px; margin-bottom: 10px; }
+.qtitle { font-size: 16px; font-weight: 700; color: var(--t1); margin-bottom: 4px; }
+.qdesc  { font-size: 12px; color: var(--tm); }

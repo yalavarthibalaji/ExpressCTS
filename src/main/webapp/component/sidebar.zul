@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    File    : component/sidebar.zul
+    Purpose : Reusable navigation sidebar. Menu items are rendered
+              dynamically by SidebarComposer based on the logged-in user's role.
+    Composer: com.iispl.composer.SidebarComposer
+-->
+<div id="sidebarContainer" sclass="sidebar"
+     apply="com.iispl.composer.SidebarComposer"
+     xmlns="http://www.zkoss.org/2005/zul">
+    <!-- Nav items injected by SidebarComposer -->
+</div>

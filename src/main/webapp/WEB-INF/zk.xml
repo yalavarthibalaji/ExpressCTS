@@ -1,33 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    zk.xml — ZK Framework Configuration
-    Placed in WEB-INF/ alongside web.xml
-    
-    Key settings:
-      - error-page : where ZK sends users on session timeout
-      - desktop-config : ajax timeout
-      - library-property : charset, theme settings
--->
 <zk>
 
-    <!-- ── Session / Desktop ──────────────────────────────────────── -->
-    <desktop-config>
-        <!-- How long (milliseconds) a desktop (page) lives without activity -->
-        <!-- 30 minutes = 1800000 ms -->
-        <desktop-timeout>1800000</desktop-timeout>
-    </desktop-config>
+    <!-- When session times out, send user back to login -->
+    <device-config>
+        <device-type>ajax</device-type>
+        <timeout-uri>/login/login.zul</timeout-uri>
+    </device-config>
 
-
-    <!-- ── Library Properties ─────────────────────────────────────── -->
-    <library-property>
-        <name>org.zkoss.web.charset</name>
-        <value>UTF-8</value>
-    </library-property>
-
-    <!-- Disable ZK default theme so our custom CSS takes full control -->
-    <library-property>
-        <name>org.zkoss.zul.theme</name>
-        <value>iceblue</value>
-    </library-property>
+    <!-- Session config -->
+    <session-config>
+        <device-type>ajax</device-type>
+        <max-desktops-per-session>10</max-desktops-per-session>
+    </session-config>
 
 </zk>

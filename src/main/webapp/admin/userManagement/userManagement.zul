@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="User Management — ExpressCTS" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/admin/userManagement/userManagement.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell" apply="com.iispl.composer.UserManagementComposer">
+
+    <!-- Topbar -->
+    <div sclass="topbar">
+        <div sclass="logo">
+            <div sclass="logo-box">EC</div>
+            <label sclass="logo-txt" value="ExpressClear CTS" />
+        </div>
+        <div sclass="topbar-right">
+            <label id="userAvatar" sclass="uavatar" value="--" />
+            <vlayout spacing="0">
+                <label id="userName" sclass="uname" value="—" />
+                <label id="userRole" sclass="urole" value="—" />
+            </vlayout>
+            <button id="logoutBtn" label="↩ Logout" sclass="logbtn" />
+        </div>
+    </div>
+
+    <!-- Body: Sidebar + Main -->
+    <div sclass="body-row">
+
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="dash-main">
+
+                <div sclass="page-hdr">
+                    <div>
+                        <div sclass="page-title">User Management</div>
+                        <div sclass="page-sub">Create users and assign roles</div>
+                    </div>
+                    <div sclass="btn-grp">
+                        <button id="addUserBtn" label="+ Add User" sclass="btn bp" />
+                    </div>
+                </div>
+
+                <div sclass="card">
+                    <div sclass="card-hdr">
+                        <div sclass="card-title">All Users</div>
+                    </div>
+                    <grid sclass="dt">
+                        <columns>
+                            <column label="#"          width="50px" />
+                            <column label="User ID"    />
+                            <column label="Full Name"  />
+                            <column label="Email"      />
+                            <column label="Mobile"     />
+                            <column label="Role"       />
+                            <column label="Status"     />
+                            <column label="Created"    />
+                            <column label="Action"     />
+                        </columns>
+                        <rows id="userRows" />
+                    </grid>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal — using <div>, not <window>, to avoid IdSpace -->
+    <div id="userModalOverlay" sclass="modal-ov">
+        <div sclass="modal" style="width:500px">
+            <div sclass="modal-hdr">
+                <label sclass="modal-title" value="Add New User" />
+                <button id="modalCloseBtn" label="✕" sclass="modal-x" />
+            </div>
+            <vlayout spacing="12px" style="padding:18px">
+                <label id="mErrorLabel" sclass="lerr" visible="false" />
+                <div sclass="fg">
+                    <label value="User ID *" />
+                    <textbox id="mLoginId" sclass="fi" placeholder="e.g. john.doe" maxlength="50" />
+                </div>
+                <div sclass="fg">
+                    <label value="Full Name *" />
+                    <textbox id="mFullName" sclass="fi" placeholder="e.g. John Doe" maxlength="100" />
+                </div>
+                <div sclass="fg">
+                    <label value="Email *" />
+                    <textbox id="mEmail" sclass="fi" placeholder="user@example.com" maxlength="100" />
+                </div>
+                <div sclass="fg">
+                    <label value="Mobile" />
+                    <textbox id="mMobile" sclass="fi" placeholder="Optional" maxlength="15" />
+                </div>
+                <div sclass="fg">
+                    <label value="Role *" />
+                    <combobox id="mRole" sclass="fs" readonly="true" />
+                </div>
+                <div sclass="fg">
+                    <label value="Initial Password *" />
+                    <textbox id="mPassword" type="password" sclass="fi" placeholder="Min 4 characters" maxlength="100" />
+                </div>
+            </vlayout>
+            <div sclass="modal-foot">
+                <button id="modalCancelBtn" label="Cancel" sclass="btn bo" />
+                <button id="modalSaveBtn"   label="Save"   sclass="btn bp" />
+            </div>
+        </div>
+    </div>
+
+</div>
+</zk>

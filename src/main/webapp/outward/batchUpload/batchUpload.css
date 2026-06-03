@@ -1,0 +1,9 @@
+/*
+ * File: outward/batchUpload/batchUpload.css
+ * Purpose: Page-specific styles for Batch Upload.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for upload box, mismatch modal
+ */
+
+/* Add batchUpload-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

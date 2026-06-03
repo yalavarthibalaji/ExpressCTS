@@ -1,0 +1,9 @@
+/*
+ * File: outward/demExport/demExport.css
+ * Purpose: Page-specific styles for DEM Export.
+ *          Import order: global.css → components.css → layout.css → this file.
+ *          Styles for file status rows, export buttons
+ */
+
+/* Add demExport-specific styles here only. */
+/* Styles that are shared across pages belong in css/components.css */

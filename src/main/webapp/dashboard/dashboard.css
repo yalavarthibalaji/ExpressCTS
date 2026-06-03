@@ -1,0 +1,49 @@
+/*
+ * File: dashboard/dashboard.css
+ * Purpose: Layout styles for all role dashboards.
+ *          Topbar styling comes from layout.css.
+ *          Component styling comes from components.css.
+ */
+
+.dash-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+/* Main content area — sits to the right of the sidebar */
+.dash-main {
+    flex: 1;
+    padding: 28px 36px;
+    overflow-y: auto;
+}
+
+/* Welcome block */
+.welcome-block { margin-bottom: 24px; }
+.welcome-title {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--t1);
+}
+.welcome-sub {
+    display: block;
+    font-size: 13px;
+    color: var(--tm);
+    margin-top: 4px;
+}
+
+/* Placeholder card for "Coming Soon" dashboards */
+.placeholder-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r8);
+    padding: 64px 40px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.ph-icon  { font-size: 56px; margin-bottom: 14px; }
+.ph-title { font-size: 20px; font-weight: 700; color: var(--t1); margin-bottom: 6px; }
+.ph-desc  { font-size: 13px; color: var(--tm); }
