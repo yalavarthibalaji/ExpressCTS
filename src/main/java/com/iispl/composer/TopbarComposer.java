@@ -31,7 +31,7 @@ public class TopbarComposer extends SelectorComposer<Component> {
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
 
-        LoginDTO dto = (LoginDTO) Sessions.getCurrent().getAttribute(SessionUtil.SESSION_KEY);
+        LoginDTO dto = SessionUtil.getCurrentUser();
         if (dto == null) return;
 
         userName.setValue(dto.getFullName());
@@ -41,7 +41,7 @@ public class TopbarComposer extends SelectorComposer<Component> {
 
     @Listen("onClick = #logoutBtn")
     public void doLogout() {
-        Sessions.getCurrent().invalidate();
+        SessionUtil.logout();
         Executions.sendRedirect("/login/login.zul");
     }
 }
