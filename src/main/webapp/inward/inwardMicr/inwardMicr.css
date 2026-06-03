@@ -1,9 +1,0 @@
-/*
- * File: inward/inwardMicr/inwardMicr.css
- * Purpose: Page-specific styles for Inward Correction.
- *          Import order: global.css → components.css → layout.css → this file.
- *          Styles for 3-step bar overrides if needed
- */
-
-/* Add inwardMicr-specific styles here only. */
-/* Styles that are shared across pages belong in css/components.css */
