@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page title="Checker Inward Dashboard" contentType="text/html;charset=UTF-8"?>
+<?page title="Dashboard — ExpressClear CTS" contentType="text/html;charset=UTF-8"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/checkerInward/checkerInwardDashboard.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
-    <!-- Topbar -->
+    <!-- Topbar — same pattern as all other dashboards, wired by DashboardComposer -->
     <div sclass="topbar">
         <div sclass="logo">
             <div sclass="logo-box">EC</div>
@@ -26,24 +27,86 @@
 
     <!-- Body: Sidebar + Main -->
     <div sclass="body-row">
+
+        <!-- Reusable sidebar — SidebarComposer renders MAIN + INWARD nav for CHECKER_INWARD -->
         <include src="/component/sidebar.zul" />
+
         <div sclass="main">
+
+            <!-- Reusable breadcrumb — layout.css .breadbar .par .sep .cur -->
+            <div sclass="breadbar">
+                <label sclass="par" value="Home" />
+                <label sclass="sep" value="›" />
+                <label sclass="cur" value="Dashboard" />
+            </div>
+
             <div sclass="dash-main">
 
-                <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Checker Inward Dashboard" />
-                    <label sclass="welcome-sub"   value="Inward verification — CBS validation, Accept or Return" />
+                <!-- Page header — components.css .page-hdr .page-title -->
+                <div sclass="page-hdr">
+                    <div>
+                        <div sclass="page-title">Dashboard</div>
+                    </div>
                 </div>
 
-                <div sclass="placeholder-card">
-                    <div sclass="ph-icon">🛡</div>
-                    <div sclass="ph-title">Coming Soon</div>
-                    <div sclass="ph-desc">Inward checker verification features will be available in the next phase.</div>
+                <!-- Two action cards — components.css .card .card-body .card-title .page-sub .btn .bp .bo -->
+                <div sclass="ci-action-row">
+
+                    <div sclass="card ci-action-card">
+                        <div sclass="card-body ci-action-card-body">
+                            <div sclass="ci-card-icon">✔</div>
+                            <div sclass="ci-card-info">
+                                <div sclass="card-title">Checker Inward Verification</div>
+                                <div sclass="page-sub">CBS validation &amp; accept/return</div>
+                            </div>
+                            <button sclass="btn bp" label="Go →" />
+                        </div>
+                    </div>
+
+                    <div sclass="card ci-action-card">
+                        <div sclass="card-body ci-action-card-body">
+                            <div sclass="ci-card-icon">📊</div>
+                            <div sclass="ci-card-info">
+                                <div sclass="card-title">Reports</div>
+                                <div sclass="page-sub">Download CXF + CIBF reports</div>
+                            </div>
+                            <button sclass="btn bo" label="Go →" />
+                        </div>
+                    </div>
+
                 </div>
 
-            </div>
-        </div>
-    </div>
+                <!-- Pending Batches — ZK grid (same pattern as userManagement.zul) -->
+                <!-- components.css .card .card-hdr .card-title .card-body .dt .mono .ac .btn .bp .btn-sm -->
+                <div sclass="card">
+                    <div sclass="card-hdr">
+                        <div sclass="card-title">Inward Batches Pending</div>
+                    </div>
+                    <grid sclass="dt">
+                        <columns>
+                            <column label="Batch ID"  />
+                            <column label="Cheques"   width="160px" />
+                            <column label="Action"    width="140px" />
+                        </columns>
+                        <rows>
+                            <row>
+                                <label sclass="mono" value="IW-2026-0001" />
+                                <label value="4 cheques" />
+                                <div sclass="ac">
+                                    <button sclass="btn bp btn-sm" label="Process" />
+                                </div>
+                            </row>
+                        </rows>
+                    </grid>
+                </div>
+
+            </div><!-- end dash-main -->
+
+            <!-- Reusable statusbar -->
+            <include src="/component/statusbar.zul" />
+
+        </div><!-- end .main -->
+    </div><!-- end .body-row -->
 
 </div>
 </zk>

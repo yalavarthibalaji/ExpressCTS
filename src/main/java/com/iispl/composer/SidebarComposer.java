@@ -87,10 +87,13 @@ public class SidebarComposer extends SelectorComposer<Component> {
     }
 
     private void renderCheckerInwardNav() {
-        addSectionTitle("INWARD");
+        addSectionTitle("MAIN");
+    
         addNavItem("Dashboard",          "/dashboard/checkerInward/checkerInwardDashboard.zul");
         addNavItem("Verification Queue", null);
         addNavItem("Reports",            null);
+
+
     }
 
     // ════════════════════════════════════════════
