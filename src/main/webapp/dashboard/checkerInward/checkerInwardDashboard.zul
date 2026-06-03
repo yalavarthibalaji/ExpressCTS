@@ -7,9 +7,13 @@
 <?link rel="stylesheet" type="text/css" href="/dashboard/checkerInward/checkerInwardDashboard.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
-<div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
+<div sclass="dash-shell" apply="com.iispl.composer.CheckerInwardDashboardComposer">
 
-    <!-- Topbar — same pattern as all other dashboards, wired by DashboardComposer -->
+    <!--
+        TOPBAR — inlined (not <include>) because TopbarComposer does not exist yet.
+        Same pattern used by every other dashboard page in this project.
+        Wired by CheckerInwardDashboardComposer: userAvatar, userName, userRole, logoutBtn.
+    -->
     <div sclass="topbar">
         <div sclass="logo">
             <div sclass="logo-box">EC</div>
@@ -25,31 +29,32 @@
         </div>
     </div>
 
-    <!-- Body: Sidebar + Main -->
     <div sclass="body-row">
 
-        <!-- Reusable sidebar — SidebarComposer renders MAIN + INWARD nav for CHECKER_INWARD -->
+        <!--
+            SIDEBAR — reusable component via <include>.
+            SidebarComposer reads CHECKER_INWARD role and renders MAIN + INWARD nav.
+        -->
         <include src="/component/sidebar.zul" />
 
         <div sclass="main">
 
-            <!-- Reusable breadcrumb — layout.css .breadbar .par .sep .cur -->
-            <div sclass="breadbar">
-                <label sclass="par" value="Home" />
-                <label sclass="sep" value="›" />
-                <label sclass="cur" value="Dashboard" />
-            </div>
+            <!--
+                BREADCRUMB — reusable component via <include>.
+                Pure markup, no composer needed. Already shows Home › Dashboard.
+            -->
+            <include src="/component/breadcrumb.zul" />
 
             <div sclass="dash-main">
 
-                <!-- Page header — components.css .page-hdr .page-title -->
+                <!-- Page header — .page-hdr .page-title from components.css -->
                 <div sclass="page-hdr">
                     <div>
                         <div sclass="page-title">Dashboard</div>
                     </div>
                 </div>
 
-                <!-- Two action cards — components.css .card .card-body .card-title .page-sub .btn .bp .bo -->
+                <!-- Action cards — .card .card-body .card-title .page-sub .btn .bp .bo from components.css -->
                 <div sclass="ci-action-row">
 
                     <div sclass="card ci-action-card">
@@ -59,7 +64,7 @@
                                 <div sclass="card-title">Checker Inward Verification</div>
                                 <div sclass="page-sub">CBS validation &amp; accept/return</div>
                             </div>
-                            <button sclass="btn bp" label="Go →" />
+                            <button id="goVerificationBtn" sclass="btn bp" label="Go →" />
                         </div>
                     </div>
 
@@ -70,39 +75,33 @@
                                 <div sclass="card-title">Reports</div>
                                 <div sclass="page-sub">Download CXF + CIBF reports</div>
                             </div>
-                            <button sclass="btn bo" label="Go →" />
+                            <button id="goReportsBtn" sclass="btn bo" label="Go →" />
                         </div>
                     </div>
 
                 </div>
 
-                <!-- Pending Batches — ZK grid (same pattern as userManagement.zul) -->
-                <!-- components.css .card .card-hdr .card-title .card-body .dt .mono .ac .btn .bp .btn-sm -->
+                <!-- Pending Batches — ZK grid (.dt from components.css), rows wired to pendingBatchRows -->
                 <div sclass="card">
                     <div sclass="card-hdr">
                         <div sclass="card-title">Inward Batches Pending</div>
                     </div>
                     <grid sclass="dt">
                         <columns>
-                            <column label="Batch ID"  />
-                            <column label="Cheques"   width="160px" />
-                            <column label="Action"    width="140px" />
+                            <column label="Batch ID" />
+                            <column label="Cheques"  width="160px" />
+                            <column label="Action"   width="140px" />
                         </columns>
-                        <rows>
-                            <row>
-                                <label sclass="mono" value="IW-2026-0001" />
-                                <label value="4 cheques" />
-                                <div sclass="ac">
-                                    <button sclass="btn bp btn-sm" label="Process" />
-                                </div>
-                            </row>
-                        </rows>
+                        <rows id="pendingBatchRows" />
                     </grid>
                 </div>
 
             </div><!-- end dash-main -->
 
-            <!-- Reusable statusbar -->
+            <!--
+                STATUSBAR — reusable component via <include>.
+                Pure markup, no composer needed.
+            -->
             <include src="/component/statusbar.zul" />
 
         </div><!-- end .main -->

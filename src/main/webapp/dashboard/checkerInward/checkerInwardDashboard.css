@@ -1,27 +1,30 @@
 /*
  * File: dashboard/checkerInward/checkerInwardDashboard.css
- * Only page-specific layout — everything else reused from components.css / layout.css / dashboard.css
+ * Only the 5 page-specific classes below are new.
+ * Everything else (.card, .card-hdr, .card-body, .card-title, .page-hdr,
+ * .page-title, .page-sub, .btn, .bp, .bo, .btn-sm, .dt, .mono, .ac,
+ * .breadbar, .topbar, .sidebar, .statusbar, .dash-shell, .dash-main,
+ * .body-row, .main) comes from the shared CSS files.
  */
 
-/* Two action cards side by side */
+/* Row holding the two side-by-side action cards */
 .ci-action-row {
     display: flex;
     gap: 16px;
     margin-bottom: 16px;
 }
 
-.ci-action-card {
-    flex: 1;
-}
+/* Each card takes equal width */
+.ci-action-card { flex: 1; }
 
-/* Horizontal layout inside each action card: icon | text | button */
+/* Horizontal layout inside card body: icon | text | button */
 .ci-action-card-body {
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
-/* Icon badge — uses design tokens from global.css */
+/* Icon badge */
 .ci-card-icon {
     width: 42px;
     height: 42px;
@@ -34,14 +37,10 @@
     flex-shrink: 0;
 }
 
-/* Text block grows to push the button to the right */
-.ci-card-info {
-    flex: 1;
-}
+/* Text block — grows to push button right */
+.ci-card-info { flex: 1; }
 
-/* Stack cards vertically on narrow screens */
+/* Stack cards on small screens */
 @media (max-width: 768px) {
-    .ci-action-row {
-        flex-direction: column;
-    }
+    .ci-action-row { flex-direction: column; }
 }
