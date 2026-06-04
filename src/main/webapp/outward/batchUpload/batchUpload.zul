@@ -92,7 +92,7 @@
                                            value="No file selected"/>
                                     <button id="uploadFileBtn"
                                             sclass="btn bo"
-                                            upload="true,maxsize=204800">
+                                            upload="true,maxsize=51200">
                                         Browse File
                                     </button>
                                 </div>
@@ -189,29 +189,25 @@
                         </div>
 
                         <div sclass="tbl-wrap">
-                            <grid id="batchGrid" sclass="dt-grid">
+                            <grid id="batchGrid" sclass="dt-grid"
+                                  emptyMessage="No batches found.">
                                 <columns>
                                     <column label="S.No"
-                                            width="55px"/>
-                                    <column width="170px">
-                                        <label value="Batch ID"/>
-                                        <textbox id="batchIdFilter"
-                                                 sclass="col-fi"
-                                                 placeholder="Filter..."
-                                                 instant="true"/>
-                                    </column>
+                                            width="65px"/>
+                                    <column label="Batch ID"
+                                            width="180px"/>
                                     <column label="Cheque Count"
-                                            width="120px"/>
+                                            width="130px"/>
                                     <column label="Total Amount (₹)"
-                                            width="150px"/>
+                                            width="160px"/>
                                     <column label="Pending Count"
-                                            width="120px"/>
+                                            width="130px"/>
                                     <column label="Processed Count"
-                                            width="135px"/>
+                                            width="145px"/>
                                     <column label="Status"
-                                            width="140px"/>
-                                    <column label="Action"
                                             width="150px"/>
+                                    <column label="Action"
+                                            width="160px"/>
                                 </columns>
                                 <rows id="batchRows"/>
                             </grid>

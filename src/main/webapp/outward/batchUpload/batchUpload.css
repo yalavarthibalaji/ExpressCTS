@@ -585,3 +585,19 @@ html, body {
 .z-button.btn {
     font-family: var(--font) !important;
 }
+
+/* Action cell — flex row for View + action button */
+.ac {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* ZK wraps <include> in a .z-include div — make it transparent to flex layout */
+.body-row > .z-include {
+    display: contents;
+}
+.body-row > .z-include > .sidebar {
+    display: flex;
+    flex-direction: column;
+}

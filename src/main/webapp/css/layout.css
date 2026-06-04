@@ -55,7 +55,6 @@
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  height:1600px;
 }
 .sidebar::-webkit-scrollbar       { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); }
@@ -116,3 +115,14 @@
 }
 .sitem       { font-size: 11px; color: rgba(255,255,255,.75); display: flex; align-items: center; gap: 4px; }
 .sitem strong { color: #fff; }
+
+/* ════ ZK INCLUDE WRAPPER FIX ════
+   ZK wraps every <include src="..."/> in a .z-include div.
+   This breaks the flex layout of .body-row because the sidebar
+   is no longer a direct child — it's nested one level deeper.
+   display:contents makes .z-include invisible to the flex container,
+   so .sidebar behaves as a direct flex child of .body-row again.
+*/
+.body-row > .z-include {
+  display: contents;
+}
