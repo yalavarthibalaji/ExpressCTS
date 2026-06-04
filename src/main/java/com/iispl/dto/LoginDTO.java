@@ -8,7 +8,7 @@ package com.iispl.dto;
  */
 public class LoginDTO {
 
-    private String   userId;
+    private Long   userId;
     private String userLoginId;
     private String fullName;
     private String roleCode;      // ADMIN | MAKER_OUTWARD | CHECKER_OUTWARD | MAKER_INWARD | CHECKER_INWARD
@@ -16,7 +16,7 @@ public class LoginDTO {
 
     public LoginDTO() {}
 
-    public LoginDTO(String userId, String userLoginId, String fullName, String roleCode, String email) {
+    public LoginDTO(Long userId, String userLoginId, String fullName, String roleCode, String email) {
         this.userId      = userId;
         this.userLoginId = userLoginId;
         this.fullName    = fullName;
@@ -24,22 +24,48 @@ public class LoginDTO {
         this.email       = email;
     }
 
-    public String   getUserId()      { return userId; }
-    public void   setUserId(String userId) { this.userId = userId; }
+    
+    public Long getUserId() {
+		return userId;
+	}
 
-    public String getUserLoginId()  { return userLoginId; }
-    public void   setUserLoginId(String userLoginId) { this.userLoginId = userLoginId; }
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
 
-    public String getFullName()     { return fullName; }
-    public void   setFullName(String fullName) { this.fullName = fullName; }
+	public String getUserLoginId() {
+		return userLoginId;
+	}
 
-    public String getRoleCode()     { return roleCode; }
-    public void   setRoleCode(String roleCode) { this.roleCode = roleCode; }
+	public void setUserLoginId(String userLoginId) {
+		this.userLoginId = userLoginId;
+	}
 
-    public String getEmail()        { return email; }
-    public void   setEmail(String email) { this.email = email; }
+	public String getFullName() {
+		return fullName;
+	}
 
-    /** Convenience: returns display initials from full name */
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+
+	public String getRoleCode() {
+		return roleCode;
+	}
+
+	public void setRoleCode(String roleCode) {
+		this.roleCode = roleCode;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	/** Convenience: returns display initials from full name */
     public String getInitials() {
         if (fullName == null || fullName.isEmpty()) return "--";
         String[] parts = fullName.trim().split(" ");
