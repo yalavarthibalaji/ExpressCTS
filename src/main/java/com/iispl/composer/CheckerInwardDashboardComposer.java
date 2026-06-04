@@ -14,7 +14,6 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
-import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Label;
@@ -24,12 +23,11 @@ import org.zkoss.zul.Rows;
 import java.util.List;
 
 /**
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
  * File    : com/iispl/composer/CheckerInwardDashboardComposer.java
  * Purpose : Checker Inward Dashboard page composer.
  *           - Role guard (CHECKER_INWARD only)
- *           - Navigates to Checker Inward Verification and Reports pages
+ *           - Navigates to Checker Inward Verification page
+ *           - Navigates to Inward Reports page  ← /checker/inward-reports.zul
  *           - Renders pending inward batches grid via InwardCheckerService
  *           - Process button stores selected batch in session and navigates
  *           Topbar handled by TopbarComposer via <include src="/component/topbar.zul" />
@@ -65,9 +63,14 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
         Executions.sendRedirect("/inward/inwardChecker/inwardCheckerVerification.zul");
     }
 
+    /**
+     * Reports card "Go →" button.
+     * Navigates to the Checker Inward Reports page.
+     * Previously showed a "coming soon" notification — now fully wired.
+     */
     @Listen("onClick = #goReportsBtn")
     public void goToReports() {
-        Clients.showNotification("Reports module coming soon.", "info", null, "top_center", 2500);
+    	 Executions.sendRedirect("/inward/inwardReports/inward-reports.zul");
     }
 
     // ════════════════════════════════════════════
