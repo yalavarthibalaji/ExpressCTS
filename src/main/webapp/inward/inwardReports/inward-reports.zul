@@ -102,10 +102,6 @@
                     <div sclass="rpt-grid-hdr">
                         <div sclass="rpt-hdr-col rpt-col-batchid">
                             <span>BATCH ID</span>
-                            <textbox id="txtGridBatchFilter"
-                                     sclass="rpt-grid-filter"
-                                     placeholder="Filter..."
-                                     maxlength="30" />
                         </div>
                         <div sclass="rpt-hdr-col rpt-col-count">COUNT</div>
                         <div sclass="rpt-hdr-col rpt-col-accepted">ACCEPTED</div>
