@@ -1,26 +1,429 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
-<?link rel="stylesheet" type="text/css" href="/outward/acctAmount/acctAmount.css"?>
+<?page title="ExpressCTS — Account and Amount Entry"
+      contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
+<?link rel="stylesheet" type="text/css"
+      href="/outward/acctAmount/acctAmount.css"?>
 
-<!--
-    File    : outward/acctAmount/acctAmount.zul
-    Purpose : Account and Amount Entry — Enter account number and verify amount for each cheque
-    Composer: com.iispl.composer.AcctAmountComposer
--->
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
 
-<div xmlns="http://www.zkoss.org/2005/zul"
-     apply="com.iispl.composer.AcctAmountComposer">
+<div apply="com.iispl.composer.outward.AccountEntryComposer"
+     sclass="shell">
 
-    <!-- Page Header -->
-    <div sclass="page-hdr">
-        <div>
-            <div sclass="page-title">Account and Amount Entry</div>
-            <div sclass="page-sub">Enter account number and verify amount for each cheque</div>
+    <!-- TOPBAR -->
+    <div sclass="topbar">
+        <div sclass="logo">
+            <n:div class="logo-box">EC</n:div>
+            <n:div class="logo-txt">
+                Express<n:span style="color:var(--accent)">Clear</n:span> CTS
+            </n:div>
+        </div>
+        <div sclass="topbar-right">
+            <label id="userAvatar" sclass="uavatar" value="--"/>
+            <div>
+                <label id="userName" sclass="uname"  value="—"/>
+                <label id="userRole"  sclass="urole"  value="—"/>
+            </div>
+            <button id="logoutBtn" sclass="logbtn">↩ Logout</button>
         </div>
     </div>
 
-    <!-- Page content goes here -->
+    <!-- BODY ROW -->
+    <div sclass="body-row">
+
+        <include src="/component/sidebar.zul"/>
+
+        <div sclass="main">
+
+            <!-- BREADBAR -->
+            <div sclass="breadbar">
+                <n:span class="par">Home</n:span>
+                <n:span class="sep">›</n:span>
+                <n:span class="par">Outward</n:span>
+                <n:span class="sep">›</n:span>
+                <n:span class="cur">Account &amp; Amount Entry</n:span>
+            </div>
+
+            <!-- PAGE -->
+            <div sclass="page">
+
+                <!-- Page Header -->
+                <div sclass="page-hdr">
+                    <div>
+                        <n:div class="page-title">
+                            Account &amp; Amount Entry
+                        </n:div>
+                        <n:div class="page-sub">
+                            Outward — Enter account number and
+                            verify cheque amount
+                        </n:div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     VIEW 1: EMPTY STATE
+                ══════════════════════════════════════ -->
+                <div id="emptyStateView" visible="false">
+                    <div sclass="empty-box">
+                        <n:div style="font-size:32px;margin-bottom:10px">
+                            📋
+                        </n:div>
+                        <n:div class="empty-title">No Batches Ready</n:div>
+                        <n:div class="empty-sub">
+                            Complete MICR Repair first to make
+                            batches available here.
+                        </n:div>
+                        <div sclass="mt12">
+                            <button id="goToMicrRepairBtn"
+                                    sclass="btn bo btn-sm">
+                                Go to MICR Repair
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     VIEW 2: BATCH SELECT
+                ══════════════════════════════════════ -->
+                <div id="batchSelectView" visible="false">
+                    <div sclass="card">
+                        <div sclass="card-hdr">
+                            <n:div class="card-title">
+                                Select Batch for Account Entry
+                            </n:div>
+                        </div>
+                        <div sclass="tbl-wrap">
+                            <grid sclass="dt-grid">
+                                <columns>
+                                    <column label="S.No"           width="55px"/>
+                                    <column label="Batch ID"       width="170px"/>
+                                    <column label="Cheque Count"   width="120px"/>
+                                    <column label="Total Amount (₹)" width="155px"/>
+                                    <column label="Pending"        width="100px"/>
+                                    <column label="Done"           width="80px"/>
+                                    <column label="Status"         width="120px"/>
+                                    <column label="Action"         width="110px"/>
+                                </columns>
+                                <rows id="batchSelectRows"/>
+                            </grid>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     VIEW 3: ENTRY VIEW (split screen)
+                ══════════════════════════════════════ -->
+                <div id="entryView" visible="false">
+
+                    <!-- Back button + batch badge -->
+                    <div sclass="flex gap8 items-c mb8">
+                        <button id="backBtn" sclass="btn bo btn-sm">
+                            Back
+                        </button>
+                        <label id="statsBatchId"
+                               sclass="badge b-info mono"
+                               value="—"/>
+                    </div>
+
+                    <!-- Stats bar -->
+                    <div sclass="card stats-bar mb12">
+                        <div sclass="stats-inner">
+                            <div sclass="stat-item">
+                                <label sclass="stat-lbl"
+                                       value="Total Amount"/>
+                                <label id="statsTotal"
+                                       sclass="stat-val fw6"
+                                       value="—"/>
+                            </div>
+                            <div sclass="stat-sep"/>
+                            <div sclass="stat-item">
+                                <label sclass="stat-lbl"
+                                       value="Entered"/>
+                                <label id="statsDoneCount"
+                                       sclass="stat-val txt-success fw6"
+                                       value="0"/>
+                            </div>
+                            <div sclass="stat-sep"/>
+                            <div sclass="stat-item">
+                                <label sclass="stat-lbl"
+                                       value="Remaining"/>
+                                <label id="statsRemCount"
+                                       sclass="stat-val txt-warn fw6"
+                                       value="—"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Split Layout 55% | 45% -->
+                    <div sclass="split">
+
+                        <!-- LEFT: Cheque Images (stacked) -->
+                        <div sclass="split-l">
+
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">Cheque Image</n:span>
+                                <div sclass="flex gap8 items-c">
+                                    <button id="prevBtn"
+                                            sclass="btn bo btn-sm">
+                                        Prev
+                                    </button>
+                                    <label id="navLabel"
+                                           sclass="txt-sm txt-muted"
+                                           value="1 of 1"/>
+                                    <button id="nextBtn"
+                                            sclass="btn bo btn-sm">
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div sclass="split-body img-bg">
+
+                                <!-- FRONT image -->
+                                <div sclass="img-sec-label">FRONT</div>
+                                <div sclass="chq-img-panel">
+                                    <image id="frontImage"
+                                           sclass="chq-img-actual"
+                                           style="width:100%;height:auto;max-height:240px;object-fit:contain;display:block"/>
+                                </div>
+
+                                <!-- BACK image -->
+                                <div sclass="img-sec-label mt8">BACK</div>
+                                <div sclass="chq-img-panel">
+                                    <image id="backImage"
+                                           sclass="chq-img-actual"
+                                           style="width:100%;height:auto;max-height:240px;object-fit:contain;display:block"/>
+                                </div>
+
+                            </div>
+
+                        </div>
+                        <!-- end split-l -->
+
+                        <!-- RIGHT: Entry Form -->
+                        <div sclass="split-r">
+
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">
+                                    Account &amp; Amount Entry
+                                </n:span>
+                                <label id="entryStatusBadge"
+                                       sclass="badge b-pend"
+                                       value="Pending"/>
+                            </div>
+
+                            <div sclass="split-body">
+
+                                <!-- Section 1: Cheque Info (read-only) -->
+                                <div sclass="vs">
+                                    <n:div class="vs-title">
+                                        Cheque Info
+                                    </n:div>
+                                    <div sclass="vr">
+                                        <label sclass="vl"
+                                               value="Cheque No."/>
+                                        <label id="chqNoDisplay"
+                                               sclass="vv mono"
+                                               value="—"/>
+                                    </div>
+                                    <div sclass="vr">
+                                        <label sclass="vl"
+                                               value="Date"/>
+                                        <label id="chqDateDisplay"
+                                               sclass="vv"
+                                               value="—"/>
+                                    </div>
+                                </div>
+
+                                <!-- Section 2: Account Number -->
+                                <div sclass="vs">
+                                    <n:div class="vs-title">
+                                        Account Number
+                                    </n:div>
+                                    <div sclass="flex gap8 mb8">
+                                        <textbox id="accountNoBox"
+                                                 sclass="fi mono flex1"
+                                                 placeholder="Enter account number"/>
+                                        <button id="validateBtn"
+                                                sclass="btn bo">
+                                            Validate
+                                        </button>
+                                    </div>
+                                    <div id="valResultDiv"
+                                         visible="false">
+                                        <label id="valResultLabel"
+                                               sclass="val-ok"
+                                               value=""/>
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Amount Entry -->
+                                <div sclass="vs">
+                                    <n:div class="vs-title">
+                                        Amount Entry
+                                    </n:div>
+                                    <div sclass="frow c2">
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl">
+                                                Amount (₹)
+                                                <n:span class="req">*</n:span>
+                                            </n:label>
+                                            <decimalbox id="amountBox"
+                                                        sclass="fi mono"
+                                                        format="#,##0.00"
+                                                        placeholder="e.g. 50000.00"
+                                                        constraint="no negative,no zero"/>
+                                        </div>
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl">
+                                                Cheque Date
+                                                <n:span class="req">*</n:span>
+                                            </n:label>
+                                            <textbox id="chequeDateBox"
+                                                     sclass="fi"
+                                                     placeholder="YYYY-MM-DD"
+                                                     maxlength="10"/>
+                                        </div>
+                                    </div>
+                                    <div sclass="fg mt8">
+                                        <n:label class="fg-lbl">
+                                            Amount in Words
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="amountInWordsBox"
+                                                 sclass="fi"
+                                                 placeholder="e.g. Fifty Thousand Rupees Only"/>
+                                    </div>
+                                </div>
+
+                                <!-- Section 4: Payee Details -->
+                                <div sclass="vs">
+                                    <n:div class="vs-title">
+                                        Payee Details
+                                    </n:div>
+                                    <div sclass="fg">
+                                        <n:label class="fg-lbl">
+                                            Payee Name
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="payeeNameBox"
+                                                 sclass="fi"
+                                                 placeholder="Name of Payee as on cheque"/>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <!-- end split-body -->
+
+                            <!-- Footer: Save + Reject -->
+                            <div sclass="split-foot">
+
+                                <div sclass="btn-grp">
+                                    <button id="saveNextBtn"
+                                            sclass="btn bs btn-lg">
+                                        Save and Next
+                                    </button>
+                                    <button id="rejectTriggerBtn"
+                                            sclass="btn bd btn-sm">
+                                        Reject
+                                    </button>
+                                </div>
+
+                                <!-- Inline Reject Panel -->
+                                <div id="rejectPanel"
+                                     sclass="reject-panel"
+                                     visible="false">
+
+                                    <n:div class="reject-panel-title">
+                                        Reject This Cheque
+                                    </n:div>
+
+                                    <div sclass="fg mb8">
+                                        <n:label class="fg-lbl">
+                                            Reason for Rejection
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <listbox id="rejectReasonBox"
+                                                 sclass="fs"
+                                                 mold="select">
+                                            <listitem label="Select a Reason" value=""/>
+                                            <listitem label="01 - Funds Insufficient" value="01"/>
+                                            <listitem label="02 - Exceeds Arrangement" value="02"/>
+                                            <listitem label="03 - Full Cover Not Received" value="03"/>
+                                            <listitem label="04 - Payment Stopped by Drawer" value="04"/>
+                                            <listitem label="05 - Payment Countermanded by Court Order" value="05"/>
+                                            <listitem label="06 - Payees Endorsement Required" value="06"/>
+                                            <listitem label="07 - Payees Endorsement Irregular" value="07"/>
+                                            <listitem label="08 - Drawers Signature Mismatch" value="08"/>
+                                            <listitem label="09 - Alteration Requires Authentication" value="09"/>
+                                            <listitem label="10 - Cheque Post-Dated or Stale" value="10"/>
+                                            <listitem label="11 - Amount Words and Figures Differ" value="11"/>
+                                            <listitem label="12 - Crossed Cheque Cannot be Paid in Cash" value="12"/>
+                                            <listitem label="13 - Account Closed or Transferred" value="13"/>
+                                            <listitem label="14 - Account Blocked or Frozen" value="14"/>
+                                            <listitem label="15 - Not Drawn on Us" value="15"/>
+                                            <listitem label="16 - MICR Band Damaged or Unreadable" value="16"/>
+                                            <listitem label="17 - Poor Image Quality IQA Failure" value="17"/>
+                                            <listitem label="18 - Non-CTS 2010 Compliant" value="18"/>
+                                            <listitem label="19 - Instrument Mutilated or Torn" value="19"/>
+                                            <listitem label="20 - Other Reason Specify in Remarks" value="20"/>
+                                        </listbox>
+                                    </div>
+
+                                    <div sclass="fg mb8">
+                                        <n:label class="fg-lbl">
+                                            Additional Remarks
+                                        </n:label>
+                                        <textbox id="rejectRemarksBox"
+                                                 sclass="fta"
+                                                 rows="2"
+                                                 multiline="true"
+                                                 placeholder="Optional additional remarks..."/>
+                                    </div>
+
+                                    <div sclass="flex gap8">
+                                        <button id="confirmRejectBtn"
+                                                sclass="btn bd btn-sm">
+                                            Confirm Reject
+                                        </button>
+                                        <button id="cancelRejectBtn"
+                                                sclass="btn bo btn-sm">
+                                            Cancel
+                                        </button>
+                                    </div>
+
+                                </div>
+                                <!-- end rejectPanel -->
+
+                            </div>
+                            <!-- end split-foot -->
+
+                        </div>
+                        <!-- end split-r -->
+
+                    </div>
+                    <!-- end split -->
+
+                </div>
+                <!-- end entryView -->
+
+            </div>
+            <!-- end page -->
+
+        </div>
+        <!-- end main -->
+
+    </div>
+    <!-- end body-row -->
+
+    <!-- STATUSBAR -->
+    <div sclass="statusbar" style="justify-content:flex-end">
+        <n:div class="sitem" style="opacity:.5;font-size:10px">
+            ExpressClear CTS · IISPL
+        </n:div>
+    </div>
 
 </div>
+</zk>

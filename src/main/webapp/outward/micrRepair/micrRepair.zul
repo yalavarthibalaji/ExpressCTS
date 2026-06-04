@@ -1,26 +1,542 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
-<?link rel="stylesheet" type="text/css" href="/outward/micrRepair/micrRepair.css"?>
+<?page title="ExpressCTS — MICR Repair"
+      contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
+<?link rel="stylesheet" type="text/css"
+      href="/outward/micrRepair/micrRepair.css"?>
 
-<!--
-    File    : outward/micrRepair/micrRepair.zul
-    Purpose : MICR Repair — Outward cheque MICR error correction by Maker
-    Composer: com.iispl.composer.MicrRepairComposer
--->
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
 
-<div xmlns="http://www.zkoss.org/2005/zul"
-     apply="com.iispl.composer.MicrRepairComposer">
+<div apply="com.iispl.composer.outward.MicrRepairComposer"
+     sclass="shell">
 
-    <!-- Page Header -->
-    <div sclass="page-hdr">
-        <div>
-            <div sclass="page-title">MICR Repair</div>
-            <div sclass="page-sub">Outward cheque MICR error correction by Maker</div>
+    <!-- ══════════════════════ TOPBAR ══════════════════════ -->
+    <div sclass="topbar">
+        <div sclass="logo">
+            <n:div class="logo-box">EC</n:div>
+            <n:div class="logo-txt">
+                Express<n:span style="color:var(--accent)">Clear</n:span> CTS
+            </n:div>
+        </div>
+        <div sclass="topbar-right">
+            <label id="userAvatar" sclass="uavatar" value="--"/>
+            <div>
+                <label id="userName" sclass="uname"  value="—"/>
+                <label id="userRole"  sclass="urole"  value="—"/>
+            </div>
+            <button id="logoutBtn" sclass="logbtn">↩ Logout</button>
         </div>
     </div>
 
-    <!-- Page content goes here -->
+    <!-- ══════════════════════ BODY ROW ══════════════════════ -->
+    <div sclass="body-row">
+
+        <include src="/component/sidebar.zul"/>
+
+        <div sclass="main">
+
+            <!-- BREADBAR -->
+            <div sclass="breadbar">
+                <n:span class="par">Home</n:span>
+                <n:span class="sep">›</n:span>
+                <n:span class="par">Outward</n:span>
+                <n:span class="sep">›</n:span>
+                <n:span class="cur">MICR Repair</n:span>
+            </div>
+
+            <!-- PAGE CONTENT -->
+            <div sclass="page">
+
+                <!-- Page Header — always visible -->
+                <div sclass="page-hdr">
+                    <div>
+                        <n:div class="page-title">
+                            MICR Reject / IQA Repair
+                        </n:div>
+                        <n:div class="page-sub">
+                            Fix MICR errors and approve or reject
+                            problematic cheques
+                        </n:div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     VIEW 1 — EMPTY STATE
+                     Shown when no batches need repair
+                ══════════════════════════════════════ -->
+                <div id="emptyStateView" visible="false">
+                    <div sclass="empty-box">
+                        <n:div style="font-size:32px;margin-bottom:10px">
+                            📋
+                        </n:div>
+                        <n:div class="empty-title">
+                            No Batches to Repair
+                        </n:div>
+                        <n:div class="empty-sub">
+                            All batches are up to date.
+                            Upload a new batch from Batch Upload.
+                        </n:div>
+                        <div sclass="mt12">
+                            <button id="goToBatchUploadBtn"
+                                    sclass="btn bo btn-sm">
+                                Go to Batch Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     VIEW 2 — BATCH SELECT
+                     Shown when accessed from sidebar
+                ══════════════════════════════════════ -->
+                <div id="batchSelectView" visible="false">
+                    <div sclass="card">
+                        <div sclass="card-hdr">
+                            <n:div class="card-title">
+                                Select Batch for Repair
+                            </n:div>
+                        </div>
+                        <div sclass="tbl-wrap">
+                            <grid sclass="dt-grid">
+                                <columns>
+                                    <column label="S.No"
+                                            width="55px"/>
+                                    <column label="Batch ID"
+                                            width="170px"/>
+                                    <column label="Cheque Count"
+                                            width="120px"/>
+                                    <column label="Total Amount (₹)"
+                                            width="155px"/>
+                                    <column label="Pending Count"
+                                            width="125px"/>
+                                    <column label="Processed"
+                                            width="110px"/>
+                                    <column label="Status"
+                                            width="130px"/>
+                                    <column label="Action"
+                                            width="110px"/>
+                                </columns>
+                                <rows id="batchSelectRows"/>
+                            </grid>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     VIEW 3 — LIST VIEW
+                     Shows MICR error cheques for batch
+                ══════════════════════════════════════ -->
+                <div id="listView" visible="false">
+
+                    <!-- Toolbar -->
+                    <div sclass="flex gap8 items-c mb12">
+                        <button id="backToBatchesBtn"
+                                sclass="btn bo btn-sm">
+                            Back to Batches
+                        </button>
+                        <label id="listBatchBadge"
+                               sclass="badge b-info"
+                               value="—"/>
+                        <label id="listPendingBadge"
+                               sclass="badge b-pend"
+                               value="—"/>
+                    </div>
+
+                    <!-- MICR cheque table -->
+                    <div sclass="card mb12">
+                        <div sclass="card-hdr">
+                            <n:div class="card-title">
+                                MICR Error Cheques
+                            </n:div>
+                        </div>
+                        <div sclass="tbl-wrap">
+                            <grid sclass="dt-grid">
+                                <columns>
+                                    <column label="#"
+                                            width="50px"/>
+                                    <column label="Cheque No"
+                                            width="110px"/>
+                                    <column label="Bank"
+                                            width="75px"/>
+                                    <column label="MICR Code"
+                                            width="215px"/>
+                                    <column label="Amount"
+                                            width="120px"/>
+                                    <column label="Issue"
+                                            width="115px"/>
+                                    <column label="Action"
+                                            width="110px"/>
+                                </columns>
+                                <rows id="micrRows"/>
+                            </grid>
+                        </div>
+                    </div>
+
+                    <!-- Proceed button -->
+                    <div sclass="flex gap8 items-c">
+                        <button id="proceedBtn"
+                                sclass="btn bp btn-lg btn-disabled"
+                                disabled="true">
+                            Proceed to Account Entry
+                        </button>
+                        <label id="proceedHint"
+                               sclass="txt-sm txt-muted"
+                               value="Complete all repairs to proceed"
+                               visible="true"/>
+                    </div>
+
+                </div>
+                <!-- end listView -->
+
+                <!-- ══════════════════════════════════════
+                     VIEW 4 — REPAIR VIEW
+                     Split screen 55% | 45%
+                ══════════════════════════════════════ -->
+                <div id="repairView" visible="false">
+
+                    <!-- Toolbar -->
+                    <div sclass="flex gap8 items-c mb12">
+                        <button id="backToListBtn"
+                                sclass="btn bo btn-sm">
+                            Back to List
+                        </button>
+                        <label id="repairBatchBadge"
+                               sclass="badge b-info"
+                               value="—"/>
+                        <label id="repairIssueBadge"
+                               sclass="badge b-pend"
+                               value="MICR Error"/>
+                    </div>
+
+                    <!-- Split Layout -->
+                    <div sclass="split">
+
+                        <!-- LEFT PANEL: Cheque Image (55%) -->
+                        <div sclass="split-l">
+
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">Cheque Image</n:span>
+                                <div sclass="flex gap8 items-c">
+                                    <button id="prevBtn"
+                                            sclass="btn bo btn-sm">
+                                        Prev
+                                    </button>
+                                    <label id="recLabel"
+                                           sclass="txt-sm txt-muted"
+                                           value="1 of 1"/>
+                                    <button id="nextBtn"
+                                            sclass="btn bo btn-sm">
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div sclass="split-body chq-bg">
+
+                                <!-- Front / Back tab buttons -->
+                                <div sclass="chq-tabs">
+                                    <button id="tabFrontBtn"
+                                            sclass="chq-tab active">
+                                        Front
+                                    </button>
+                                    <button id="tabBackBtn"
+                                            sclass="chq-tab">
+                                        Back
+                                    </button>
+                                </div>
+
+                                <!-- FRONT: actual cheque image -->
+                                <div id="chqFront" sclass="chq-img-panel">
+                                    <image id="frontImage"
+                                           sclass="chq-img-actual"
+                                           style="width:100%;height:auto;max-height:260px;object-fit:contain;display:block"/>
+                                </div>
+
+                                <!-- BACK: actual cheque back image -->
+                                <div id="chqBack"
+                                     sclass="chq-img-panel"
+                                     visible="false">
+                                    <image id="backImage"
+                                           sclass="chq-img-actual"
+                                           style="width:100%;height:auto;max-height:260px;object-fit:contain;display:block"/>
+                                </div>
+
+                                <!-- Terminal MICR band — dark green display -->
+                                <div sclass="micr-terminal">
+                                    <label sclass="mono" value="⑆"/>
+                                    <label id="termChqNo"
+                                           sclass="mono"
+                                           value="?"/>
+                                    <label sclass="mono" value="⑆  "/>
+                                    <label id="termMicrCode"
+                                           sclass="mono"
+                                           value="?"/>
+                                    <label sclass="mono"
+                                           value="⑈  ⑉29⑉"/>
+                                </div>
+
+                            </div>
+                            <!-- end split-body -->
+
+                            <div sclass="split-foot">
+                                <n:span class="txt-sm txt-muted">
+                                    ℹ Blue = OCR-filled (correct)
+                                    · Yellow = Mismatch (correct this)
+                                </n:span>
+                            </div>
+
+                        </div>
+                        <!-- end split-l -->
+
+                        <!-- RIGHT PANEL: MICR Entry Form (45%) -->
+                        <div sclass="split-r">
+
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">MICR Data Entry</n:span>
+                                <label sclass="badge b-pend"
+                                       value="MICR ERROR"/>
+                            </div>
+
+                            <div sclass="split-body">
+
+                                <!-- Cheque No — editable -->
+                                <div sclass="frow c2 mb10">
+                                    <div sclass="fg"
+                                         style="grid-column:span 2">
+                                        <n:label class="fg-lbl">
+                                            Cheque Number
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="chqNoBox"
+                                                 sclass="fi mono"
+                                                 maxlength="6"
+                                                 placeholder="6 digits"/>
+                                    </div>
+                                </div>
+
+                                <!-- MICR sub-fields row 1 -->
+                                <div sclass="frow c2">
+                                    <div sclass="fg">
+                                        <n:label class="fg-lbl">
+                                            City Code
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="cityCodeBox"
+                                                 sclass="fi mono"
+                                                 maxlength="3"
+                                                 placeholder="3 digits"/>
+                                    </div>
+                                    <div sclass="fg">
+                                        <n:label class="fg-lbl">
+                                            Bank Code
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="bankCodeBox"
+                                                 sclass="fi mono"
+                                                 maxlength="3"
+                                                 placeholder="3 digits"/>
+                                    </div>
+                                </div>
+
+                                <!-- MICR sub-fields row 2 -->
+                                <div sclass="frow c2">
+                                    <div sclass="fg">
+                                        <n:label class="fg-lbl">
+                                            Branch Code
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="branchCodeBox"
+                                                 sclass="fi mono"
+                                                 maxlength="3"
+                                                 placeholder="3 digits"/>
+                                    </div>
+                                    <div sclass="fg">
+                                        <n:label class="fg-lbl">
+                                            Base Number
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="baseNumberBox"
+                                                 sclass="fi mono"
+                                                 maxlength="6"
+                                                 placeholder="6 digits"/>
+                                    </div>
+                                </div>
+
+                                <!-- MICR sub-fields row 3 -->
+                                <div sclass="frow c2 mb10">
+                                    <div sclass="fg">
+                                        <n:label class="fg-lbl">
+                                            Transaction Code
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <textbox id="transCodeBox"
+                                                 sclass="fi mono"
+                                                 maxlength="2"
+                                                 placeholder="2 digits"/>
+                                    </div>
+                                </div>
+
+                                <!-- Remarks -->
+                                <div sclass="fg mb12">
+                                    <n:label class="fg-lbl">
+                                        Remarks
+                                    </n:label>
+                                    <textbox id="repairRemarksBox"
+                                             sclass="fta"
+                                             rows="2"
+                                             multiline="true"
+                                             placeholder="Optional remarks..."/>
+                                </div>
+
+                                <!-- Action buttons -->
+                                <div sclass="flex-col gap8 mb8">
+                                    <button id="saveNextBtn"
+                                            sclass="btn bp btn-lg w100">
+                                        Save and Next
+                                    </button>
+                                    <button id="rejectTriggerBtn"
+                                            sclass="btn bd w100">
+                                        Reject Cheque
+                                    </button>
+                                </div>
+
+                                <!-- Inline Reject Panel (hidden) -->
+                                <div id="rejectPanel"
+                                     sclass="reject-panel"
+                                     visible="false">
+
+                                    <n:div class="reject-panel-title">
+                                        Reject This Cheque
+                                    </n:div>
+
+                                    <div sclass="fg mb8">
+                                        <n:label class="fg-lbl">
+                                            Reason for Rejection
+                                            <n:span class="req">*</n:span>
+                                        </n:label>
+                                        <listbox id="rejectReasonBox"
+                                                 sclass="fs"
+                                                 mold="select">
+                                            <listitem
+                                                label="Select a Reason"
+                                                value=""/>
+                                            <listitem
+                                                label="01 - Funds Insufficient"
+                                                value="01"/>
+                                            <listitem
+                                                label="02 - Exceeds Arrangement"
+                                                value="02"/>
+                                            <listitem
+                                                label="03 - Full Cover Not Received"
+                                                value="03"/>
+                                            <listitem
+                                                label="04 - Payment Stopped by Drawer"
+                                                value="04"/>
+                                            <listitem
+                                                label="05 - Payment Countermanded by Court Order"
+                                                value="05"/>
+                                            <listitem
+                                                label="06 - Payee Endorsement Required"
+                                                value="06"/>
+                                            <listitem
+                                                label="07 - Payee Endorsement Irregular"
+                                                value="07"/>
+                                            <listitem
+                                                label="08 - Drawer Signature Mismatch"
+                                                value="08"/>
+                                            <listitem
+                                                label="09 - Alteration Requires Authentication"
+                                                value="09"/>
+                                            <listitem
+                                                label="10 - Cheque Post-Dated or Stale"
+                                                value="10"/>
+                                            <listitem
+                                                label="11 - Amount Words and Figures Differ"
+                                                value="11"/>
+                                            <listitem
+                                                label="12 - Crossed Cheque Cannot be Paid in Cash"
+                                                value="12"/>
+                                            <listitem
+                                                label="13 - Account Closed or Transferred"
+                                                value="13"/>
+                                            <listitem
+                                                label="14 - Account Blocked or Frozen"
+                                                value="14"/>
+                                            <listitem
+                                                label="15 - Not Drawn on Us"
+                                                value="15"/>
+                                            <listitem
+                                                label="16 - MICR Band Damaged or Unreadable"
+                                                value="16"/>
+                                            <listitem
+                                                label="17 - Poor Image Quality IQA Failure"
+                                                value="17"/>
+                                            <listitem
+                                                label="18 - Non-CTS 2010 Compliant"
+                                                value="18"/>
+                                            <listitem
+                                                label="19 - Instrument Mutilated or Torn"
+                                                value="19"/>
+                                            <listitem
+                                                label="20 - Other Reason Specify in Remarks"
+                                                value="20"/>
+                                        </listbox>
+                                    </div>
+
+                                    <div sclass="fg mb8">
+                                        <n:label class="fg-lbl">
+                                            Additional Remarks
+                                        </n:label>
+                                        <textbox id="rejectRemarksBox"
+                                                 sclass="fta"
+                                                 rows="2"
+                                                 multiline="true"
+                                                 placeholder="Optional additional remarks..."/>
+                                    </div>
+
+                                    <div sclass="flex gap8">
+                                        <button id="confirmRejectBtn"
+                                                sclass="btn bd btn-sm">
+                                            Confirm Reject
+                                        </button>
+                                        <button id="cancelRejectBtn"
+                                                sclass="btn bo btn-sm">
+                                            Cancel
+                                        </button>
+                                    </div>
+
+                                </div>
+                                <!-- end rejectPanel -->
+
+                            </div>
+                            <!-- end split-body -->
+
+                        </div>
+                        <!-- end split-r -->
+
+                    </div>
+                    <!-- end split -->
+
+                </div>
+                <!-- end repairView -->
+
+            </div>
+            <!-- end page -->
+
+        </div>
+        <!-- end main -->
+
+    </div>
+    <!-- end body-row -->
+
+    <!-- STATUSBAR -->
+    <div sclass="statusbar" style="justify-content:flex-end">
+        <n:div class="sitem" style="opacity:.5;font-size:10px">
+            ExpressClear CTS · IISPL
+        </n:div>
+    </div>
 
 </div>
+</zk>

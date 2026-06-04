@@ -100,4 +100,16 @@ public interface OutwardBatchDao {
      * e.g. prefix = "B-2026-0603" → returns 2 (means next is -003)
      */
     int countBatchesToday(String datePrefix);
+    
+    /**
+     * Find all batches with status = NEEDS_REPAIR created by this maker.
+     * Used on MICR Repair screen when accessed from sidebar.
+     */
+    List<OutwardBatch> findNeedsRepairByMaker(Long makerId);
+    
+    /**
+     * Returns batches with status = ENTRY_DONE for this maker.
+     * These are ready for Account and Amount Entry.
+     */
+    List<OutwardBatch> findEntryReadyByMaker(Long makerId);
 }

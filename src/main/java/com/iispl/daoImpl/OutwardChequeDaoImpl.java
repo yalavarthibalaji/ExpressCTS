@@ -22,6 +22,148 @@ import com.iispl.util.HibernateUtil;
  *           If any cheque fails to save, the entire batch cheques roll back.
  */
 public class OutwardChequeDaoImpl implements OutwardChequeDao {
+	
+	@Override
+	public List<OutwardCheque> findMicrErrorCheques(Long batchDbId) {
+	    Session session = HibernateUtil.getSessionFactory().openSession();
+	    try {
+	        String sql = "SELECT * FROM outward_cheque "
+	                   + "WHERE batch_id = :batchId "
+	                   + "AND is_micr_error = TRUE "
+	                   + "AND repair_status != 'REPAIRED' "
+	                   + "AND status != 'REJECTED' "
+	                   + "ORDER BY seq_no ASC";
+	        NativeQuery<OutwardCheque> q =
+	                session.createNativeQuery(sql, OutwardCheque.class);
+	        q.setParameter("batchId", batchDbId);
+	        return q.list();
+	    } catch (Exception e) {
+	        System.err.println("OutwardChequeDao → findMicrErrorCheques failed: "
+	                + e.getMessage());
+	        return new ArrayList<>();
+	    } finally {
+	        session.close();
+	    }
+	}
+
+	@Override
+	public boolean updateMicrRepaired(Long chequeId,
+	                                   String cityCode,
+	                                   String bankCode,
+	                                   String branchCode,
+	                                   String baseNumber,
+	                                   String transactionCode,
+	                                   String micrCodeCorrected) {
+	    Session     session = HibernateUtil.getSessionFactory().openSession();
+	    Transaction tx      = null;
+	    try {
+	        tx = session.beginTransaction();
+	        String sql = "UPDATE outward_cheque "
+	                   + "SET city_code          = :cityCode, "
+	                   + "    bank_code          = :bankCode, "
+	                   + "    branch_code        = :branchCode, "
+	                   + "    base_number        = :baseNumber, "
+	                   + "    transaction_code   = :transCode, "
+	                   + "    micr_code_corrected = :micrCorrected, "
+	                   + "    repair_status      = 'REPAIRED', "
+	                   + "    updated_at         = NOW() "
+	                   + "WHERE id = :chequeId";
+	        NativeQuery<?> q = session.createNativeQuery(sql);
+	        q.setParameter("cityCode",      cityCode);
+	        q.setParameter("bankCode",      bankCode);
+	        q.setParameter("branchCode",    branchCode);
+	        q.setParameter("baseNumber",    baseNumber);
+	        q.setParameter("transCode",     transactionCode);
+	        q.setParameter("micrCorrected", micrCodeCorrected);
+	        q.setParameter("chequeId",      chequeId);
+	        int rows = q.executeUpdate();
+	        tx.commit();
+	        System.out.println("OutwardChequeDao → MICR repaired for cheque id="
+	                + chequeId);
+	        return rows > 0;
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        System.err.println("OutwardChequeDao → updateMicrRepaired failed: "
+	                + e.getMessage());
+	        return false;
+	    } finally {
+	        session.close();
+	    }
+	}
+
+	@Override
+	public int countPendingMicrRepairs(Long batchDbId) {
+	    Session session = HibernateUtil.getSessionFactory().openSession();
+	    try {
+	        String sql = "SELECT COUNT(*) FROM outward_cheque "
+	                   + "WHERE batch_id     = :batchId "
+	                   + "AND is_micr_error  = TRUE "
+	                   + "AND repair_status != 'REPAIRED' "
+	                   + "AND status        != 'REJECTED'";
+	        NativeQuery<?> q = session.createNativeQuery(sql);
+	        q.setParameter("batchId", batchDbId);
+	        Number count = (Number) q.uniqueResult();
+	        return count != null ? count.intValue() : 0;
+	    } catch (Exception e) {
+	        System.err.println("OutwardChequeDao → countPendingMicrRepairs failed: "
+	                + e.getMessage());
+	        return 0;
+	    } finally {
+	        session.close();
+	    }
+	}
+
+	@Override
+	public boolean rejectWithReason(Long chequeId,
+	                                 String reasonCode,
+	                                 String remarks,
+	                                 Long userId) {
+	    Session     session = HibernateUtil.getSessionFactory().openSession();
+	    Transaction tx      = null;
+	    try {
+	        tx = session.beginTransaction();
+
+	        OutwardCheque cheque = session.get(OutwardCheque.class, chequeId);
+	        if (cheque == null) { tx.rollback(); return false; }
+	        if ("REJECTED".equals(cheque.getStatus())) {
+	            tx.rollback();
+	            return true;
+	        }
+
+	        cheque.setStatus("REJECTED");
+	        cheque.setRejectedAt(LocalDateTime.now());
+	        cheque.setRejectedReasonCode(reasonCode);
+	        cheque.setRemarks(remarks);
+	        User u = new User(); u.setId(userId);
+	        cheque.setRejectedBy(u);
+	        session.merge(cheque);
+
+	        // Decrement batch totals
+	        OutwardBatch batch = cheque.getBatch();
+	        if (batch != null) {
+	            int        newCount  = Math.max(0, batch.getChequeCount() - 1);
+	            BigDecimal cur       = batch.getActualAmount() != null
+	                                    ? batch.getActualAmount() : BigDecimal.ZERO;
+	            BigDecimal chqAmt    = cheque.getAmount() != null
+	                                    ? cheque.getAmount() : BigDecimal.ZERO;
+	            batch.setChequeCount(newCount);
+	            batch.setActualAmount(cur.subtract(chqAmt));
+	            session.merge(batch);
+	        }
+
+	        tx.commit();
+	        System.out.println("OutwardChequeDao → rejectWithReason: cheque "
+	                + cheque.getChequeNo() + " rejected. Reason=" + reasonCode);
+	        return true;
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        System.err.println("OutwardChequeDao → rejectWithReason failed: "
+	                + e.getMessage());
+	        return false;
+	    } finally {
+	        session.close();
+	    }
+	}
 
     @Override
     public boolean saveAll(List<OutwardCheque> cheques) {
@@ -149,6 +291,98 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
             if (tx != null) tx.rollback();
             System.err.println("OutwardChequeDao → rejectCheque failed: " + e.getMessage());
             e.printStackTrace();
+            return false;
+        } finally {
+            session.close();
+        }
+    }
+    
+    
+    @Override
+    public List<OutwardCheque> findPendingEntries(Long batchDbId) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT * FROM outward_cheque "
+                       + "WHERE batch_id = :batchId "
+                       + "AND status = 'PENDING' "
+                       + "ORDER BY seq_no ASC";
+            NativeQuery<OutwardCheque> q =
+                    session.createNativeQuery(sql, OutwardCheque.class);
+            q.setParameter("batchId", batchDbId);
+            return q.list();
+        } catch (Exception e) {
+            System.err.println("OutwardChequeDao → findPendingEntries failed: "
+                    + e.getMessage());
+            return new ArrayList<>();
+        } finally {
+            session.close();
+        }
+    }
+
+    @Override
+    public int countPendingEntries(Long batchDbId) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT COUNT(*) FROM outward_cheque "
+                       + "WHERE batch_id = :batchId "
+                       + "AND status = 'PENDING'";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("batchId", batchDbId);
+            Number count = (Number) q.uniqueResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception e) {
+            System.err.println("OutwardChequeDao → countPendingEntries failed: "
+                    + e.getMessage());
+            return 0;
+        } finally {
+            session.close();
+        }
+    }
+
+    @Override
+    public boolean saveAccountEntry(Long       chequeId,
+                                      String     accountNo,
+                                      String     accountHolder,
+                                      BigDecimal amount,
+                                      String     amountInWords,
+                                      String     chequeDate,
+                                      String     payeeName) {
+        Session     session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tx      = null;
+        try {
+            tx = session.beginTransaction();
+
+            String sql = "UPDATE outward_cheque "
+                       + "SET account_no      = :accountNo, "
+                       + "    account_holder  = :accountHolder, "
+                       + "    amount          = :amount, "
+                       + "    amount_in_words = :amountInWords, "
+                       + "    cheque_date     = CAST(:chequeDate AS DATE), "
+                       + "    payee_name      = :payeeName, "
+                       + "    status          = 'ENTRY_DONE', "
+                       + "    updated_at      = NOW() "
+                       + "WHERE id = :chequeId";
+
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("accountNo",     accountNo);
+            q.setParameter("accountHolder", accountHolder);
+            q.setParameter("amount",        amount);
+            q.setParameter("amountInWords", amountInWords);
+            q.setParameter("chequeDate",    chequeDate);
+            q.setParameter("payeeName",     payeeName);
+            q.setParameter("chequeId",      chequeId);
+
+            int rows = q.executeUpdate();
+            tx.commit();
+
+            System.out.println("OutwardChequeDao → Account entry saved. "
+                    + "chequeId=" + chequeId + " status=ENTRY_DONE");
+            return rows > 0;
+
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            System.err.println("OutwardChequeDao → saveAccountEntry failed: "
+                    + e.getMessage());
             return false;
         } finally {
             session.close();

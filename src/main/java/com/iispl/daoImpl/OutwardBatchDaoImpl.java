@@ -288,4 +288,48 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
+    
+    
+    @Override
+    public List<OutwardBatch> findNeedsRepairByMaker(Long makerId) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT * FROM outward_batch "
+                       + "WHERE created_by = :makerId "
+                       + "AND status = 'NEEDS_REPAIR' "
+                       + "ORDER BY created_at DESC";
+            NativeQuery<OutwardBatch> q =
+                    session.createNativeQuery(sql, OutwardBatch.class);
+            q.setParameter("makerId", makerId);
+            return q.list();
+        } catch (Exception e) {
+            System.err.println("OutwardBatchDao → findNeedsRepairByMaker failed: "
+                    + e.getMessage());
+            return new ArrayList<>();
+        } finally {
+            session.close();
+        }
+    }
+    
+    
+    @Override
+    public List<OutwardBatch> findEntryReadyByMaker(Long makerId) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT * FROM outward_batch "
+                       + "WHERE created_by = :makerId "
+                       + "AND status = 'ENTRY_DONE' "
+                       + "ORDER BY created_at DESC";
+            NativeQuery<OutwardBatch> q =
+                    session.createNativeQuery(sql, OutwardBatch.class);
+            q.setParameter("makerId", makerId);
+            return q.list();
+        } catch (Exception e) {
+            System.err.println("OutwardBatchDao → findEntryReadyByMaker failed: "
+                    + e.getMessage());
+            return new ArrayList<>();
+        } finally {
+            session.close();
+        }
+    }
 }
