@@ -4,8 +4,10 @@
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/makerOutward/makerOutwardDashboard.css"?>
 
-<zk xmlns="http://www.zkoss.org/2005/zul">
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
     <div sclass="topbar">
@@ -18,15 +20,49 @@
             <div sclass="dash-main">
 
                 <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Maker Outward Dashboard" />
-                    <label sclass="welcome-sub"   value="Outward cheque processing — upload, MICR repair, data entry" />
+                    <label sclass="welcome-title" value="Dashboard" />
+                    <label sclass="welcome-sub" value="Outward cheque processing — upload, MICR repair, data entry" />
                 </div>
 
-                <div sclass="placeholder-card">
-                    <div sclass="ph-icon">📤</div>
-                    <div sclass="ph-title">Coming Soon</div>
-                    <div sclass="ph-desc">Outward processing features will be available in the next phase.</div>
-                </div>
+                <n:div class="quick-cards">
+
+                    <n:div class="qcard qcard-primary">
+                        <n:div class="qicon">📤</n:div>
+                        <n:div class="qtext">
+                            <n:div class="qtitle">Batch Upload</n:div>
+                            <n:div class="qdesc">Upload XML &amp; scan new batch</n:div>
+                        </n:div>
+                        <button id="gotoBatchUpload" sclass="qgo">Go →</button>
+                    </n:div>
+
+                    <n:div class="qcard qcard-warning">
+                        <n:div class="qicon">🔍</n:div>
+                        <n:div class="qtext">
+                            <n:div class="qtitle">MICR Repair</n:div>
+                            <n:div class="qdesc">Fix MICR &amp; IQA errors</n:div>
+                        </n:div>
+                        <button id="gotoMicrRepair" sclass="qgo">Go →</button>
+                    </n:div>
+
+                    <n:div class="qcard qcard-primary">
+                        <n:div class="qicon">💳</n:div>
+                        <n:div class="qtext">
+                            <n:div class="qtitle">Account &amp; Amount</n:div>
+                            <n:div class="qdesc">Enter account &amp; amount</n:div>
+                        </n:div>
+                        <button id="gotoAcctAmount" sclass="qgo">Go →</button>
+                    </n:div>
+
+                    <n:div class="qcard qcard-disabled">
+                        <n:div class="qicon">📄</n:div>
+                        <n:div class="qtext">
+                            <n:div class="qtitle">View Batches</n:div>
+                            <n:div class="qdesc">View all scanned batches</n:div>
+                        </n:div>
+                        <n:div class="qgo qgo-disabled">Go →</n:div>
+                    </n:div>
+
+                </n:div>
 
             </div>
         </div>

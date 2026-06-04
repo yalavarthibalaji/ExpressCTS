@@ -7,6 +7,7 @@ import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
+import org.zkoss.zul.Button;
 import org.zkoss.zul.Label;
 
 /**
@@ -15,9 +16,13 @@ import org.zkoss.zul.Label;
  */
 public class DashboardComposer extends SelectorComposer<Component> {
 
-    @Wire private Label userAvatar;
-    @Wire private Label userName;
-    @Wire private Label userRole;
+	@Wire private Label  userAvatar;
+	@Wire private Label  userName;
+	@Wire private Label  userRole;
+
+	@Wire("#gotoBatchUpload") private Button gotoBatchUpload;
+	@Wire("#gotoMicrRepair")  private Button gotoMicrRepair;
+	@Wire("#gotoAcctAmount")  private Button gotoAcctAmount;
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
@@ -34,6 +39,21 @@ public class DashboardComposer extends SelectorComposer<Component> {
     @Listen("onClick = #logoutBtn")
     public void doLogout() {
         SessionUtil.logout();
+    }
+
+    @Listen("onClick = #gotoBatchUpload")
+    public void gotoBatchUpload() {
+        Executions.sendRedirect("/outward/batchUpload/batchUpload.zul");
+    }
+    
+    @Listen("onClick = #gotoMicrRepair")
+    public void gotoMicrRepair() {
+        Executions.sendRedirect("/outward/micrRepair/micrRepair.zul");
+    }
+
+    @Listen("onClick = #gotoAcctAmount")
+    public void gotoAcctAmount() {
+        Executions.sendRedirect("/outward/acctAmount/acctAmount.zul");
     }
 
     @Listen("onClick = #userMgmtBtn")
