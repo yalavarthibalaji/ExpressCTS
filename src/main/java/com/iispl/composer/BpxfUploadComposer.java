@@ -6,11 +6,13 @@ import java.util.List;
 import org.zkoss.util.media.Media;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Executions;
+import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.event.EventQueue;
+import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.Button;
-import org.zkoss.zul.Fileupload;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listcell;
 import org.zkoss.zul.Listitem;
@@ -19,6 +21,7 @@ import org.zkoss.zul.Textbox;
 
 import com.iispl.dto.InwardBatchDto;
 import com.iispl.dto.LoginDTO;
+import com.iispl.service.BpxfFolderWatchService;
 import com.iispl.service.BpxfUploadService;
 import com.iispl.serviceImpl.BpxfUploadServiceImpl;
 import com.iispl.util.SessionUtil;
@@ -33,14 +36,18 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
     @Wire("#searchBox")       private Textbox  searchBox;
     @Wire("#fileListbox")     private Listbox  fileListbox;
 
-    private Media              uploadedFile = null;
-    private List<InwardBatchDto> allBatches = null;
-    private final BpxfUploadService service = new BpxfUploadServiceImpl();
+    private Media                uploadedFile = null;
+    private List<InwardBatchDto> allBatches   = null;
+    private final BpxfUploadService service   = new BpxfUploadServiceImpl();
 
+    private Thread                 watchThread  = null;
+    private BpxfFolderWatchService watchService = null;
     @Override
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
         loadBatches();
+        startWatcher();
+        subscribeToQueue();
     }
 
     @Listen("onUpload = #uploadBtn")   // ✅ onUpload, not onClick
@@ -80,7 +87,7 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
                     Messagebox.OK, Messagebox.ERROR);
         }
     }
-
+    
     @Listen("onChanging = #searchBox")
     public void onSearch() {
         String keyword = searchBox.getValue().toLowerCase().trim();
@@ -93,7 +100,32 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
             }
         }
     }
+    
+    
+    private void startWatcher() {
+        LoginDTO operator = SessionUtil.getCurrentUser();
+        if (operator == null) return;
 
+        watchService = new BpxfFolderWatchService(operator);
+        watchThread  = new Thread(watchService, "bpxf-folder-watcher");
+        watchThread.setDaemon(true);
+        watchThread.start();
+    }
+
+    private void subscribeToQueue() {
+        EventQueue<Event> queue = EventQueues.lookup(
+                BpxfFolderWatchService.QUEUE_NAME, EventQueues.APPLICATION, true);
+
+        queue.subscribe(event -> {
+            String fileName = (String) event.getData();
+            loadBatches();
+            Messagebox.show("Auto-imported: " + fileName, "New File Detected",
+                    Messagebox.OK, Messagebox.INFORMATION);
+        }, true); // true = async server push
+    }
+    
+    
+    
     // ── Private helpers ───────────────────────────────────────────────────
 
     private void loadBatches() {
@@ -118,9 +150,23 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
         // Action button
         Button viewBtn = new Button("View");
         viewBtn.setSclass("btn-view");
+       
         Listcell actionCell = new Listcell();
         actionCell.appendChild(viewBtn);
         item.appendChild(actionCell);
+        
+        viewBtn.addEventListener("onClick", event -> {
+            Executions.sendRedirect("/inward/viewBatches/viewBatches.zul");
+        });
+        
+        Button repairBtn = new Button("Repair");
+        repairBtn.setSclass("btn-view");
+        actionCell.appendChild(repairBtn);
+        item.appendChild(actionCell);
+        
+        repairBtn.addEventListener("onClick", event -> {
+            Executions.sendRedirect("/inward/inwardMicr/RejectRepair.zul");
+        });
 
         fileListbox.appendChild(item);
     }

@@ -81,11 +81,12 @@
                         <listhead sclass="listhead-row">
                             <listheader label="#"              width="50px"  style="color:black;font-weight:700;font-size:12px;" />
                             <listheader label="BATCH ID"       width="150px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="FILE NAME"      hflex="1"    style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="FILE NAME"       width="200px"    style="color:black;font-weight:700;font-size:12px;"/>
                             <listheader label="TOTAL CHEQUES"  width="200px" style="color:black;font-weight:700;font-size:12px;"/>
                             <listheader label="MICR ERRORS"    width="140px" style="color:black;font-weight:700;font-size:12px;"/>
                             <listheader label="PARSED AT"      width="160px" style="color:black;font-weight:700;font-size:12px;"/>
                             <listheader label="STATUS"         width="110px" style="color:black;font-weight:700;font-size:12px;"/>
+                             <listheader label="Action"         width="220px" style="color:black;font-weight:700;font-size:12px;"/>
                         </listhead>
                     </listbox>
                 </div>

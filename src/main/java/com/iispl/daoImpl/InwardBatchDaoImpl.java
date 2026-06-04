@@ -17,12 +17,13 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
 	    try {
 	        tx = session.beginTransaction();
 	        session.persist(batch);
+	        session.flush();   // ✅ forces INSERT on batch first → ID assigned → cheques can reference it
 	        tx.commit();
 	    } catch (Exception e) {
 	        if (tx != null) tx.rollback();
 	        throw new RuntimeException("Failed to save InwardBatch: " + e.getMessage(), e);
 	    } finally {
-	        session.close();  // ✅ close manually AFTER commit
+	        session.close();
 	    }
 	}
 

@@ -1,5 +1,5 @@
 package com.iispl.enums;
 
 public enum MicrStatus {
-	pass,fail
+	NEEDS_REPAIR,PASSED
 }
