@@ -13,11 +13,85 @@
 <div xmlns="http://www.zkoss.org/2005/zul"
      apply="com.iispl.composer.BpxfUploadComposer">
 
-  <div class="">
-  	 <include src="/component/topbar.zul" />
-  </div>
-  
+    <!-- Topbar -->
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
 
-    <!-- Page content goes here -->
+    <!-- Body: Sidebar + Main -->
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="dash-main">
+
+                <!-- Breadcrumb -->
+                <div sclass="breadcrumb">
+                    <label sclass="breadcrumb-home" value="Home" />
+                    <span sclass="breadcrumb-sep">›</span>
+                    <label sclass="breadcrumb-current" value="File Processing" />
+                </div>
+
+                <!-- Page Title -->
+                <div sclass="page-title-block">
+                    <label sclass="page-title" value="Inward — File Processing" />
+                    <label sclass="page-subtitle" value="Upload inward cheque files and process them for verification" />
+                </div>
+
+                <!-- Upload Card -->
+                <div sclass="upload-card">
+                    <div sclass="card-section-title">Upload Cheques</div>
+
+                    <div sclass="upload-fields-row">
+                        <div sclass="field-group">
+                            <label sclass="field-label" value="BATCH NAME / ID" />
+                            <textbox id="batchNameBox"
+                                     sclass="field-input"
+                                     placeholder="e.g. IW-2024-0312 (auto-generated if blank)" />
+                        </div>
+                        <div sclass="field-group">
+                            <label sclass="field-label required-star" value="UPLOAD CHEQUES *" />
+                            <div sclass="file-upload-row">
+                                <textbox id="fileNameDisplay"
+                                         sclass="field-input file-name-display"
+                                         readonly="true"
+                                         placeholder="No file selected" />
+										<fileupload id="uploadBtn" label="Choose File" />                            </div>
+                        </div>
+                    </div>
+
+                    <div sclass="upload-actions">
+                        <button id="parseBtn"
+                                sclass="btn-parse"
+                                label="▶ Parse Files" />
+                    </div>
+                </div>
+
+                <!-- File Details Card -->
+                <div sclass="details-card">
+                    <div sclass="details-header">
+                        <label sclass="card-section-title" value="📋 Uploaded File Details" />
+                        <textbox id="searchBox"
+                                 sclass="search-box"
+                                 placeholder="🔍 Search by batch ID or file..." />
+                    </div>
+
+                    <listbox id="fileListbox" sclass="file-listbox"
+                             emptyMessage="No files uploaded yet. Upload a file above to begin.">
+                        <listhead sclass="listhead-row">
+                            <listheader label="#"              width="50px"  style="color:black;font-weight:700;font-size:12px;" />
+                            <listheader label="BATCH ID"       width="150px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="FILE NAME"      hflex="1"    style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="TOTAL CHEQUES"  width="200px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="MICR ERRORS"    width="140px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="PARSED AT"      width="160px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="STATUS"         width="110px" style="color:black;font-weight:700;font-size:12px;"/>
+                        </listhead>
+                    </listbox>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
 </div>

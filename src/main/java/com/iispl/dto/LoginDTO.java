@@ -8,7 +8,7 @@ package com.iispl.dto;
  */
 public class LoginDTO {
 
-    private String   userId;
+    private Long   userId;
     private String userLoginId;
     private String fullName;
     private String roleCode;      // ADMIN | MAKER_OUTWARD | CHECKER_OUTWARD | MAKER_INWARD | CHECKER_INWARD
@@ -16,7 +16,7 @@ public class LoginDTO {
 
     public LoginDTO() {}
 
-    public LoginDTO(String userId, String userLoginId, String fullName, String roleCode, String email) {
+    public LoginDTO(Long userId, String userLoginId, String fullName, String roleCode, String email) {
         this.userId      = userId;
         this.userLoginId = userLoginId;
         this.fullName    = fullName;
@@ -24,8 +24,8 @@ public class LoginDTO {
         this.email       = email;
     }
 
-    public String   getUserId()      { return userId; }
-    public void   setUserId(String userId) { this.userId = userId; }
+    public Long   getUserId()      { return userId; }
+    public void   setUserId(Long userId) { this.userId = userId; }
 
     public String getUserLoginId()  { return userLoginId; }
     public void   setUserLoginId(String userLoginId) { this.userLoginId = userLoginId; }

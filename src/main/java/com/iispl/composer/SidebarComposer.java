@@ -83,7 +83,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
         addSectionTitle("INWARD");
         addNavItem("Dashboard",          "/dashboard/makerInward/makerInwardDashboard.zul");
         addNavItem("File Processing",    "/inward/bpxfUpload/bpxfUpload.zul");
-        addNavItem("Inward Correction",  "/inward/inwardMicr/inwardMicr.zul");
+        addNavItem("Inward Correction",  "/inward/inwardMicr/RejectRepair.zul");
     }
 
     private void renderCheckerInwardNav() {

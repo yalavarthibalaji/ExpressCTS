@@ -85,7 +85,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
      */
     @Listen("onClick = #btnRejectRepair")
     public void onRejectRepair() {
-        Executions.getCurrent().sendRedirect("/inward/bpxfUpload/bpxfUpload.zul");
+        Executions.getCurrent().sendRedirect("/inward/inwardMicr/RejectRepair.zul");
     }
     
 }

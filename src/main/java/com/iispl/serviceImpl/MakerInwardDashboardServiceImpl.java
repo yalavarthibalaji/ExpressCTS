@@ -5,53 +5,32 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.iispl.dao.MakerInwardDashboardDao;
-import com.iispl.daoImpl.MakerInwardDashboardDaoImpl;
+import com.iispl.dao.InwardBatchDao;
+import com.iispl.daoImpl.InwardBatchDaoImpl;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.service.MakerInwardDashboardService;
 
-
-
-/**
- * MakerInwardDashboardServiceImpl
- *
- * Business-logic layer between the ZK Composer and the DAO.
- * Validates inputs, handles exceptions, and applies any
- * Maker-role business rules before returning data.
- */
 public class MakerInwardDashboardServiceImpl implements MakerInwardDashboardService {
 
     private static final Logger LOG =
             Logger.getLogger(MakerInwardDashboardServiceImpl.class.getName());
 
-    // Inject via Spring @Autowired, or construct directly
-    private final MakerInwardDashboardDao dashboardDao;
-
-    // ── Constructors ──────────────────────────────────────────────────────
+    private final InwardBatchDao inwardBatchDao;
 
     /** Default constructor – creates its own DAO (non-Spring projects). */
     public MakerInwardDashboardServiceImpl() {
-        this.dashboardDao = new MakerInwardDashboardDaoImpl();
+        this.inwardBatchDao = new InwardBatchDaoImpl();
     }
 
     /** Spring / test constructor – DAO injected externally. */
-    public MakerInwardDashboardServiceImpl(MakerInwardDashboardDao dashboardDao) {
-        this.dashboardDao = dashboardDao;
+    public MakerInwardDashboardServiceImpl(InwardBatchDao inwardBatchDao) {
+        this.inwardBatchDao = inwardBatchDao;
     }
 
-    // ── Interface implementation ──────────────────────────────────────────
-
-    /**
-     * {@inheritDoc}
-     *
-     * Delegates to DAO and guarantees a non-null list is returned.
-     * Any DAO-level exception is caught here so the composer always
-     * receives a safe result.
-     */
     @Override
     public List<InwardBatch> getInwardBatches() {
         try {
-            List<InwardBatch> batches = dashboardDao.findAllInwardBatches();
+            List<InwardBatch> batches = inwardBatchDao.findAll();
             return batches != null ? batches : new ArrayList<>();
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Error fetching inward batches", e);
@@ -59,11 +38,6 @@ public class MakerInwardDashboardServiceImpl implements MakerInwardDashboardServ
         }
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * Validates the status string before hitting the DAO.
-     */
     @Override
     public List<InwardBatch> getInwardBatchesByStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
@@ -72,7 +46,7 @@ public class MakerInwardDashboardServiceImpl implements MakerInwardDashboardServ
         }
         try {
             List<InwardBatch> batches =
-                    dashboardDao.findInwardBatchesByStatus(status.trim().toUpperCase());
+                    inwardBatchDao.findInwardBatchesByStatus(status.trim().toUpperCase());
             return batches != null ? batches : new ArrayList<>();
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Error fetching inward batches by status: " + status, e);

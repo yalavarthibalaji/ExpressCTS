@@ -1,9 +1,229 @@
-/*
- * File: inward/bpxfUpload/bpxfUpload.css
- * Purpose: Page-specific styles for Inward File Processing.
- *          Import order: global.css → components.css → layout.css → this file.
- *          Styles for file table, batch detail panel
- */
 
-/* Add bpxfUpload-specific styles here only. */
-/* Styles that are shared across pages belong in css/components.css */
+/* ---------- shell & layout ---------- */
+.dash-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1a2340;
+}
+
+.body-row {
+    display: flex;
+    flex: 1;
+}
+
+.main {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* ---------- main content area ---------- */
+.dash-main {
+    padding: 24px 32px;
+    max-width: 1200px;
+}
+
+/* ---------- breadcrumb ---------- */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+
+.breadcrumb-home {
+    color: #4b5563;
+    cursor: pointer;
+}
+
+.breadcrumb-home:hover {
+    color: #1a2340;
+    text-decoration: underline;
+}
+
+.breadcrumb-sep {
+    color: #9ca3af;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.breadcrumb-current {
+    color: #1a2340;
+    font-weight: 500;
+}
+
+
+/* ---------- page title ---------- */
+.page-title-block {
+    margin-bottom: 24px;
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.3px;
+}
+
+
+/* ---------- page subtitle ---------- */
+.page-subtitle {
+    display: block;
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+    font-weight: 400;
+}
+
+/* ---------- upload card ---------- */
+.upload-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.card-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.upload-fields-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.required-star {
+    color: #6b7280;
+}
+
+.field-input {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #1a2340;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.field-input:focus {
+    border-color: #1a2340;
+    outline: none;
+}
+
+.file-upload-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.file-name-display {
+    flex: 1;
+    color: #9ca3af;
+}
+
+.btn-upload {
+    height: 38px;
+    padding: 0 16px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-upload:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.upload-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-parse {
+    height: 38px;
+    padding: 0 20px;
+    background: #1a2340;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.btn-parse:hover {
+    background: #2d3a5e;
+}
+
+/* ---------- details card ---------- */
+.details-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.search-box {
+    height: 34px;
+    width: 260px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 13px;
+    color: #374151;
+}
+
+.file-listbox {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.listhead-row .z-listheader {
+    background: #f9fafb;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+}
