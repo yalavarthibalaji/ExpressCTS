@@ -11,7 +11,7 @@
 <div sclass="dash-shell" apply="com.iispl.composer.CheckerOutwardDashboardComposer">
 
     <div sclass="topbar">
-       <include src="/component/topbar.zul" />
+        <include src="/component/topbar.zul" />
     </div>
 
     <div sclass="body-row">
@@ -25,44 +25,27 @@
                 </div>
 
                 <n:div class="quick-cards">
+                    <include src="/component/dashCard.zul"
+                             icon="✅" title="Verification Queue"
+                             desc="Verify maker-submitted batches"
+                             btnId="gotoVerificationQueue" style="qcard-primary"/>
 
-                    <n:div class="qcard qcard-primary">
-                        <n:div class="qicon">✅</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">Verification Queue</n:div>
-                            <n:div class="qdesc">Verify maker-submitted batches</n:div>
-                        </n:div>
-                        <button id="gotoVerificationQueue" sclass="qgo">Go →</button>
-                    </n:div>
+                    <include src="/component/dashCard.zul"
+                             icon="📥" title="DEM Export"
+                             desc="Generate CXF/CIGF &amp; reports"
+                             btnId="gotoDemExport" style="qcard-warning"/>
 
-                    <n:div class="qcard qcard-warning">
-                        <n:div class="qicon">📥</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">DEM Export</n:div>
-                            <n:div class="qdesc">Generate CXF/CIGF &amp; reports</n:div>
-                        </n:div>
-                        <button id="gotoDemExport" sclass="qgo">Go →</button>
-                    </n:div>
-
-                    <n:div class="qcard qcard-primary">
-                        <n:div class="qicon">📊</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">Reports</n:div>
-                            <n:div class="qdesc">View outward processing reports</n:div>
-                        </n:div>
-                        <button id="gotoReports" sclass="qgo">Go →</button>
-                    </n:div>
-
+                    <include src="/component/dashCard.zul"
+                             icon="📊" title="Reports"
+                             desc="View outward processing reports"
+                             btnId="gotoReports" style="qcard-primary"/>
                 </n:div>
 
                 <!-- Bottom Row: Pending Verification + Summary -->
                 <n:div class="bottom-row">
 
-                    <!-- Pending Verification -->
                     <n:div class="recent-section">
-
                         <n:div class="recent-title">Pending Verification</n:div>
-
                         <n:div class="recent-table-wrap">
                             <grid id="pendingBatchGrid" sclass="recent-grid" width="100%"
                                   xmlns="http://www.zkoss.org/2005/zul">
@@ -74,14 +57,10 @@
                                 <rows id="pendingBatchRows"/>
                             </grid>
                         </n:div>
-
                     </n:div>
 
-                    <!-- Summary -->
                     <n:div class="summary-section">
-
                         <n:div class="recent-title">Summary</n:div>
-
                         <n:div class="summary-body">
                             <n:div class="sum-row">
                                 <n:span class="sum-lbl">Pending Queue</n:span>
@@ -104,7 +83,6 @@
                                        xmlns="http://www.zkoss.org/2005/zul"/>
                             </n:div>
                         </n:div>
-
                     </n:div>
 
                 </n:div>

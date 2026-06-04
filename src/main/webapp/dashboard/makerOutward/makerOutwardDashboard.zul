@@ -11,7 +11,7 @@
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
     <div sclass="topbar">
-       <include src="/component/topbar.zul" />
+        <include src="/component/topbar.zul" />
     </div>
 
     <div sclass="body-row">
@@ -25,53 +25,32 @@
                 </div>
 
                 <n:div class="quick-cards">
+                    <include src="/component/dashCard.zul"
+                             icon="📤" title="Batch Upload"
+                             desc="Upload XML &amp; scan new batch"
+                             btnId="gotoBatchUpload" style="qcard-primary"/>
 
-                    <n:div class="qcard qcard-primary">
-                        <n:div class="qicon">📤</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">Batch Upload</n:div>
-                            <n:div class="qdesc">Upload XML &amp; scan new batch</n:div>
-                        </n:div>
-                        <button id="gotoBatchUpload" sclass="qgo">Go →</button>
-                    </n:div>
+                    <include src="/component/dashCard.zul"
+                             icon="🔍" title="MICR Repair"
+                             desc="Fix MICR &amp; IQA errors"
+                             btnId="gotoMicrRepair" style="qcard-warning"/>
 
-                    <n:div class="qcard qcard-warning">
-                        <n:div class="qicon">🔍</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">MICR Repair</n:div>
-                            <n:div class="qdesc">Fix MICR &amp; IQA errors</n:div>
-                        </n:div>
-                        <button id="gotoMicrRepair" sclass="qgo">Go →</button>
-                    </n:div>
+                    <include src="/component/dashCard.zul"
+                             icon="💳" title="Account &amp; Amount"
+                             desc="Enter account &amp; amount"
+                             btnId="gotoAcctAmount" style="qcard-primary"/>
 
-                    <n:div class="qcard qcard-primary">
-                        <n:div class="qicon">💳</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">Account &amp; Amount</n:div>
-                            <n:div class="qdesc">Enter account &amp; amount</n:div>
-                        </n:div>
-                        <button id="gotoAcctAmount" sclass="qgo">Go →</button>
-                    </n:div>
-
-                    <n:div class="qcard qcard-disabled">
-                        <n:div class="qicon">📄</n:div>
-                        <n:div class="qtext">
-                            <n:div class="qtitle">View Batches</n:div>
-                            <n:div class="qdesc">View all scanned batches</n:div>
-                        </n:div>
-                        <n:div class="qgo qgo-disabled">Go →</n:div>
-                    </n:div>
-
+                    <include src="/component/dashCard.zul"
+                             icon="📄" title="View Batches"
+                             desc="View all scanned batches"
+                             btnId="${null}" style="qcard-disabled"/>
                 </n:div>
 
                 <!-- Bottom Row: Recent Batches + Summary -->
                 <n:div class="bottom-row">
 
-                    <!-- Recent Batches -->
                     <n:div class="recent-section">
-
                         <n:div class="recent-title">Recent Batches</n:div>
-
                         <n:div class="recent-table-wrap">
                             <grid id="recentBatchGrid" sclass="recent-grid" width="100%"
                                   xmlns="http://www.zkoss.org/2005/zul">
@@ -83,14 +62,10 @@
                                 <rows id="recentBatchRows"/>
                             </grid>
                         </n:div>
-
                     </n:div>
 
-                    <!-- Summary -->
                     <n:div class="summary-section">
-
                         <n:div class="recent-title">Summary</n:div>
-
                         <n:div class="summary-body">
                             <n:div class="sum-row">
                                 <n:span class="sum-lbl">Total Batches</n:span>
@@ -113,7 +88,6 @@
                                        xmlns="http://www.zkoss.org/2005/zul"/>
                             </n:div>
                         </n:div>
-
                     </n:div>
 
                 </n:div>
