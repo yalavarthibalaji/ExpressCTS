@@ -78,6 +78,19 @@
             <artifactId>zkbind</artifactId>
             <version>10.0.0-jakarta</version>
         </dependency>
+		
+		<dependency>
+		    <groupId>jakarta.xml.bind</groupId>
+		    <artifactId>jakarta.xml.bind-api</artifactId>
+		    <version>3.0.1</version>
+		</dependency>
+		
+		<!-- JAXB Runtime Implementation -->
+		<dependency>
+		    <groupId>com.sun.xml.bind</groupId>
+		    <artifactId>jaxb-impl</artifactId>
+		    <version>3.0.2</version>
+		</dependency>
 
         <!-- Jakarta Servlet -->
         <dependency>

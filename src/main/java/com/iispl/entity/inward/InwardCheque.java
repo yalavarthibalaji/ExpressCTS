@@ -19,6 +19,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
+
 @Entity
 @Table(name = "inward_cheque")
 public class InwardCheque {
