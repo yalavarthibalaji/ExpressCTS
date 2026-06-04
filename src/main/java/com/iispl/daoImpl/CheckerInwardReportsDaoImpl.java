@@ -2,41 +2,36 @@ package com.iispl.daoImpl;
 
 import com.iispl.dao.CheckerInwardReportsDao;
 import com.iispl.dto.InwardReportDTO;
+import com.iispl.entity.inward.InwardBatch;
+import com.iispl.entity.inward.InwardCheque;
+import com.iispl.util.HibernateUtil;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hibernate.Session;
+import org.hibernate.query.Query;
 
-import java.sql.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * File    : com/iispl/daoImpl/CheckerInwardReportsDaoImpl.java
- * Purpose : Pure-JDBC implementation of CheckerInwardReportsDao.
  *
- *   CHANGES vs previous version:
- *     - Query now selects: accepted_count, returned_count,
- *       presenting_banks (distinct bank names comma-joined via STRING_AGG)
- *     - Legacy columns (micr_error_count, iqa_fails, passed_count,
- *       rejected_count, referred_count) are still fetched for XML export
- *     - mapRow() populates new DTO fields
+ * Uses HQL + HibernateUtil.getSessionFactory() — identical pattern to
+ * CheckerInwardVerificationDaoImpl.
+ *
+ * Aggregates (acceptedCount, returnedCount, presentingBanks) are computed
+ * in Java by iterating batch.getCheques(), exactly the same way
+ * CheckerInwardVerificationComposer already does it.
+ * This avoids native SQL / STRING_AGG entirely and stays in pure HQL.
  */
 public class CheckerInwardReportsDaoImpl implements CheckerInwardReportsDao {
 
-    private static final Logger log = LoggerFactory.getLogger(CheckerInwardReportsDaoImpl.class);
-
-    private static final String JDBC_URL  = "jdbc:postgresql://localhost:5432/expressCTS";
-    private static final String JDBC_USER = "postgres";
-    private static final String JDBC_PASS = "iispl660";
-
-    private static final List<String> ALL_STATUSES = Arrays.asList(
-            "PENDING_CHECKER", "ACCEPTED", "RETURNED", "REJECTED"
-    );
-
     // ─────────────────────────────────────────────────────────────────────────
-    //  Public API
+    //  findReports — HQL with optional filters, returns mapped DTOs
     // ─────────────────────────────────────────────────────────────────────────
 
     @Override
@@ -47,37 +42,67 @@ public class CheckerInwardReportsDaoImpl implements CheckerInwardReportsDao {
                                               int    pageNo,
                                               int    pageSize) {
 
+        Session session = null;
         List<InwardReportDTO> results = new ArrayList<>();
 
-        if (pageNo   < 1) pageNo   = 1;
-        if (pageSize < 1) pageSize = 20;
-        int offset = (pageNo - 1) * pageSize;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
 
-        String sql = buildSelectSql(batchIdSearch, fromDate, toDate, status)
-                   + " ORDER BY ib.batch_date DESC, ib.created_at DESC"
-                   + " LIMIT ? OFFSET ?";
+            // JOIN FETCH cheques — needed to compute accepted/returned/presentingBanks
+            // in Java (same pattern as CheckerInwardVerificationDaoImpl)
+            StringBuilder hql = new StringBuilder(
+                "SELECT DISTINCT b FROM InwardBatch b " +
+                "LEFT JOIN FETCH b.cheques " +
+                "WHERE b.status IN ('PENDING_CHECKER','ACCEPTED','RETURNED','REJECTED') "
+            );
 
-        log.debug("findReports SQL: {}", sql);
-
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            int idx = bindParams(ps, batchIdSearch, fromDate, toDate, status, 1);
-            ps.setInt(idx++, pageSize);
-            ps.setInt(idx,   offset);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    results.add(mapRow(rs));
-                }
+            // ── Optional filters ─────────────────────────────────────────────
+            if (isSpecificStatus(status)) {
+                hql.append("AND b.status = :status ");
+            }
+            if (isNotBlank(batchIdSearch)) {
+                hql.append("AND LOWER(b.batchId) LIKE LOWER(:batchSearch) ");
+            }
+            if (fromDate != null) {
+                hql.append("AND b.batchDate >= :fromDate ");
+            }
+            if (toDate != null) {
+                hql.append("AND b.batchDate <= :toDate ");
             }
 
-        } catch (SQLException e) {
-            log.error("findReports failed: {}", e.getMessage(), e);
+            hql.append("ORDER BY b.batchDate DESC, b.createdAt DESC");
+
+            Query<InwardBatch> query = session.createQuery(hql.toString(), InwardBatch.class);
+
+            if (isSpecificStatus(status))  query.setParameter("status",      status);
+            if (isNotBlank(batchIdSearch)) query.setParameter("batchSearch", "%" + batchIdSearch.trim() + "%");
+            if (fromDate != null)          query.setParameter("fromDate",    toLocalDate(fromDate));
+            if (toDate   != null)          query.setParameter("toDate",      toLocalDate(toDate));
+
+            // Pagination
+            if (pageNo   < 1) pageNo   = 1;
+            if (pageSize < 1) pageSize = 50;
+            query.setFirstResult((pageNo - 1) * pageSize);
+            query.setMaxResults(pageSize);
+
+            List<InwardBatch> batches = query.getResultList();
+            for (InwardBatch batch : batches) {
+                results.add(toDTO(batch));
+            }
+
+        } catch (Exception e) {
+            System.err.println("findReports error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (session != null && session.isOpen()) session.close();
         }
 
         return results;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  countReports — same filters, COUNT only (no FETCH needed)
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     public int countReports(String batchIdSearch,
@@ -85,142 +110,104 @@ public class CheckerInwardReportsDaoImpl implements CheckerInwardReportsDao {
                              Date   toDate,
                              String status) {
 
-        String baseSql  = buildSelectSql(batchIdSearch, fromDate, toDate, status);
-        String countSql = "SELECT COUNT(*) FROM (" + baseSql + ") AS sub";
+        Session session = null;
 
-        log.debug("countReports SQL: {}", countSql);
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(countSql)) {
+            StringBuilder hql = new StringBuilder(
+                "SELECT COUNT(DISTINCT b) FROM InwardBatch b " +
+                "WHERE b.status IN ('PENDING_CHECKER','ACCEPTED','RETURNED','REJECTED') "
+            );
 
-            bindParams(ps, batchIdSearch, fromDate, toDate, status, 1);
+            if (isSpecificStatus(status))  hql.append("AND b.status = :status ");
+            if (isNotBlank(batchIdSearch)) hql.append("AND LOWER(b.batchId) LIKE LOWER(:batchSearch) ");
+            if (fromDate != null)          hql.append("AND b.batchDate >= :fromDate ");
+            if (toDate   != null)          hql.append("AND b.batchDate <= :toDate ");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
+            Query<Long> query = session.createQuery(hql.toString(), Long.class);
+
+            if (isSpecificStatus(status))  query.setParameter("status",      status);
+            if (isNotBlank(batchIdSearch)) query.setParameter("batchSearch", "%" + batchIdSearch.trim() + "%");
+            if (fromDate != null)          query.setParameter("fromDate",    toLocalDate(fromDate));
+            if (toDate   != null)          query.setParameter("toDate",      toLocalDate(toDate));
+
+            Long count = query.uniqueResult();
+            return count != null ? count.intValue() : 0;
+
+        } catch (Exception e) {
+            System.err.println("countReports error: " + e.getMessage());
+            e.printStackTrace();
+            return 0;
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  InwardBatch → InwardReportDTO
+    //  Aggregates computed in Java from batch.getCheques() —
+    //  same approach as CheckerInwardVerificationComposer
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private InwardReportDTO toDTO(InwardBatch batch) {
+        InwardReportDTO dto = new InwardReportDTO();
+
+        dto.setBatchId     (batch.getBatchId());
+        dto.setBatchDate   (batch.getBatchDate() != null ? batch.getBatchDate().toString() : "");
+        dto.setTotalCheques(batch.getTotalCheques());
+        dto.setMicrErrors  (batch.getMicrErrorCount());
+        dto.setStatus      (batch.getStatus());
+
+        List<InwardCheque> cheques = batch.getCheques();
+        if (cheques == null || cheques.isEmpty()) {
+            dto.setAcceptedCount (0);
+            dto.setReturnedCount (0);
+            dto.setRejectedCount (0);
+            dto.setReferredCount (0);
+            dto.setIqaFails      (0);
+            dto.setPresentingBanks("—");
+        } else {
+            int accepted  = 0, returned = 0, rejected = 0, referred = 0, iqaFail = 0;
+            Set<String> banks = new LinkedHashSet<>(); // preserves insertion order, no duplicates
+
+            for (InwardCheque c : cheques) {
+                String cs = c.getStatus();
+                if ("ACCEPTED".equalsIgnoreCase(cs)) accepted++;
+                else if ("RETURNED".equalsIgnoreCase(cs)) returned++;
+                else if ("REJECTED".equalsIgnoreCase(cs)) rejected++;
+                else if ("REFERRED".equalsIgnoreCase(cs)) referred++;
+
+                if ("FAIL".equalsIgnoreCase(c.getIqaStatus())) iqaFail++;
+
+                if (c.getPresentingBankName() != null && !c.getPresentingBankName().isBlank()) {
+                    banks.add(c.getPresentingBankName().trim());
+                }
             }
 
-        } catch (SQLException e) {
-            log.error("countReports failed: {}", e.getMessage(), e);
+            dto.setAcceptedCount (accepted);
+            dto.setReturnedCount (returned);
+            dto.setRejectedCount (rejected);
+            dto.setReferredCount (referred);
+            dto.setIqaFails      (iqaFail);
+            dto.setPassedCount   (accepted); // legacy alias
+            dto.setPresentingBanks(banks.isEmpty() ? "—" : String.join(", ", banks));
         }
-
-        return 0;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Build the SELECT … FROM … WHERE … GROUP BY portion.
-     *
-     * NEW columns added to target UI:
-     *   accepted_count  — cheques with ic.status = 'ACCEPTED'
-     *   returned_count  — cheques with ic.status = 'RETURNED'
-     *   presenting_banks — comma-joined DISTINCT presenting_bank_name values
-     *
-     * Legacy columns retained for XML export:
-     *   micr_error_count, iqa_fails, passed_count, rejected_count, referred_count
-     */
-    private String buildSelectSql(String batchIdSearch,
-                                   Date   fromDate,
-                                   Date   toDate,
-                                   String status) {
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(
-            "SELECT " +
-            "  ib.batch_id, " +
-            "  TO_CHAR(ib.batch_date, 'DD/MM/YYYY') AS batch_date_fmt, " +
-            "  ib.total_cheques, " +
-            "  ib.micr_error_count, " +
-            "  ib.status, " +
-            // ── Target grid columns ───────────────────────────────────────
-            "  COALESCE(SUM(CASE WHEN ic.status = 'ACCEPTED' THEN 1 ELSE 0 END), 0) AS accepted_count, " +
-            "  COALESCE(SUM(CASE WHEN ic.status = 'RETURNED' THEN 1 ELSE 0 END), 0) AS returned_count, " +
-            // STRING_AGG produces comma-joined distinct bank names, e.g. "SBI, HDFC"
-            "  COALESCE(STRING_AGG(DISTINCT ic.presenting_bank_name, ', ' ORDER BY ic.presenting_bank_name), '—') AS presenting_banks, " +
-            // ── Legacy columns (kept for XML export) ─────────────────────
-            "  COALESCE(SUM(CASE WHEN ic.iqa_status = 'FAIL'     THEN 1 ELSE 0 END), 0) AS iqa_fails, " +
-            "  COALESCE(SUM(CASE WHEN ic.status     = 'REJECTED' THEN 1 ELSE 0 END), 0) AS rejected_count, " +
-            "  COALESCE(SUM(CASE WHEN ic.status     = 'REFERRED' THEN 1 ELSE 0 END), 0) AS referred_count " +
-            "FROM inward_batch ib " +
-            "LEFT JOIN inward_cheque ic ON ic.batch_id = ib.id " +
-            "WHERE 1=1 "
-        );
-
-        // ── Status filter ─────────────────────────────────────────────────
-        if (isSpecificStatus(status)) {
-            sb.append("AND ib.status = ? ");
-        } else {
-            sb.append("AND ib.status IN ('PENDING_CHECKER','ACCEPTED','RETURNED','REJECTED') ");
-        }
-
-        // ── Batch ID search ───────────────────────────────────────────────
-        if (isNotBlank(batchIdSearch)) {
-            sb.append("AND LOWER(ib.batch_id) LIKE LOWER(?) ");
-        }
-
-        // ── Date range ────────────────────────────────────────────────────
-        if (fromDate != null) sb.append("AND ib.batch_date >= ? ");
-        if (toDate   != null) sb.append("AND ib.batch_date <= ? ");
-
-        // GROUP BY — note: presenting_bank_name uses STRING_AGG so it is NOT in GROUP BY
-        sb.append(
-            "GROUP BY " +
-            "  ib.batch_id, ib.batch_date, ib.total_cheques, " +
-            "  ib.micr_error_count, ib.status, ib.created_at "
-        );
-
-        return sb.toString();
-    }
-
-    private int bindParams(PreparedStatement ps,
-                            String batchIdSearch,
-                            Date   fromDate,
-                            Date   toDate,
-                            String status,
-                            int    startIdx) throws SQLException {
-        int idx = startIdx;
-        if (isSpecificStatus(status))  ps.setString(idx++, status);
-        if (isNotBlank(batchIdSearch)) ps.setString(idx++, "%" + batchIdSearch.trim() + "%");
-        if (fromDate != null)          ps.setDate(idx++, new java.sql.Date(fromDate.getTime()));
-        if (toDate   != null)          ps.setDate(idx++, new java.sql.Date(toDate.getTime()));
-        return idx;
-    }
-
-    /** Map ResultSet row → InwardReportDTO. Populates both new + legacy fields. */
-    private InwardReportDTO mapRow(ResultSet rs) throws SQLException {
-        InwardReportDTO dto = new InwardReportDTO();
-        dto.setBatchId       (rs.getString("batch_id"));
-        dto.setBatchDate     (rs.getString("batch_date_fmt"));
-        dto.setTotalCheques  (rs.getInt   ("total_cheques"));
-        dto.setMicrErrors    (rs.getInt   ("micr_error_count"));
-        dto.setStatus        (rs.getString("status"));
-
-        // ── New target columns ────────────────────────────────────────────
-        dto.setAcceptedCount (rs.getInt   ("accepted_count"));
-        dto.setReturnedCount (rs.getInt   ("returned_count"));
-        dto.setPresentingBanks(rs.getString("presenting_banks"));
-
-        // ── Legacy (for XML export) ───────────────────────────────────────
-        dto.setIqaFails      (rs.getInt   ("iqa_fails"));
-        dto.setPassedCount   (rs.getInt   ("accepted_count")); // alias
-        dto.setRejectedCount (rs.getInt   ("rejected_count"));
-        dto.setReferredCount (rs.getInt   ("referred_count"));
 
         return dto;
     }
 
-    private Connection getConnection() throws SQLException {
-        try { Class.forName("org.postgresql.Driver"); }
-        catch (ClassNotFoundException e) { throw new SQLException("PostgreSQL driver not found", e); }
-        return DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASS);
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Helpers — identical to CheckerInwardVerificationDaoImpl
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private LocalDate toLocalDate(Date date) {
+        if (date == null) return null;
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private boolean isSpecificStatus(String status) {
-        return status != null && !status.isEmpty()
-            && !status.equalsIgnoreCase("ALL")
-            && ALL_STATUSES.contains(status);
+    private boolean isSpecificStatus(String s) {
+        return s != null && !s.isEmpty() && !s.equalsIgnoreCase("ALL");
     }
 
     private boolean isNotBlank(String s) {
