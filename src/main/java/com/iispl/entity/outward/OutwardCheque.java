@@ -99,6 +99,9 @@ public class OutwardCheque {
 
     @Column(name = "rejected_reason_code", length = 5)
     private String rejectedReasonCode;
+    
+    @Column(name = "is_micr_error", nullable = false)
+    private boolean isMicrError = false;
 
     // Unidirectional — maker who rejected at entry step
     @ManyToOne(fetch = FetchType.LAZY)
@@ -218,6 +221,9 @@ public class OutwardCheque {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public boolean isMicrError() { return isMicrError; }
+    public void setMicrError(boolean micrError) { this.isMicrError = micrError; }
 
     public List<OutwardMicrRepair> getMicrRepairs() { return micrRepairs; }
     public void setMicrRepairs(List<OutwardMicrRepair> micrRepairs) { this.micrRepairs = micrRepairs; }

@@ -66,7 +66,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
     private void renderMakerOutwardNav() {
         addSectionTitle("OUTWARD");
         addNavItem("Dashboard",        "/dashboard/makerOutward/makerOutwardDashboard.zul");
-        addNavItem("Batch Upload",     null);
+        addNavItem("Batch Upload",      "/outward/batchUpload/batchUpload.zul");
         addNavItem("MICR Repair",      null);
         addNavItem("Account & Amount", null);
     }
