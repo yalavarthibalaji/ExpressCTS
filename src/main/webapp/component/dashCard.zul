@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
+    <n:div class="qcard ${arg.style}">
+        <n:div class="qicon">${arg.icon}</n:div>
+        <n:div class="qtext">
+            <n:div class="qtitle">${arg.title}</n:div>
+            <n:div class="qdesc">${arg.desc}</n:div>
+        </n:div>
+        <zk if="${arg.btnId != null}">
+            <button id="${arg.btnId}" sclass="qgo">Go →</button>
+        </zk>
+        <zk unless="${arg.btnId != null}">
+            <n:div class="qgo qgo-disabled">Go →</n:div>
+        </zk>
+    </n:div>
+</zk>

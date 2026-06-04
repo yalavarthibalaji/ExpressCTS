@@ -13,4 +13,10 @@
         <max-desktops-per-session>10</max-desktops-per-session>
     </session-config>
 
+<system>
+        <macro-definition>
+            <component-name>dashCard</component-name>
+            <macro-uri>/component/dashCard.zul</macro-uri>
+        </macro-definition>
+    </system>
 </zk>

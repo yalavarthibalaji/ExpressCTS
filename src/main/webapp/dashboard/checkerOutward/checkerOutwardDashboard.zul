@@ -4,31 +4,88 @@
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/checkerOutward/checkerOutwardDashboard.css"?>
 
-<zk xmlns="http://www.zkoss.org/2005/zul">
-<div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
+<div sclass="dash-shell" apply="com.iispl.composer.CheckerOutwardDashboardComposer">
 
-    <!-- Topbar -->
     <div sclass="topbar">
         <include src="/component/topbar.zul" />
     </div>
 
-    <!-- Body: Sidebar + Main -->
     <div sclass="body-row">
         <include src="/component/sidebar.zul" />
         <div sclass="main">
             <div sclass="dash-main">
 
                 <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Checker Outward Dashboard" />
-                    <label sclass="welcome-sub"   value="Outward cheque verification — Pass, Reject, or Refer" />
+                    <label sclass="welcome-title" value="Dashboard" />
+                    <label sclass="welcome-sub" value="Outward cheque verification — verify, export and report" />
                 </div>
 
-                <div sclass="placeholder-card">
-                    <div sclass="ph-icon">✓</div>
-                    <div sclass="ph-title">Coming Soon</div>
-                    <div sclass="ph-desc">Outward checker verification features will be available in the next phase.</div>
-                </div>
+                <n:div class="quick-cards">
+                    <include src="/component/dashCard.zul"
+                             icon="✅" title="Verification Queue"
+                             desc="Verify maker-submitted batches"
+                             btnId="gotoVerificationQueue" style="qcard-primary"/>
+
+                    <include src="/component/dashCard.zul"
+                             icon="📥" title="DEM Export"
+                             desc="Generate CXF/CIGF &amp; reports"
+                             btnId="gotoDemExport" style="qcard-warning"/>
+
+                    <include src="/component/dashCard.zul"
+                             icon="📊" title="Reports"
+                             desc="View outward processing reports"
+                             btnId="gotoReports" style="qcard-primary"/>
+                </n:div>
+
+                <!-- Bottom Row: Pending Verification + Summary -->
+                <n:div class="bottom-row">
+
+                    <n:div class="recent-section">
+                        <n:div class="recent-title">Pending Verification</n:div>
+                        <n:div class="recent-table-wrap">
+                            <grid id="pendingBatchGrid" sclass="recent-grid" width="100%"
+                                  xmlns="http://www.zkoss.org/2005/zul">
+                                <columns>
+                                    <column label="BATCH ID" width="160px"/>
+                                    <column label="CHEQUES"  width="100px"/>
+                                    <column label="ACTION"   />
+                                </columns>
+                                <rows id="pendingBatchRows"/>
+                            </grid>
+                        </n:div>
+                    </n:div>
+
+                    <n:div class="summary-section">
+                        <n:div class="recent-title">Summary</n:div>
+                        <n:div class="summary-body">
+                            <n:div class="sum-row">
+                                <n:span class="sum-lbl">Pending Queue</n:span>
+                                <label id="sumPending" sclass="sum-val" value="0"
+                                       xmlns="http://www.zkoss.org/2005/zul"/>
+                            </n:div>
+                            <n:div class="sum-row">
+                                <n:span class="sum-lbl">On Hold</n:span>
+                                <label id="sumOnHold" sclass="sum-val sum-warn" value="0"
+                                       xmlns="http://www.zkoss.org/2005/zul"/>
+                            </n:div>
+                            <n:div class="sum-row">
+                                <n:span class="sum-lbl">Ready to Export</n:span>
+                                <label id="sumReadyExport" sclass="sum-val" value="0"
+                                       xmlns="http://www.zkoss.org/2005/zul"/>
+                            </n:div>
+                            <n:div class="sum-row">
+                                <n:span class="sum-lbl">DEM Exported</n:span>
+                                <label id="sumExported" sclass="sum-val" value="0"
+                                       xmlns="http://www.zkoss.org/2005/zul"/>
+                            </n:div>
+                        </n:div>
+                    </n:div>
+
+                </n:div>
 
             </div>
         </div>
