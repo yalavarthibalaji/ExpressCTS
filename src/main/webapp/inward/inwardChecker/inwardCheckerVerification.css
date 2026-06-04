@@ -381,4 +381,51 @@
 .card {
     margin-top: 10px;
 }
+/* ============================================================
+   DASHBOARD HEIGHT FIX
+   Fixes ZK include wrapper height issues
+   ============================================================ */
+
+/* Root shell fills viewport */
+.dash-shell {
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* Body area fills space between topbar and statusbar */
+.dash-shell > .body-row {
+    flex: 1 !important;
+    display: flex !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* ZK-generated wrapper around sidebar */
+.body-row > .z-div {
+    height: 100% !important;
+    display: flex !important;
+}
+
+/* Main content area */
+.body-row > .main {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Dashboard content */
+.main > .dash-main {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+}
+
+/* Cards can shrink correctly */
+.card {
+    min-height: 0 !important;
+}
 	

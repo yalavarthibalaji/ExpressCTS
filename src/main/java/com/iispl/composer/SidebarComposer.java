@@ -90,8 +90,8 @@ public class SidebarComposer extends SelectorComposer<Component> {
         addSectionTitle("MAIN");
     
         addNavItem("Dashboard",          "/dashboard/checkerInward/checkerInwardDashboard.zul");
-        addNavItem("Verification Queue", null);
-        addNavItem("Reports",            null);
+        addNavItem("Verification Queue", "/inward/inwardChecker/inwardCheckerVerification.zul");
+        addNavItem("Reports",            "/inward/inwardReports/inward-reports.zul");
 
 
     }

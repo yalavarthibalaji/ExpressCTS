@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Inward Reports — ExpressClear CTS" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardReports/inward-reports.css"?>
+
+<!--
+    File    : inward/inwardReports/inward-reports.zul
+    Purpose : Checker Inward Reports page — redesigned to match target UI.
+
+    CSS load order matters:
+      1. global.css      — variables + reset
+      2. components.css  — shared components (.btn, .badge, .note, etc.)
+      3. layout.css      — .main, .body-row, .breadbar, .page, etc.
+      4. dashboard.css   — .dash-shell { height:100vh } ← REQUIRED for full height
+      5. inward-reports.css — page-specific overrides + ZK flex-chain fix
+
+    Composer: com.iispl.composer.CheckerInwardReportsComposer
+    Access  : CHECKER_INWARD role only
+-->
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell" apply="com.iispl.composer.CheckerInwardReportsComposer">
+
+    <!-- ① REUSABLE TOPBAR -->
+    <include src="/component/topbar.zul" />
+
+    <div sclass="body-row">
+
+        <!-- ② REUSABLE SIDEBAR -->
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+
+            <!-- ③ BREADCRUMB -->
+            <div id="breadbar" sclass="breadbar">
+                <label sclass="par" value="Home" />
+                <label sclass="sep" value="›" />
+                <label sclass="cur" value="Reports" />
+            </div>
+
+            <!-- ④ PAGE CONTENT -->
+            <div sclass="page rpt-page">
+
+                <!-- Info note -->
+                <div sclass="note info rpt-note">
+                    <span class="rpt-note-icon">ℹ</span>
+                    <span>ACK.xml contains accepted cheques.
+                          RRF.xml contains rejected cheques with reason.
+                    </span>
+                </div>
+
+              
+
+                <!-- Filter bar — single inline row, no labels -->
+                <div sclass="rpt-fbar">
+                    <textbox id="txtBatchSearch"
+                             sclass="fi rpt-fi-search"
+                             placeholder="🔍 Search batches..."
+                             maxlength="30" />
+
+                    <datebox id="dtFrom"
+                             sclass="fi rpt-fi-date"
+                             format="dd/MM/yyyy"
+                             cols="12" 
+                             placeholder="From Date" />
+
+                    <datebox id="dtTo"
+                             sclass="fi rpt-fi-date"
+                             format="dd/MM/yyyy"
+                             cols="12" 
+                             placeholder="To Date"/>
+
+                    <combobox id="cmbStatus"
+                              sclass="fi rpt-fi-status"
+                              readonly="true"
+                              width="130px" />
+
+                    <button id="btnGenerate"
+                            label="Generate"
+                            sclass="btn bp rpt-btn-generate" />
+
+                    <button id="btnDownloadAck"
+                            label="↓ ACK.xml"
+                            sclass="btn bg rpt-btn-export"
+                            disabled="true" />
+
+                    <button id="btnDownloadRrf"
+                            label="↓ RRF.xml"
+                            sclass="btn bg rpt-btn-export"
+                            disabled="true" />
+
+                  
+                </div>
+
+                <!-- Results grid -->
+                <div sclass="rpt-grid-wrap">
+
+                    <!-- Custom flex header with inline Batch ID filter -->
+                    <div sclass="rpt-grid-hdr">
+                        <div sclass="rpt-hdr-col rpt-col-batchid">
+                            <span>BATCH ID</span>
+                            <textbox id="txtGridBatchFilter"
+                                     sclass="rpt-grid-filter"
+                                     placeholder="Filter..."
+                                     maxlength="30" />
+                        </div>
+                        <div sclass="rpt-hdr-col rpt-col-count">COUNT</div>
+                        <div sclass="rpt-hdr-col rpt-col-accepted">ACCEPTED</div>
+                        <div sclass="rpt-hdr-col rpt-col-returned">RETURNED</div>
+                        <div sclass="rpt-hdr-col rpt-col-banks">PRESENTING BANKS</div>
+                        <div sclass="rpt-hdr-col rpt-col-status">STATUS</div>
+                    </div>
+
+                    <!-- Grid body — populated by composer -->
+                    <div id="rptGridBody" sclass="rpt-grid-body">
+                        <div sclass="rpt-empty-state">
+                            <label value="Generate report to view data." />
+                        </div>
+                    </div>
+
+                </div><!-- end .rpt-grid-wrap -->
+
+            </div><!-- end .page -->
+
+            <!-- ⑤ REUSABLE STATUSBAR -->
+            <include src="/component/statusbar.zul" />
+
+        </div><!-- end .main -->
+    </div><!-- end .body-row -->
+
+</div>
+</zk>
