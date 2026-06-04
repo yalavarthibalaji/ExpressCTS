@@ -5,6 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.iispl.enums.MicrStatus;
+import com.iispl.enums.RepairStatus;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -106,7 +109,7 @@ public class InwardCheque {
 
     // NOT_REQUIRED | NEEDS_REPAIR | REPAIRED  (covers Step 1 MICR + Step 2 Date/Amt)
     @Column(name = "repair_status", nullable = false, length = 20)
-    private String repairStatus = "NOT_REQUIRED";
+    private String repairStatus = "";
 
     @Column(name = "front_image_path", length = 500)
     private String frontImagePath;

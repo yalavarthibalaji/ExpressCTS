@@ -9,7 +9,9 @@ import java.util.List;
 import org.zkoss.util.media.Media;
 
 import com.iispl.dao.InwardBatchDao;
+import com.iispl.dao.InwardChequeDao;
 import com.iispl.daoImpl.InwardBatchDaoImpl;
+import com.iispl.daoImpl.InwardChequeDaoImpl;
 import com.iispl.dto.InwardBatchDto;
 import com.iispl.dto.LoginDTO;
 import com.iispl.entity.User;
@@ -25,6 +27,7 @@ import jakarta.xml.bind.Unmarshaller;
 public class BpxfUploadServiceImpl implements BpxfUploadService {
 
     private final InwardBatchDao batchDao = new InwardBatchDaoImpl();
+    private final InwardChequeDao chequeDao = new InwardChequeDaoImpl();
 
     @Override
     public void parseAndSave(Media file, String batchName, LoginDTO operator) {
@@ -104,7 +107,7 @@ public class BpxfUploadServiceImpl implements BpxfUploadService {
                         || containsNonNumeric(bpxf.getCityCode());
 
                 cheque.setMicrError(hasMicrError);
-                cheque.setRepairStatus(hasMicrError ? "NEEDS_REPAIR" : "NOT_REQUIRED");
+	            cheque.setRepairStatus(hasMicrError ? "NEEDS_REPAIR" : "NOT_REQUIRED");
                 if (hasMicrError) micrErrors++;
 
                 // ── Operational defaults ──
@@ -131,6 +134,87 @@ public class BpxfUploadServiceImpl implements BpxfUploadService {
         }
     }
 
+    public void parseAndSaveRoot(BpxfRoot root, String resolvedBatchId,
+            String fileName, LoginDTO operator) {
+		try {
+		// 1. Build InwardBatch
+		InwardBatch batch = new InwardBatch();
+		batch.setBatchId(resolvedBatchId);
+		batch.setBatchDate(LocalDate.parse(root.getHeader().getBatchDate()));
+		batch.setSourceFileName(fileName);
+		batch.setSourceFilePath("");
+		batch.setStatus("RECEIVED");
+		batch.setParsedAt(LocalDateTime.now());
+		
+		User user = new User();
+		user.setId(operator.getUserId());
+		batch.setReceivedBy(user);
+		
+		// 2. Map BpxfCheque → InwardCheque
+		List<BpxfCheque>   parsed  = root.getCheques();
+		List<InwardCheque> cheques = new ArrayList<>();
+		int micrErrors = 0;
+		int seq        = 1;
+		
+		for (BpxfCheque bpxf : parsed) {
+		InwardCheque cheque = new InwardCheque();
+		cheque.setSeqNo(seq++);
+		cheque.setChequeNo(bpxf.getChequeNo());
+		cheque.setChequeDate(bpxf.getChequeDate());
+		cheque.setAmount(bpxf.getAmount());
+		cheque.setChequeDateOcr(bpxf.getChequeDateOcr());
+		cheque.setAmountOcr(bpxf.getAmountOcr());
+		cheque.setAmountInWords(bpxf.getAmountInWords());
+		cheque.setMicrCodeRaw(bpxf.getMicrCodeRaw());
+		cheque.setMicrCodeCorrected(bpxf.getMicrCodeCorrected());
+		cheque.setCityCode(bpxf.getCityCode());
+		cheque.setBankCode(bpxf.getBankCode());
+		cheque.setBranchCode(bpxf.getBranchCode());
+		cheque.setDraweeAccountNumber(bpxf.getDraweeAccountNumber());
+		cheque.setDraweeAccountHolder(bpxf.getDraweeAccountHolder());
+		cheque.setAccountBalance(bpxf.getAccountBalance());
+		cheque.setIsAccountValid(bpxf.getIsAccountValid());
+		cheque.setIsBankMatched(bpxf.getIsBankMatched());
+		cheque.setPayeeName(bpxf.getPayeeName());
+		cheque.setIqaStatus(bpxf.getIqaStatus());
+		cheque.setFrontImagePath(bpxf.getFrontImagePath());
+		cheque.setBackImagePath(bpxf.getBackImagePath());
+		cheque.setRemarks(bpxf.getRemarks());
+		cheque.setPresentingBankCode(root.getHeader().getPresentingBankCode());
+		cheque.setPresentingBankName(root.getHeader().getPresentingBankName());
+		
+		boolean hasMicrError = containsNonNumeric(bpxf.getMicrCodeRaw())
+		  || containsNonNumeric(bpxf.getBranchCode())
+		  || containsNonNumeric(bpxf.getBankCode())
+		  || containsNonNumeric(bpxf.getCityCode());
+		
+		cheque.setMicrError(hasMicrError);
+		cheque.setRepairStatus(hasMicrError ? "NEEDS_REPAIR" : "NOT_REQUIRED");
+		if (hasMicrError) micrErrors++;
+		
+		cheque.setStatus("RECEIVED");
+		cheque.setBatch(batch);
+		cheques.add(cheque);
+		}
+		
+		// 3. Set batch totals
+		batch.setTotalCheques(cheques.size());
+		batch.setTotalAmount(root.getHeader().getTotalAmount());
+		batch.setMicrErrorCount(micrErrors);
+		batch.setRepairStatus(micrErrors > 0 ? "NEEDS_REPAIR" : "NOT_REQUIRED");
+		
+		// 4. Save batch first — must exist in DB before cheques reference it
+		batchDao.save(batch);
+		
+		// 5. Save cheques explicitly — batch.id is now valid
+		chequeDao.saveAll(cheques);
+		
+		} catch (Exception e) {
+		throw new RuntimeException("Failed to build/save batch: " + e.getMessage(), e);
+		}
+}
+    
+    
     @Override
     public List<InwardBatchDto> getAllBatches() {
         List<InwardBatch>    batches = batchDao.findAll();
@@ -147,6 +231,8 @@ public class BpxfUploadServiceImpl implements BpxfUploadService {
         }
         return dtos;
     }
+    
+    
 
     private boolean containsNonNumeric(String value) {
         if (value == null || value.isBlank()) return false;

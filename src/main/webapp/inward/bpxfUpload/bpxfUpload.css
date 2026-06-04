@@ -9,6 +9,14 @@
     color: #1a2340;
 }
 
+.btn-view{
+	background-color: #1a2340;
+	color:white;
+	margin-right : 10px;
+	width:60px; 
+	padding:0;
+}
+
 .body-row {
     display: flex;
     flex: 1;
