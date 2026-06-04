@@ -58,7 +58,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
         addSectionTitle("ADMINISTRATION");
         addNavItem("Dashboard",        "/admin/adminDashboard.zul");
         addNavItem("User Management",  "/admin/userManagement/userManagement.zul");
-        addNavItem("View Batches",     null);
+        addNavItem("View Batches",     "/outward/viewBatches/viewBatches.zul");
         addNavItem("Reports",          null);
         addNavItem("Audit Logs",       null);
     }
@@ -69,7 +69,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
         addNavItem("Batch Upload",      "/outward/batchUpload/batchUpload.zul");
         addNavItem("MICR Repair",      "/outward/micrRepair/micrRepair.zul");
         addNavItem("Data Entry", "/outward/acctAmount/acctAmount.zul");
-        addNavItem("View Batches" , "");
+        addNavItem("View Batches" , "/outward/viewBatches/viewBatches.zul");
     }
 
     private void renderCheckerOutwardNav() {

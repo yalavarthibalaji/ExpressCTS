@@ -11,17 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-/**
- * File    : com/iispl/util/ImageServlet.java
- * Purpose : Serves cheque images stored outside the webapp directory.
- *
- * Images are stored at: /opt/cts/images/outward/{batchId}/images/{filename}
- * They cannot be served directly by Tomcat (outside webapp).
- * This servlet reads the file from disk and streams it to the browser.
- *
- * URL pattern : /imageServlet?path=/opt/cts/images/outward/B-xxx/images/file.png
- * Security    : Only paths starting with /opt/cts/images/ are allowed.
- */
 @WebServlet("/imageServlet")
 public class ImageServlet extends HttpServlet {
 
