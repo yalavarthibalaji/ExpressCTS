@@ -37,6 +37,8 @@ public class MakerInwardDashboardServiceImpl implements MakerInwardDashboardServ
             return new ArrayList<>();
         }
     }
+    
+    
 
     @Override
     public List<InwardBatch> getInwardBatchesByStatus(String status) {

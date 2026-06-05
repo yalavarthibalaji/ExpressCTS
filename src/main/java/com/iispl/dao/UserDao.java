@@ -10,4 +10,5 @@ public interface UserDao {
     boolean    existsByEmail(String email);
     boolean    save(User user);
     boolean    updateStatus(Long userId, String newStatus);
+    public List<Long> findUserIdsByRole(String roleCode) ;
 }

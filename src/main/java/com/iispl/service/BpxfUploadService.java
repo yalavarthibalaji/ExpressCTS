@@ -10,6 +10,6 @@ import com.iispl.jaxb.BpxfRoot;
 
 public interface BpxfUploadService {
     void parseAndSave(Media file, String batchName, LoginDTO operator);
-    void parseAndSaveRoot(BpxfRoot root,String resolvedBatchId, String fileName, LoginDTO operator);
+    public void parseAndSaveRoot(BpxfRoot root, String fileName, LoginDTO operator) ;
     List<InwardBatchDto> getAllBatches();
 }
