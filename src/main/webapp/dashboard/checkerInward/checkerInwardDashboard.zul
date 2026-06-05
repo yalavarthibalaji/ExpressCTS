@@ -25,11 +25,7 @@
             <div sclass="dash-main">
 
                 <!-- Page header — .page-hdr .page-title from components.css -->
-                <div sclass="page-hdr">
-                    <div>
-                        <div sclass="page-title">Dashboard</div>
-                    </div>
-                </div>
+               
 
                 <!-- Action cards — .card .card-body .card-title .page-sub .btn .bp .bo -->
                 <div sclass="ci-action-row">
@@ -50,7 +46,7 @@
                             <div sclass="ci-card-icon">📊</div>
                             <div sclass="ci-card-info">
                                 <div sclass="card-title">Reports</div>
-                                <div sclass="page-sub">Download CXF + CIBF reports</div>
+                                <div sclass="page-sub">Download ACK + RRF reports</div>
                             </div>
                             <button id="goReportsBtn" sclass="btn bo" label="Go →" />
                         </div>
@@ -61,7 +57,9 @@
                 <!-- Pending Batches — ZK grid, rows populated by CheckerInwardDashboardComposer -->
                 <div sclass="card">
                     <div sclass="card-hdr">
-                        <div sclass="card-title">Inward Batches Pending</div>
+                        <label id="pendingBatchTitle"
+       							sclass="card-title"
+       							value="Inward Batches Pending"/>
                     </div>
                     <grid sclass="dt">
                         <columns>

@@ -38,6 +38,8 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
     private final InwardCheckerService inwardCheckerService = new InwardCheckerServiceImpl();
 
     @Wire private Rows pendingBatchRows;
+    @Wire
+    private Label pendingBatchTitle;
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
@@ -82,7 +84,9 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
         pendingBatchRows.getChildren().clear();
 
         List<InwardBatch> batches = inwardCheckerService.getPendingBatches();
-
+        pendingBatchTitle.setValue(
+            "Inward Batches Pending (" + batches.size() + ")"
+        );
         if (batches.isEmpty()) {
             Row emptyRow = new Row();
             Label msg = new Label("No pending batches at this time.");
@@ -106,7 +110,7 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
             row.appendChild(new Label(batch.getTotalCheques() + " cheques"));
 
             // Col 3 — Process button
-            Button processBtn = new Button("Process");
+            Button processBtn = new Button("view");
             processBtn.setSclass("btn bp btn-sm");
             final String batchId = batch.getBatchId();
             processBtn.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
