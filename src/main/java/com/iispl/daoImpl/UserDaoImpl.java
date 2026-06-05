@@ -122,4 +122,13 @@ public class UserDaoImpl implements UserDao {
             session.close();
         }
     }
+    @Override
+    public List<Long> findUserIdsByRole(String roleCode) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT u.id FROM User u WHERE u.role.roleCode = :role", Long.class)
+                .setParameter("role", roleCode)
+                .getResultList();
+        }
+    }
 }

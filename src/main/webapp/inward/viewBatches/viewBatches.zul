@@ -1,3 +1,69 @@
-<zk>
+<?xml version="1.0" encoding="UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/bpxfUpload/bpxfUpload.css"?>
 
-</zk>
+<!--
+    File    : inward/bpxfUpload/bpxfUpload.zul
+    Purpose : Inward File Processing — Upload incoming CTS cheque files. One file per batch.
+    Composer: com.iispl.composer.BpxfUploadComposer
+-->
+
+<div xmlns="http://www.zkoss.org/2005/zul"
+     apply="com.iispl.composer.ViewBatchesComposer">
+
+    <!-- Topbar -->
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
+
+    <!-- Body: Sidebar + Main -->
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="dash-main">
+
+                <!-- Breadcrumb -->
+                <div sclass="breadcrumb">
+                    <label sclass="breadcrumb-home" value="Home" />
+                    <span sclass="breadcrumb-sep">›</span>
+                    <label sclass="breadcrumb-current" value="View Batches" />
+                </div>
+
+                <!-- Page Title -->
+                <div sclass="page-title-block">
+                    <label sclass="page-title" value="Inward — View Batches" />
+                </div>
+
+
+                <!-- File Details Card -->
+                <div sclass="details-card">
+                    <div sclass="details-header">
+                        <label sclass="card-section-title" value="Batches" />
+                        <textbox id="searchBox"
+                                 sclass="search-box"
+                                 placeholder="🔍 Search by batch ID or file..." />
+                    </div>
+
+                    <listbox id="fileListbox" sclass="file-listbox"
+                             emptyMessage="No files uploaded yet. Upload a file above to begin.">
+                        <listhead sclass="listhead-row">
+                            <listheader label="#"              width="50px"  style="color:black;font-weight:700;font-size:12px;" />
+                            <listheader label="BATCH ID"       width="150px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="FILE NAME"       width="200px"    style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="TOTAL CHEQUES"  width="200px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="MICR ERRORS"    width="140px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="PARSED AT"      width="160px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="STATUS"         width="110px" style="color:black;font-weight:700;font-size:12px;"/>
+                             <listheader label="Action"         width="220px" style="color:black;font-weight:700;font-size:12px;"/>
+                        </listhead>
+                    </listbox>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>

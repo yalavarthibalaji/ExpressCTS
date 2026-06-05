@@ -31,6 +31,31 @@
                 <div sclass="page-title-block">
                     <label sclass="page-title" value="Dashboard" />
                 </div>
+                
+               <div sclass="stat-cards-row">
+
+    <div sclass="stat-card stat-card--pending" id="statPending">
+        <label sclass="stat-number" id="lblPendingCount" value="0"/>
+        <label sclass="stat-label" value="Pending batches"/>
+        <div sclass="stat-card-overlay">
+            <button sclass="stat-overlay-btn" id="btnPendingOverlay" label="Go to Repair"/>
+        </div>
+    </div>
+
+    <div sclass="stat-card stat-card--cleared" id="statCleared">
+        <label sclass="stat-number" id="lblClearedCount" value="0"/>
+        <label sclass="stat-label" value="Cleared batches"/>
+        <div sclass="stat-card-overlay">
+            <button sclass="stat-overlay-btn" id="btnClearedOverlay" label="View Batches"/>
+        </div>
+    </div>
+
+    <div sclass="stat-card stat-card--inprocess" id="statTotal">
+        <label sclass="stat-number" id="lblTotalCount" value="0"/>
+        <label sclass="stat-label" value="Total batches"/>
+    </div>
+
+</div>
 
                 <!-- Action Cards Row -->
                 <div sclass="action-cards-row">
@@ -55,7 +80,7 @@
                             <div sclass="card-icon repair-icon">&#x1F527;</div>
                             <div sclass="card-text">
                                 <label sclass="card-title" value="Reject &amp; Repair" />
-                                <label sclass="card-desc"  value="Fix MICR errors in inward cheques" />
+                                <label sclass="card-desc"  value="Fix errors in inward cheques" />
                             </div>
                         </div>
                         <button sclass="go-btn go-btn-gold"
@@ -64,28 +89,24 @@
                     </div>
 
                 </div>
-
-                <!-- Inward Batches Section -->
-                <div sclass="batches-section">
-                    <div sclass="batches-header">
-                        <label sclass="batches-title" value="Inward Batches" />
-                    </div>
-                    <div sclass="batches-body">
-                        <div sclass="batches-empty" id="emptyBatchesMsg">
-                            <label value="No inward batches yet." />
-                        </div>
-                        <listbox id="batchListbox" sclass="batch-listbox" visible="false"
-                                 emptyMessage="No inward batches yet.">
-                            <listhead>
-                                <listheader label="Batch ID"      width="150px" style="color:black;font-weight:700;font-size:12px" />
-                                <listheader label="File Name"     hflex="1"     style="color:black;font-weight:700;font-size:12px"   />
-                                <listheader label="Date"          width="150px" style="color:black;font-weight:700;font-size:12px"/>
-                                <listheader label="Status"        width="120px" style="color:black;font-weight:700;font-size:12px"/>
-                                <listheader label="Total Cheques" width="140px" style="color:black;font-weight:700;font-size:12px"/>
-                            </listhead>
-                        </listbox>
-                    </div>
-                </div>
+			
+			
+			<div>
+				<label value = "Pending Batches"/>
+				<listbox width="100%" id="pendingBatches" sclass="pendingBatches">
+				    <listhead>
+				        <listheader label="Batch ID" sclass="pendingBatchesHeader" />
+				        <listheader label="No. of Cheques" sclass="pendingBatchesHeader"/>
+				        <listheader label="Micr Error Count" sclass="pendingBatchesHeader" />
+				        <listheader label="Parsed At" sclass="pendingBatchesHeader" />
+				        <listheader label="Status" sclass="pendingBatchesHeader" />
+				        <listheader label="Action" sclass="pendingBatchesHeader"/>
+				    </listhead>
+				</listbox>
+				
+				<label id="emptyBatchesMsg" value="No pending batches"/>
+			</div>
+               
 
             </div>
         </div>

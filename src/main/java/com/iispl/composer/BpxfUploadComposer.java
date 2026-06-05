@@ -13,6 +13,8 @@ import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.Button;
+import org.zkoss.zul.Div;
+import org.zkoss.zul.Label;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listcell;
 import org.zkoss.zul.Listitem;
@@ -31,10 +33,16 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
     private static final long serialVersionUID = 1L;
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    @Wire("#batchNameBox")    private Textbox  batchNameBox;
-    @Wire("#fileNameDisplay") private Textbox  fileNameDisplay;
-    @Wire("#searchBox")       private Textbox  searchBox;
-    @Wire("#fileListbox")     private Listbox  fileListbox;
+    @Wire("#batchNameBox")       private Textbox batchNameBox;
+    @Wire("#fileNameDisplay")    private Textbox fileNameDisplay;
+    @Wire("#searchBox")          private Textbox searchBox;
+    @Wire("#fileListbox")        private Listbox fileListbox;
+    @Wire("#watcherStatusLabel") private Label   watcherStatusLabel;
+    @Wire("#watcherDot")         private Div     watcherDot;
+    @Wire("#tabManual")          private Div     tabManual;
+    @Wire("#tabAuto")            private Div     tabAuto;
+    @Wire("#panelManual")        private Div     panelManual;
+    @Wire("#panelAuto")          private Div     panelAuto;
 
     private Media                uploadedFile = null;
     private List<InwardBatchDto> allBatches   = null;
@@ -42,17 +50,35 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
 
     private Thread                 watchThread  = null;
     private BpxfFolderWatchService watchService = null;
+
     @Override
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
         loadBatches();
         startWatcher();
+        updateWatcherStatus();
         subscribeToQueue();
     }
 
-    @Listen("onUpload = #uploadBtn")   // ✅ onUpload, not onClick
+    @Listen("onClick = #tabManual")
+    public void onTabManual() {
+        tabManual.setSclass("mode-tab active");
+        tabAuto.setSclass("mode-tab");
+        panelManual.setVisible(true);
+        panelAuto.setVisible(false);
+    }
+
+    @Listen("onClick = #tabAuto")
+    public void onTabAuto() {
+        tabAuto.setSclass("mode-tab active");
+        tabManual.setSclass("mode-tab");
+        panelAuto.setVisible(true);
+        panelManual.setVisible(false);
+    }
+
+    @Listen("onUpload = #uploadBtn")
     public void onUpload(org.zkoss.zk.ui.event.UploadEvent event) {
-        Media media = event.getMedia();   // ✅ get file directly from the event
+        Media media = event.getMedia();
         if (media != null) {
             uploadedFile = media;
             fileNameDisplay.setValue(media.getName());
@@ -87,7 +113,7 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
                     Messagebox.OK, Messagebox.ERROR);
         }
     }
-    
+
     @Listen("onChanging = #searchBox")
     public void onSearch() {
         String keyword = searchBox.getValue().toLowerCase().trim();
@@ -100,8 +126,9 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
             }
         }
     }
-    
-    
+
+    // ── Private helpers ───────────────────────────────────────────────────
+
     private void startWatcher() {
         LoginDTO operator = SessionUtil.getCurrentUser();
         if (operator == null) return;
@@ -110,6 +137,18 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
         watchThread  = new Thread(watchService, "bpxf-folder-watcher");
         watchThread.setDaemon(true);
         watchThread.start();
+    }
+
+    private void updateWatcherStatus() {
+        if (watchThread != null && watchThread.isAlive()) {
+            watcherStatusLabel.setValue("Active");
+            watcherStatusLabel.setSclass("watcher-status-text");
+            watcherDot.setSclass("watcher-dot active");
+        } else {
+            watcherStatusLabel.setValue("Inactive");
+            watcherStatusLabel.setSclass("watcher-status-text inactive");
+            watcherDot.setSclass("watcher-dot inactive");
+        }
     }
 
     private void subscribeToQueue() {
@@ -121,12 +160,8 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
             loadBatches();
             Messagebox.show("Auto-imported: " + fileName, "New File Detected",
                     Messagebox.OK, Messagebox.INFORMATION);
-        }, true); // true = async server push
+        }, true);
     }
-    
-    
-    
-    // ── Private helpers ───────────────────────────────────────────────────
 
     private void loadBatches() {
         allBatches = service.getAllBatches();
@@ -138,7 +173,6 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
 
     private void appendRow(InwardBatchDto dto) {
         Listitem item = new Listitem();
-        item.appendChild(new Listcell(String.valueOf(fileListbox.getItemCount() + 1)));
         item.appendChild(new Listcell(dto.getBatchId()));
         item.appendChild(new Listcell(dto.getSourceFileName()));
         item.appendChild(new Listcell(String.valueOf(dto.getTotalCheques())));
@@ -147,27 +181,23 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
                 ? dto.getParsedAt().format(FMT) : "—"));
         item.appendChild(new Listcell(dto.getStatus()));
 
-        // Action button
+        Listcell actionCell = new Listcell();
+
         Button viewBtn = new Button("View");
         viewBtn.setSclass("btn-view");
-       
-        Listcell actionCell = new Listcell();
-        actionCell.appendChild(viewBtn);
-        item.appendChild(actionCell);
-        
         viewBtn.addEventListener("onClick", event -> {
             Executions.sendRedirect("/inward/viewBatches/viewBatches.zul");
         });
-        
+        actionCell.appendChild(viewBtn);
+
         Button repairBtn = new Button("Repair");
         repairBtn.setSclass("btn-view");
-        actionCell.appendChild(repairBtn);
-        item.appendChild(actionCell);
-        
         repairBtn.addEventListener("onClick", event -> {
             Executions.sendRedirect("/inward/inwardMicr/RejectRepair.zul");
         });
+        actionCell.appendChild(repairBtn);
 
+        item.appendChild(actionCell);
         fileListbox.appendChild(item);
     }
 }

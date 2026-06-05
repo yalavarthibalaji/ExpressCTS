@@ -38,10 +38,18 @@
                     <label sclass="page-subtitle" value="Upload inward cheque files and process them for verification" />
                 </div>
 
-                <!-- Upload Card -->
-                <div sclass="upload-card">
-                    <div sclass="card-section-title">Upload Cheques</div>
+                <!-- Tab Bar -->
+                <div sclass="mode-tab-bar">
+                    <div id="tabManual" sclass="mode-tab active" onClick="tabManual.focus()">
+                        <label sclass="mode-tab-label" value="⬆ Manual Upload" />
+                    </div>
+                    <div id="tabAuto" sclass="mode-tab" >
+                        <label sclass="mode-tab-label" value="⚙ Auto Import" />
+                    </div>
+                </div>
 
+                <!-- Manual Upload Panel -->
+                <div id="panelManual" sclass="upload-card" visible="true">
                     <div sclass="upload-fields-row">
                         <div sclass="field-group">
                             <label sclass="field-label" value="BATCH NAME / ID" />
@@ -56,14 +64,34 @@
                                          sclass="field-input file-name-display"
                                          readonly="true"
                                          placeholder="No file selected" />
-										<fileupload id="uploadBtn" label="Choose File" />                            </div>
+                                <fileupload id="uploadBtn" label="Choose File" upload="true,maxsize=102400"/>
+                            </div>
                         </div>
                     </div>
-
                     <div sclass="upload-actions">
                         <button id="parseBtn"
                                 sclass="btn-parse"
                                 label="▶ Parse Files" />
+                    </div>
+                </div>
+
+                <!-- Auto Import Panel -->
+                <div id="panelAuto" sclass="auto-import-card" visible="false">
+                    <div sclass="auto-import-row">
+                        <div sclass="auto-import-field">
+                            <label sclass="field-label" value="STATUS" />
+                            <div sclass="watcher-status-row">
+                                <div id="watcherDot" sclass="watcher-dot active" />
+                                <label id="watcherStatusLabel"
+                                       sclass="watcher-status-text"
+                                       value="Active" />
+                            </div>
+                        </div>
+                        
+                        <div sclass="auto-import-field">
+                            <label sclass="field-label" value="ACCEPTED FORMAT" />
+                            <label sclass="auto-import-value" value=".zip" />
+                        </div>
                     </div>
                 </div>
 
@@ -79,14 +107,14 @@
                     <listbox id="fileListbox" sclass="file-listbox"
                              emptyMessage="No files uploaded yet. Upload a file above to begin.">
                         <listhead sclass="listhead-row">
-                            <listheader label="#"              width="50px"  style="color:black;font-weight:700;font-size:12px;" />
-                            <listheader label="BATCH ID"       width="150px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="FILE NAME"       width="200px"    style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="TOTAL CHEQUES"  width="200px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="MICR ERRORS"    width="140px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="PARSED AT"      width="160px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="STATUS"         width="110px" style="color:black;font-weight:700;font-size:12px;"/>
-                             <listheader label="Action"         width="220px" style="color:black;font-weight:700;font-size:12px;"/>
+                            
+                            <listheader label="BATCH ID"      width="150px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="FILE NAME"     width="200px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="TOTAL CHEQUES" width="200px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="MICR ERRORS"   width="140px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="PARSED AT"     width="160px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="STATUS"        width="110px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="Action"        width="220px" style="color:black;font-weight:700;font-size:12px;"/>
                         </listhead>
                     </listbox>
                 </div>
