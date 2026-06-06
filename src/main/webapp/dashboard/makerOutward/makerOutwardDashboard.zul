@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page title="Maker Outward Dashboard" contentType="text/html;charset=UTF-8"?>
+<?page title="Outward Dashboard" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
@@ -8,92 +9,253 @@
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
     xmlns:n="native">
+
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
+    <!-- ══ TOPBAR ══ -->
     <div sclass="topbar">
-        <include src="/component/topbar.zul" />
+        <include src="/component/topbar.zul"/>
     </div>
 
+    <!-- ══ BODY ══ -->
     <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
+        <include src="/component/sidebar.zul"/>
+
         <div sclass="main">
             <div sclass="dash-main">
 
-                <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Dashboard" />
-                    <label sclass="welcome-sub" value="Outward cheque processing — upload, MICR repair, data entry" />
-                </div>
-
-                <n:div class="quick-cards">
-                    <include src="/component/dashCard.zul"
-                             icon="📤" title="Batch Upload"
-                             desc="Upload XML &amp; scan new batch"
-                             btnId="gotoBatchUpload" style="qcard-primary"/>
-
-                    <include src="/component/dashCard.zul"
-                             icon="🔍" title="MICR Repair"
-                             desc="Fix MICR &amp; IQA errors"
-                             btnId="gotoMicrRepair" style="qcard-warning"/>
-
-                    <include src="/component/dashCard.zul"
-                             icon="💳" title="Account &amp; Amount"
-                             desc="Enter account &amp; amount"
-                             btnId="gotoAcctAmount" style="qcard-primary"/>
-
-                    <include src="/component/dashCard.zul"
-                             icon="📄" title="View Batches"
-                             desc="View all scanned batches"
-                             btnId="${null}" style="qcard-disabled"/>
+                <!-- ── PAGE HEADER ── -->
+                <n:div class="od-page-header">
+                    <n:div class="od-header-left">
+                        <n:div class="od-page-eyebrow">OUTWARD CLEARING</n:div>
+                        <label sclass="od-page-title" value="Maker Dashboard"/>
+                        <label sclass="od-page-sub"   value="Upload, repair and submit outward cheque batches"/>
+                    </n:div>
+                    <n:div class="od-header-right">
+                        <n:div class="od-date-pill">
+                            <n:i class="fa-regular fa-calendar"/>
+                            <label id="lblTodayDate" sclass="od-date-text" value=""/>
+                        </n:div>
+                        <n:div class="od-session-pill">
+                            <n:i class="fa-solid fa-circle od-session-dot"/>
+                            <label id="lblClearingSession" sclass="od-session-text" value=""/>
+                        </n:div>
+                    </n:div>
                 </n:div>
 
-                <!-- Bottom Row: Recent Batches + Summary -->
-                <n:div class="bottom-row">
+                <!-- ── KPI STRIP ── -->
+                <n:div class="od-kpi-strip">
 
-                    <n:div class="recent-section">
-                        <n:div class="recent-title">Recent Batches</n:div>
-                        <n:div class="recent-table-wrap">
-                            <grid id="recentBatchGrid" sclass="recent-grid" width="100%"
-                                  xmlns="http://www.zkoss.org/2005/zul">
-                                <columns>
-                                    <column label="BATCH ID" width="160px"/>
-                                    <column label="CHEQUES"  width="100px"/>
-                                    <column label="STATUS"   />
-                                </columns>
-                                <rows id="recentBatchRows"/>
-                            </grid>
+                    <n:div class="od-kpi-card od-kpi-total">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-blue">
+                            <n:i class="fa-solid fa-layer-group"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiTotalBatches" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Total Batches</n:span>
                         </n:div>
                     </n:div>
 
-                    <n:div class="summary-section">
-                        <n:div class="recent-title">Summary</n:div>
-                        <n:div class="summary-body">
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">Total Batches</n:span>
-                                <label id="sumTotal" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">Pending MICR</n:span>
-                                <label id="sumMicr" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">In Data Entry</n:span>
-                                <label id="sumEntry" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">Submitted</n:span>
-                                <label id="sumSubmitted" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
+                    <n:div class="od-kpi-card od-kpi-micr">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-amber">
+                            <n:i class="fa-solid fa-wrench"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiMicrPending" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Pending MICR Repair</n:span>
+                        </n:div>
+                    </n:div>
+
+                    <n:div class="od-kpi-card od-kpi-entry">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-teal">
+                            <n:i class="fa-solid fa-keyboard"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiEntryPending" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Pending Data Entry</n:span>
+                        </n:div>
+                    </n:div>
+
+                    <n:div class="od-kpi-card od-kpi-submitted">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-green">
+                            <n:i class="fa-solid fa-circle-check"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiSubmitted" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Submitted Today</n:span>
+                        </n:div>
+                    </n:div>
+
+                    <n:div class="od-kpi-card od-kpi-cheques">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-purple">
+                            <n:i class="fa-solid fa-money-check"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiTotalCheques" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Total Cheques</n:span>
                         </n:div>
                     </n:div>
 
                 </n:div>
 
-            </div>
-        </div>
+                <!-- ── QUICK ACTION CARDS ── -->
+                <n:div class="od-section-label">QUICK ACTIONS</n:div>
+                <n:div class="od-action-row">
+
+                    <n:div class="od-action-card od-action-upload">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-upload"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-blue">Upload</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">Batch Upload</n:div>
+                        <n:div class="od-action-desc">Upload outward cheque ZIP files for processing</n:div>
+                        <button sclass="od-action-btn od-btn-blue"
+                                label="Go to Batch Upload"
+                                id="gotoBatchUpload"/>
+                    </n:div>
+
+                    <n:div class="od-action-card od-action-micr">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-wrench"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-amber">Repair</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">MICR Repair</n:div>
+                        <n:div class="od-action-desc">Fix MICR and IQA errors in uploaded batches</n:div>
+                        <button sclass="od-action-btn od-btn-amber"
+                                label="Go to MICR Repair"
+                                id="gotoMicrRepair"/>
+                    </n:div>
+
+                    <n:div class="od-action-card od-action-entry">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-keyboard"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-teal">Entry</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">Account &amp; Amount</n:div>
+                        <n:div class="od-action-desc">Enter account numbers and cheque amounts</n:div>
+                        <button sclass="od-action-btn od-btn-teal"
+                                label="Go to Data Entry"
+                                id="gotoAcctAmount"/>
+                    </n:div>
+
+                    <n:div class="od-action-card od-action-view">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-table-list"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-slate">View</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">View Batches</n:div>
+                        <n:div class="od-action-desc">Browse all batches and cheque details</n:div>
+                        <button sclass="od-action-btn od-btn-slate"
+                                label="View All Batches"
+                                id="gotoViewBatches"/>
+                    </n:div>
+
+                </n:div>
+
+                <!-- ── RECENT BATCHES PANEL (full width) ── -->
+                <n:div class="od-recent-panel">
+
+                    <!-- Panel header -->
+                    <n:div class="od-panel-header">
+                        <n:div class="od-panel-title">
+                            <n:i class="fa-solid fa-clock-rotate-left"/>
+                            Recent Batches
+                        </n:div>
+                        <button sclass="od-view-all-btn"
+                                label="View All"
+                                id="gotoViewBatchesSmall"/>
+                    </n:div>
+
+                    <!-- ── FILTER BAR ── -->
+                    <n:div class="od-filter-bar">
+
+                        <!-- Left: Date + Status filters -->
+                        <n:div class="od-filter-left">
+                            <n:div class="od-filter-group">
+                                <n:label class="od-filter-label">Date</n:label>
+                                <datebox id="filterFromDate"
+                                         sclass="od-filter-datebox"
+                                         format="dd-MM-yyyy"
+                                         placeholder="From date"
+                                         width="140px"/>
+                                <n:span class="od-filter-sep">to</n:span>
+                                <datebox id="filterToDate"
+                                         sclass="od-filter-datebox"
+                                         format="dd-MM-yyyy"
+                                         placeholder="To date"
+                                         width="140px"/>
+                            </n:div>
+
+                            <n:div class="od-filter-group">
+                                <n:label class="od-filter-label">Status</n:label>
+                                <combobox id="filterStatus"
+                                          sclass="od-filter-combo"
+                                          readonly="true"
+                                          width="160px"
+                                          placeholder="All statuses">
+                                    <comboitem label="All" value="ALL"/>
+                                    <comboitem label="Uploaded"      value="UPLOADED"/>
+                                    <comboitem label="Needs Repair"  value="NEEDS_REPAIR"/>
+                                    <comboitem label="Entry Pending" value="ENTRY_PENDING"/>
+                                    <comboitem label="Entry Done"    value="ENTRY_DONE"/>
+                                    <comboitem label="Submitted"     value="SUBMITTED"/>
+                                    <comboitem label="Rejected"      value="REJECTED"/>
+                                </combobox>
+                            </n:div>
+
+                            <button sclass="od-filter-apply-btn" label="Apply" id="btnApplyFilter"/>
+                            <button sclass="od-filter-clear-btn" label="Clear" id="btnClearFilter"/>
+                        </n:div>
+
+                        <!-- Right: Batch ID search -->
+                        <n:div class="od-filter-right">
+                            <n:div class="od-search-wrap">
+                                <n:i class="fa-solid fa-magnifying-glass od-search-icon"/>
+                                <textbox id="filterBatchId"
+                                         sclass="od-search-input"
+                                         placeholder="Search Batch ID..."
+                                         width="210px"
+                                         instant="true"/>
+                            </n:div>
+                        </n:div>
+
+                    </n:div>
+
+                    <!-- Table -->
+                    <listbox id="recentBatchList"
+                             sclass="od-batch-listbox"
+                             visible="false">
+                        <listhead sclass="od-listhead">
+                            <listheader label="Batch ID"     width="250px"/>
+                            <listheader label="Cheques"      width="130px"/>
+                            <listheader label="Amount " width="200px"/>
+                            <listheader label="Uploaded At"  width="180px"/>
+                            <listheader label="Status"/>
+                        </listhead>
+                    </listbox>
+
+                    <label id="emptyBatchesMsg"
+                           value="No batches found."
+                           sclass="od-empty-msg"
+                           visible="true"/>
+
+                </n:div>
+
+            </div><!-- /dash-main -->
+        </div><!-- /main -->
+    </div><!-- /body-row -->
+
+    <!-- ══ FOOTER ══ -->
+    <div sclass="dash-footer">
+        <label value="ExpressClear CTS — IISPL"/>
     </div>
 
 </div>
