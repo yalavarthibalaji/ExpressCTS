@@ -1,26 +1,679 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?page title="Checker Queue — Outward" contentType="text/html;charset=UTF-8"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/outward/checkerQueue/checkerQueue.css"?>
 
 <!--
-    File    : outward/checkerQueue/checkerQueue.zul
-    Purpose : Checker Queue — Outward Checker verification — Pass, Reject, or Refer
-    Composer: com.iispl.composer.CheckerQueueComposer
+    File    : webapp/outward/checkerQueue/checkerQueue.zul
+    Purpose : Checker Outward — Verification Queue
+              Section A : Empty state
+              Section B : Batch list — filter bar, status legend, batch table
+              Section C : Split-screen process view
+                          Left  — real scanned cheque images via ImageServlet
+                          Right — cheque details + maker data entry + actions
+              Modals    : Refer, Batch Hold, Batch Ready to Export
+    Composer: com.iispl.composer.outward.CheckerQueueComposer
 -->
 
-<div xmlns="http://www.zkoss.org/2005/zul"
-     apply="com.iispl.composer.CheckerQueueComposer">
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.zkoss.org/2005/zul
+                        http://www.zkoss.org/2005/zul/zul.xsd">
 
-    <!-- Page Header -->
-    <div sclass="page-hdr">
-        <div>
-            <div sclass="page-title">Checker Queue</div>
-            <div sclass="page-sub">Outward Checker verification — Pass, Reject, or Refer</div>
+<div sclass="shell-layout"
+     apply="com.iispl.composer.outward.CheckerQueueComposer">
+
+    <!-- ═══════════════════════════════════════════════════════
+         TOPBAR
+    ═══════════════════════════════════════════════════════ -->
+    <include src="/component/topbar.zul"/>
+
+    <!-- ═══════════════════════════════════════════════════════
+         BODY ROW — Sidebar + Main
+    ═══════════════════════════════════════════════════════ -->
+    <div sclass="body-row">
+
+        <include src="/component/sidebar.zul"/>
+
+        <div sclass="main">
+
+            <include src="/component/breadcrumb.zul"/>
+
+            <!-- ═══════════════════════════════════════════════
+                 PAGE CONTENT
+            ═══════════════════════════════════════════════ -->
+            <div sclass="page">
+
+                <!-- Page Header -->
+                <div sclass="page-hdr">
+                    <div>
+                        <div sclass="page-title">Cheque Verification</div>
+                        <div sclass="page-sub">Pass, Reject or Refer cheques back to Maker</div>
+                    </div>
+                </div>
+
+                <!-- ───────────────────────────────────────────
+                     SECTION A: EMPTY STATE
+                     Shown when no batches are in the queue
+                ─────────────────────────────────────────── -->
+                <div id="cqEmptyState" sclass="cq-empty-state" visible="false">
+                    <div sclass="cq-empty-icon">✅</div>
+                    <div sclass="cq-empty-title">No Batches in Queue</div>
+                    <div sclass="cq-empty-msg">Makers need to submit batches first.</div>
+                </div>
+
+                <!-- ───────────────────────────────────────────
+                     SECTION B: BATCH LIST VIEW
+                ─────────────────────────────────────────── -->
+                <div id="cqBatchView" visible="false">
+
+                    <!-- Filter Bar -->
+                    <div sclass="fbar">
+                        <div sclass="fg flex1">
+                            <n:label class="fg-lbl">Search</n:label>
+                            <textbox id="cqSearchBox"
+                                     sclass="fi w100"
+                                     placeholder="Search by Batch ID or Maker name..."
+                                     instant="true"/>
+                        </div>
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">Status</n:label>
+                            <listbox id="cqStatusFilter" sclass="fs" mold="select">
+                                <listitem label="All Status"      value=""/>
+                                <listitem label="Pending"         value="SUBMITTED"/>
+                                <listitem label="In Progress"     value="CHECKER_IN_PROGRESS"/>
+                                <listitem label="Hold"            value="CHECKER_HOLD"/>
+                                <listitem label="Ready to Export" value="CHECKER_APPROVED"/>
+                            </listbox>
+                        </div>
+                    </div>
+
+                    <!-- Status Legend -->
+                    <div sclass="cq-legend-row">
+                        <div sclass="note info cq-legend-item">
+                            <n:span>🕐</n:span>
+                            <n:span>
+                                <n:b>Pending</n:b> — Submitted by Maker, waiting for Checker
+                            </n:span>
+                        </div>
+                        <div sclass="note info cq-legend-item">
+                            <n:span>🔄</n:span>
+                            <n:span>
+                                <n:b>In Progress</n:b> — Checker is currently processing
+                            </n:span>
+                        </div>
+                        <div sclass="note warn cq-legend-item">
+                            <n:span>⏸</n:span>
+                            <n:span>
+                                <n:b>Hold</n:b> — Cheques referred back to Maker for correction
+                            </n:span>
+                        </div>
+                        <div sclass="note suc cq-legend-item">
+                            <n:span>✅</n:span>
+                            <n:span>
+                                <n:b>Ready to Export</n:b> — All cheques verified
+                            </n:span>
+                        </div>
+                    </div>
+
+                    <!-- Batch Table -->
+                    <div sclass="tbl-wrap mb12">
+                        <grid sclass="dt" width="100%">
+                            <columns>
+                                <column label="Batch ID"     width="160px"/>
+                                <column label="Total"        width="70px"/>
+                                <column label="Verified"     width="80px"/>
+                                <column label="Referred"     width="80px"/>
+                                <column label="Maker"        width="150px"/>
+                                <column label="Submitted At" width="150px"/>
+                                <column label="Status"       width="140px"/>
+                                <column label="Action"/>
+                            </columns>
+                            <rows id="cqBatchRows"/>
+                        </grid>
+                    </div>
+
+                </div><!-- end cqBatchView -->
+
+                <!-- ───────────────────────────────────────────
+                     SECTION C: PROCESS VIEW
+                     Shown when Checker opens a batch
+                ─────────────────────────────────────────── -->
+                <div id="cqProcessView" visible="false">
+
+                    <!-- Process View Top Bar -->
+                    <div sclass="cq-process-topbar">
+                        <button id="cqBackBtn" sclass="btn bo btn-sm">← Back to Queue</button>
+                        <label  id="cqBatchBadge" sclass="badge b-info cq-batch-badge">—</label>
+                        <div sclass="flex1"/>
+                        <div sclass="cq-progress-wrap">
+                            <div sclass="prog-wrap" style="width:200px">
+                                <div id="cqProgressFill" sclass="prog-fill" style="width:0%"/>
+                            </div>
+                            <label id="cqProgressText"
+                                   sclass="txt-sm txt-muted cq-prog-txt">—</label>
+                        </div>
+                    </div>
+
+                    <!-- Split Layout -->
+                    <div sclass="split cq-split-height">
+
+                        <!-- ═══════════════════════════════════
+                             LEFT PANEL — Cheque Images
+                        ═══════════════════════════════════ -->
+                        <div sclass="split-l">
+
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">Cheque Images</n:span>
+                                <div sclass="flex gap8">
+                                    <button id="cqPrevBtn" sclass="btn bo btn-sm">← Prev</button>
+                                    <label  id="cqRecLabel"
+                                            sclass="txt-sm txt-muted cq-rec-lbl">—</label>
+                                    <button id="cqNextBtn" sclass="btn bo btn-sm">Next →</button>
+                                </div>
+                            </div>
+
+                            <div sclass="split-body cq-image-panel">
+
+                                <!-- Front / Back Tab Buttons -->
+                                <div sclass="chq-img-tabs">
+                                    <div id="cqFrontTab" sclass="chq-img-tab active">Front</div>
+                                    <div id="cqBackTab"  sclass="chq-img-tab">Back</div>
+                                </div>
+
+                                <!-- ─────────────────────────────────────
+                                     FRONT IMAGE
+                                     Real scanned cheque image from DB path.
+                                     Served by ImageServlet.
+                                     Composer: cqFrontImage.setSrc(url)
+                                ───────────────────────────────────── -->
+                                <div id="cqFrontPanel" sclass="cq-img-panel-wrap">
+
+                                    <image id="cqFrontImage"
+                                           sclass="cq-img-actual"
+                                           style="width:100%;height:auto;
+                                                  max-height:300px;
+                                                  object-fit:contain;
+                                                  display:block"/>
+
+                                    <!-- Fallback: shown when front_image_path is null in DB -->
+                                    <div id="cqFrontNoImage"
+                                         sclass="cq-no-image"
+                                         visible="false">
+                                        <div sclass="cq-no-img-icon">🖼</div>
+                                        <div sclass="cq-no-img-txt">Front image not available</div>
+                                        <div sclass="cq-no-img-sub">
+                                            Image path not set in database
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- ─────────────────────────────────────
+                                     BACK IMAGE
+                                     Real scanned cheque back from DB path.
+                                ───────────────────────────────────── -->
+                                <div id="cqBackPanel"
+                                     sclass="cq-img-panel-wrap"
+                                     visible="false">
+
+                                    <image id="cqBackImage"
+                                           sclass="cq-img-actual"
+                                           style="width:100%;height:auto;
+                                                  max-height:300px;
+                                                  object-fit:contain;
+                                                  display:block"/>
+
+                                    <!-- Fallback: shown when back_image_path is null in DB -->
+                                    <div id="cqBackNoImage"
+                                         sclass="cq-no-image"
+                                         visible="false">
+                                        <div sclass="cq-no-img-icon">🔄</div>
+                                        <div sclass="cq-no-img-txt">Back image not available</div>
+                                        <div sclass="cq-no-img-sub">
+                                            Image path not set in database
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- MICR Repaired — Changed Fields Panel -->
+                                <div id="cqChangedFields"
+                                     sclass="cq-changed-panel cq-full-width"
+                                     visible="false">
+                                    <div sclass="cq-changed-title">
+                                        ⚠ MICR Repaired — Changed Fields:
+                                    </div>
+                                    <div id="cqChangedList" sclass="cq-changed-list"/>
+                                </div>
+
+                            </div><!-- end split-body left -->
+
+                        </div><!-- end split-l -->
+
+                        <!-- ═══════════════════════════════════
+                             RIGHT PANEL — Verification
+                        ═══════════════════════════════════ -->
+                        <div sclass="split-r">
+
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">Verification</n:span>
+                                <label id="cqStatusBadge" sclass="badge b-pend">Pending</label>
+                            </div>
+
+                            <div sclass="split-body">
+
+                                <!-- ─── Section 1: Cheque Details ─── -->
+                                <div sclass="vs">
+                                    <div sclass="vs-title">Cheque Details</div>
+
+                                    <div sclass="vr">
+                                        <n:span class="vl">Cheque No.</n:span>
+                                        <label id="cqDetailChequeNo" sclass="vv mono">—</label>
+                                    </div>
+                                    <div sclass="vr">
+                                        <n:span class="vl">Amount</n:span>
+                                        <label id="cqDetailAmount" sclass="vv mono">—</label>
+                                    </div>
+                                    <div sclass="vr">
+                                        <n:span class="vl">Account Holder</n:span>
+                                        <label id="cqDetailHolder" sclass="vvn">—</label>
+                                    </div>
+                                    <div sclass="vr">
+                                        <n:span class="vl">IQA Status</n:span>
+                                        <label id="cqDetailIqa" sclass="badge b-pass">PASS</label>
+                                    </div>
+                                    <div sclass="vr">
+                                        <n:span class="vl">MICR Repaired</n:span>
+                                        <label id="cqDetailMicrRepaired"
+                                               sclass="badge b-pass">No Repair</label>
+                                    </div>
+                                </div>
+
+                                <!-- ─── Section 2: Data Entry — Maker's Input ─── -->
+                                <div sclass="vs">
+                                    <div sclass="vs-title cq-entry-title">
+                                        <n:span>Data Entry — Maker's Input</n:span>
+                                        <n:span class="cq-yellow-legend">
+                                            🖊 Yellow = Maker edited
+                                        </n:span>
+                                    </div>
+
+                                    <div sclass="frow c2 mb6">
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl" id="cqLblAccNo">
+                                                Account No.
+                                            </n:label>
+                                            <textbox id="cqDeAccNo"
+                                                     sclass="fi mono cq-readonly"
+                                                     readonly="true"/>
+                                        </div>
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl" id="cqLblAmt">
+                                                Amount (₹)
+                                            </n:label>
+                                            <textbox id="cqDeAmt"
+                                                     sclass="fi mono cq-readonly"
+                                                     readonly="true"/>
+                                        </div>
+                                    </div>
+
+                                    <div sclass="frow c2 mb6">
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl" id="cqLblDate">
+                                                Cheque Date
+                                            </n:label>
+                                            <textbox id="cqDeDate"
+                                                     sclass="fi cq-readonly"
+                                                     readonly="true"/>
+                                        </div>
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl" id="cqLblHolder">
+                                                Account Holder
+                                            </n:label>
+                                            <textbox id="cqDeHolder"
+                                                     sclass="fi cq-readonly"
+                                                     readonly="true"/>
+                                        </div>
+                                    </div>
+
+                                    <div sclass="frow mb6">
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl" id="cqLblPayee">
+                                                Payee Name
+                                            </n:label>
+                                            <textbox id="cqDePayee"
+                                                     sclass="fi cq-readonly"
+                                                     readonly="true"/>
+                                        </div>
+                                    </div>
+
+                                    <div sclass="frow mb6">
+                                        <div sclass="fg">
+                                            <n:label class="fg-lbl" id="cqLblWords">
+                                                Amount in Words
+                                            </n:label>
+                                            <textbox id="cqDeWords"
+                                                     sclass="fi cq-readonly"
+                                                     readonly="true"/>
+                                        </div>
+                                    </div>
+
+                                </div><!-- end data entry section -->
+
+                                <!-- ─── Section 3: Action ─── -->
+                                <div sclass="vs">
+                                    <div sclass="vs-title">Action</div>
+
+                                    <!-- Normal action buttons -->
+                                    <div id="cqNormalActions">
+                                        <div sclass="btn-grp mb8">
+                                            <button id="cqBtnPass"
+                                                    sclass="btn bs">✓ Pass</button>
+                                            <button id="cqBtnReject"
+                                                    sclass="btn bd">✗ Reject</button>
+                                            <button id="cqBtnRefer"
+                                                    sclass="btn bw">↩ Refer</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pass inline confirmation panel -->
+                                    <div id="cqPassConfirm" visible="false">
+                                        <div sclass="note warn mb8">
+                                            <n:span>⚠</n:span>
+                                            <n:span>
+                                                Confirm: Do you want to pass Cheque
+                                                <n:b>
+                                                    <label id="cqPassConfirmNo"
+                                                           sclass="mono"/>
+                                                </n:b> ?
+                                            </n:span>
+                                        </div>
+                                        <div sclass="btn-grp">
+                                            <button id="cqConfirmPassBtn"
+                                                    sclass="btn bs btn-sm">
+                                                Yes — Pass
+                                            </button>
+                                            <button id="cqCancelPassBtn"
+                                                    sclass="btn bo btn-sm">
+                                                No — Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reject inline form panel -->
+                                    <div id="cqRejectForm" visible="false">
+                                        <div sclass="note warn mb8">
+                                            <n:span>⚠</n:span>
+                                            <n:span>Please provide a reason for rejection.</n:span>
+                                        </div>
+                                        <div sclass="fg mb8">
+                                            <n:label class="fg-lbl">
+                                                Reject Reason
+                                                <n:span class="req">*</n:span>
+                                            </n:label>
+                                            <listbox id="cqRejectReason"
+                                                     sclass="fs"
+                                                     mold="select">
+                                                <listitem label="Select reason..."
+                                                          value=""/>
+                                                <listitem label="01 — Funds Insufficient"
+                                                          value="01"/>
+                                                <listitem label="02 — Exceeds Arrangement"
+                                                          value="02"/>
+                                                <listitem label="03 — Full Cover Not Received"
+                                                          value="03"/>
+                                                <listitem label="04 — Payment Stopped by Drawer"
+                                                          value="04"/>
+                                                <listitem label="05 — Payment Countermanded by Court Order"
+                                                          value="05"/>
+                                                <listitem label="06 — Payee's Endorsement Required"
+                                                          value="06"/>
+                                                <listitem label="07 — Payee's Endorsement Irregular"
+                                                          value="07"/>
+                                                <listitem label="08 — Drawer's Signature Mismatch"
+                                                          value="08"/>
+                                                <listitem label="09 — Alteration Requires Authentication"
+                                                          value="09"/>
+                                                <listitem label="10 — Cheque Post-Dated / Stale"
+                                                          value="10"/>
+                                                <listitem label="11 — Amount in Words and Figures Differs"
+                                                          value="11"/>
+                                                <listitem label="12 — Crossed Cheque Cannot be Paid in Cash"
+                                                          value="12"/>
+                                                <listitem label="13 — Account Closed / Transferred"
+                                                          value="13"/>
+                                                <listitem label="14 — Account Blocked / Frozen"
+                                                          value="14"/>
+                                                <listitem label="15 — Not Drawn on Us"
+                                                          value="15"/>
+                                                <listitem label="16 — MICR Band Damaged / Unreadable"
+                                                          value="16"/>
+                                                <listitem label="17 — Image Not Clear / IQA Failure"
+                                                          value="17"/>
+                                                <listitem label="18 — Non-CTS 2010 Compliant"
+                                                          value="18"/>
+                                                <listitem label="19 — Instrument Mutilated / Torn"
+                                                          value="19"/>
+                                                <listitem label="20 — Other Reason (Specify in Remarks)"
+                                                          value="20"/>
+                                            </listbox>
+                                        </div>
+                                        <div sclass="fg mb8">
+                                            <n:label class="fg-lbl">Remarks</n:label>
+                                            <textbox id="cqRejectRemarks"
+                                                     sclass="fta"
+                                                     rows="2"
+                                                     placeholder="Optional additional remarks..."
+                                                     multiline="true"/>
+                                        </div>
+                                        <div sclass="btn-grp">
+                                            <button id="cqConfirmRejectBtn"
+                                                    sclass="btn bd btn-sm">
+                                                ✗ Confirm Reject
+                                            </button>
+                                            <button id="cqCancelRejectBtn"
+                                                    sclass="btn bo btn-sm">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div><!-- end action section -->
+
+                            </div><!-- end split-body right -->
+
+                        </div><!-- end split-r -->
+
+                    </div><!-- end split -->
+
+                </div><!-- end cqProcessView -->
+
+            </div><!-- end page -->
+        </div><!-- end main -->
+    </div><!-- end body-row -->
+
+    <!-- Status Bar -->
+    <include src="/component/statusbar.zul"/>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MODAL 1 — REFER CHEQUE
+    ═══════════════════════════════════════════════════════ -->
+    <div id="cqReferModal" sclass="modal-ov" visible="false">
+        <div sclass="modal" style="width:460px">
+            <div sclass="modal-hdr">
+                <div sclass="modal-title">↩ Refer Cheque to Maker</div>
+                <button id="cqReferModalCloseBtn" sclass="modal-x">✕</button>
+            </div>
+            <div sclass="modal-body">
+                <div sclass="note warn mb12">
+                    <n:span>⚠</n:span>
+                    <n:span>
+                        The cheque will be sent back to the Maker for correction.
+                        The batch will be placed on <n:b>Hold</n:b> until the
+                        Maker corrects and re-submits.
+                    </n:span>
+                </div>
+                <div sclass="fg mb12">
+                    <n:label class="fg-lbl">
+                        Refer Reason <n:span class="req">*</n:span>
+                    </n:label>
+                    <listbox id="cqReferReason" sclass="fs" mold="select">
+                        <listitem label="Select reason..."
+                                  value=""/>
+                        <listitem label="01 — Funds Insufficient"
+                                  value="01"/>
+                        <listitem label="02 — Exceeds Arrangement"
+                                  value="02"/>
+                        <listitem label="03 — Full Cover Not Received"
+                                  value="03"/>
+                        <listitem label="04 — Payment Stopped by Drawer"
+                                  value="04"/>
+                        <listitem label="05 — Payment Countermanded by Court Order"
+                                  value="05"/>
+                        <listitem label="06 — Payee's Endorsement Required"
+                                  value="06"/>
+                        <listitem label="07 — Payee's Endorsement Irregular"
+                                  value="07"/>
+                        <listitem label="08 — Drawer's Signature Mismatch"
+                                  value="08"/>
+                        <listitem label="09 — Alteration Requires Authentication"
+                                  value="09"/>
+                        <listitem label="10 — Cheque Post-Dated / Stale"
+                                  value="10"/>
+                        <listitem label="11 — Amount in Words and Figures Differs"
+                                  value="11"/>
+                        <listitem label="12 — Crossed Cheque Cannot be Paid in Cash"
+                                  value="12"/>
+                        <listitem label="13 — Account Closed / Transferred"
+                                  value="13"/>
+                        <listitem label="14 — Account Blocked / Frozen"
+                                  value="14"/>
+                        <listitem label="15 — Not Drawn on Us"
+                                  value="15"/>
+                        <listitem label="16 — MICR Band Damaged / Unreadable"
+                                  value="16"/>
+                        <listitem label="17 — Image Not Clear / IQA Failure"
+                                  value="17"/>
+                        <listitem label="18 — Non-CTS 2010 Compliant"
+                                  value="18"/>
+                        <listitem label="19 — Instrument Mutilated / Torn"
+                                  value="19"/>
+                        <listitem label="20 — Other Reason (Specify in Remarks)"
+                                  value="20"/>
+                    </listbox>
+                </div>
+                <div sclass="fg mb12">
+                    <n:label class="fg-lbl">
+                        Refer To Module <n:span class="req">*</n:span>
+                    </n:label>
+                    <listbox id="cqReferModule" sclass="fs" mold="select">
+                        <listitem label="Select module..." value=""/>
+                        <listitem label="MICR Repair"      value="MICR_REPAIR"/>
+                        <listitem label="Data Entry"       value="DATA_ENTRY"/>
+                    </listbox>
+                </div>
+                <div sclass="fg">
+                    <n:label class="fg-lbl">Remarks</n:label>
+                    <textbox id="cqReferRemarks"
+                             sclass="fta"
+                             rows="2"
+                             placeholder="Optional remarks for the Maker..."
+                             multiline="true"/>
+                </div>
+            </div>
+            <div sclass="modal-foot">
+                <button id="cqCancelReferBtn"  sclass="btn bo">Cancel</button>
+                <button id="cqConfirmReferBtn" sclass="btn bw">↩ Confirm Refer</button>
+            </div>
         </div>
     </div>
 
-    <!-- Page content goes here -->
+    <!-- ═══════════════════════════════════════════════════════
+         MODAL 2 — BATCH ON HOLD
+         Shown when all cheques actioned but some are referred
+    ═══════════════════════════════════════════════════════ -->
+    <div id="cqHoldModal" sclass="modal-ov" visible="false">
+        <div sclass="modal" style="width:440px">
+            <div sclass="modal-hdr">
+                <div sclass="modal-title">⏸ Batch Placed on Hold</div>
+            </div>
+            <div sclass="modal-body">
+                <div sclass="note warn mb12">
+                    <n:span>⏸</n:span>
+                    <label id="cqHoldMessage" sclass="txt-sm"/>
+                </div>
+                <div sclass="note info">
+                    <n:span>ℹ</n:span>
+                    <n:span>
+                        The Maker will correct the referred cheques and re-submit.
+                        The batch will return to the queue for your verification.
+                    </n:span>
+                </div>
+            </div>
+            <div sclass="modal-foot">
+                <button id="cqHoldOkBtn" sclass="btn bw">OK — Back to Queue</button>
+            </div>
+        </div>
+    </div>
 
-</div>
+    <!-- ═══════════════════════════════════════════════════════
+         MODAL 3 — BATCH READY TO EXPORT
+         Shown when all cheques passed or rejected (none referred)
+    ═══════════════════════════════════════════════════════ -->
+    <div id="cqReadyModal" sclass="modal-ov" visible="false">
+        <div sclass="modal" style="width:440px">
+            <div sclass="modal-hdr">
+                <div sclass="modal-title">✅ Batch Processing Complete</div>
+            </div>
+            <div sclass="modal-body">
+                <div sclass="note suc mb12">
+                    <n:span>✅</n:span>
+                    <n:span>
+                        Batch
+                        <n:b><label id="cqReadyBatchId" sclass="mono"/></n:b>
+                        has been fully verified.
+                    </n:span>
+                </div>
+                <div sclass="frow c2 mb8">
+                    <div sclass="fg">
+                        <n:label class="fg-lbl">Cheques Passed</n:label>
+                        <label id="cqReadyPassCount"
+                               sclass="txt-s fw6"
+                               style="font-size:20px;display:block;margin-top:4px">
+                            0
+                        </label>
+                    </div>
+                    <div sclass="fg">
+                        <n:label class="fg-lbl">Cheques Rejected</n:label>
+                        <label id="cqReadyRejectCount"
+                               sclass="txt-d fw6"
+                               style="font-size:20px;display:block;margin-top:4px">
+                            0
+                        </label>
+                    </div>
+                </div>
+                <div sclass="note info">
+                    <n:span>ℹ</n:span>
+                    <n:span>
+                        This batch is now ready for DEM Export
+                        (CXF/CIGF file generation).
+                    </n:span>
+                </div>
+            </div>
+            <div sclass="modal-foot">
+                <button id="cqStayInQueueBtn" sclass="btn bo">
+                    No — Stay in Queue
+                </button>
+                <button id="cqGoToExportBtn" sclass="btn bs">
+                    Yes — Go to File Processing →
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end shell-layout -->
+</zk>

@@ -19,7 +19,7 @@ public interface OutwardChequeDao {
 
     boolean rejectCheque(Long chequeId, Long userId);
 
-    // ── NEW METHODS FOR MICR REPAIR ──
+    // ── MICR Repair ──────────────────────────────────────────────────────────
 
     /**
      * Returns all MICR-error cheques for a batch that are NOT yet
@@ -54,7 +54,9 @@ public interface OutwardChequeDao {
                               String reasonCode,
                               String remarks,
                               Long userId);
-    
+
+    // ── Account Entry ─────────────────────────────────────────────────────────
+
     /**
      * Returns all cheques in a batch that are PENDING account entry.
      * Excludes REJECTED and already ENTRY_DONE cheques.
@@ -71,11 +73,44 @@ public interface OutwardChequeDao {
      * Saves account entry data for a cheque.
      * Sets status = ENTRY_DONE after successful save.
      */
-    boolean saveAccountEntry(Long      chequeId,
-                              String    accountNo,
-                              String    accountHolder,
+    boolean saveAccountEntry(Long       chequeId,
+                              String     accountNo,
+                              String     accountHolder,
                               BigDecimal amount,
-                              String    amountInWords,
-                              String    chequeDate,
-                              String    payeeName);
+                              String     amountInWords,
+                              String     chequeDate,
+                              String     payeeName);
+
+    // ── Checker Outward ───────────────────────────────────────────────────────
+
+    /**
+     * Returns ALL cheques for a batch, ordered by seq_no ASC.
+     * No status filtering — Checker sees every cheque including
+     * already-passed, rejected, and referred ones.
+     *
+     * Used in: CheckerQueueComposer to populate the split-screen navigator.
+     */
+    List<OutwardCheque> findAllByBatchDbId(Long batchDbId);
+
+    /**
+     * Updates the status column on a single cheque row.
+     * Called after every Checker action — Pass, Reject, or Refer.
+     *
+     * Expected values for newStatus:
+     *   CHECKER_PASSED   — Checker passed this cheque.
+     *   CHECKER_REJECTED — Checker rejected this cheque.
+     *   CHECKER_REFERRED — Checker referred this cheque back to Maker.
+     */
+    boolean updateCheckerStatus(Long chequeId, String newStatus);
+
+    /**
+     * Counts cheques in a batch that still have status = ENTRY_DONE,
+     * meaning the Checker has not yet acted on them.
+     *
+     * Returns 0 when all cheques in the batch have been
+     * passed, rejected, or referred by the Checker.
+     *
+     * Used in: CheckerServiceImpl.isAllChequesActioned()
+     */
+    int countPendingCheckerActions(Long batchDbId);
 }
