@@ -175,6 +175,7 @@ public class BpxfUploadServiceImpl implements BpxfUploadService {
         List<InwardBatchDto> dtos    = new ArrayList<>();
         for (InwardBatch b : batches) {
             dtos.add(new InwardBatchDto(
+            		b.getId(),
                     b.getBatchId(),
                     b.getSourceFileName(),
                     b.getTotalCheques(),

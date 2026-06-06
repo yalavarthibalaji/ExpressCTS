@@ -26,7 +26,7 @@ import jakarta.xml.bind.Unmarshaller;
  */
 public class BpxfParser {
 
-    private static final String BASE_IMAGE_DIR = "";
+    private static final String BASE_IMAGE_DIR = "/home/administrator/BpxfFile/Bpxf_Batch_1";
 
     // ── Result class ──────────────────────────────────────────────────────
 
@@ -140,7 +140,13 @@ public class BpxfParser {
      */
     public static String buildImagePath(String batchId, String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) return null;
-        return BASE_IMAGE_DIR + batchId + "/"
-                + relativePath.replaceFirst("^/", "").trim() + ".png";
+        String rel = relativePath.replaceFirst("^/", "").trim();
+        if (!rel.toLowerCase().endsWith(".png")
+                && !rel.toLowerCase().endsWith(".jpg")
+                && !rel.toLowerCase().endsWith(".jpeg")) {
+            rel = rel + ".png";
+        }
+        // ZIP extracts to BASE/batchId/batchId/ — add batchId twice
+        return BASE_IMAGE_DIR + batchId + "/" + batchId + "/" + rel;
     }
 }
