@@ -12,7 +12,6 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
-import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Combobox;
 import org.zkoss.zul.Div;
@@ -35,7 +34,7 @@ import com.iispl.serviceImpl.RejectRepairServiceImpl;
  *  - Wizard bar rendering and step navigation
  *  - Load cheques for the selected inward batch
  *  - Render cheque table with pagination, filter, and search
- *  - Show cheque detail panel on row click
+ *  - Inline accordion detail row on row click AND repair button click
  *  - Validate all repairs before allowing Step 2
  */
 public class RejectRepairComposer extends SelectorComposer<Component> {
@@ -61,65 +60,35 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     // ── Wired Components ──────────────────────────────────────────────────
 
-    // Panels
-    @Wire("#emptyStatePanel")        private Div      emptyStatePanel;
-    @Wire("#batchListPanel")         private Div      batchListPanel;
-    @Wire("#chequeDetailPanel")      private Div      chequeDetailPanel;
+    @Wire("#emptyStatePanel")       private Div      emptyStatePanel;
+    @Wire("#batchListPanel")        private Div      batchListPanel;
 
-    // Wizard step buttons
-    @Wire("#btnStep1")               private Button   btnStep1;
-    @Wire("#btnStep2")               private Button   btnStep2;
-    @Wire("#btnStep3")               private Button   btnStep3;
+    @Wire("#btnStep1")              private Button   btnStep1;
+    @Wire("#btnStep2")              private Button   btnStep2;
+    @Wire("#btnStep3")              private Button   btnStep3;
 
-    // Wizard connectors
-    @Wire("#conn1")                  private Div      conn1;
-    @Wire("#conn2")                  private Div      conn2;
+    @Wire("#conn1")                 private Div      conn1;
+    @Wire("#conn2")                 private Div      conn2;
 
-    // Wizard step labels
-    @Wire("#lblStep2Num")            private Label    lblStep2Num;
-    @Wire("#lblStep2Desc")           private Label    lblStep2Desc;
-    @Wire("#lblStep3Num")            private Label    lblStep3Num;
-    @Wire("#lblStep3Desc")           private Label    lblStep3Desc;
+    @Wire("#lblStep2Num")           private Label    lblStep2Num;
+    @Wire("#lblStep2Desc")          private Label    lblStep2Desc;
+    @Wire("#lblStep3Num")           private Label    lblStep3Num;
+    @Wire("#lblStep3Desc")          private Label    lblStep3Desc;
 
-    // Table
-    @Wire("#chequeListbox")          private Listbox  chequeListbox;
+    @Wire("#chequeListbox")         private Listbox  chequeListbox;
 
-    // Badges / Info
-    @Wire("#lblBatchBadge")          private Label    lblBatchBadge;
-    @Wire("#lblPendingBadge")        private Label    lblPendingBadge;
-    @Wire("#lblPageInfo")            private Label    lblPageInfo;
+    @Wire("#lblBatchBadge")         private Label    lblBatchBadge;
+    @Wire("#lblPendingBadge")       private Label    lblPendingBadge;
+    @Wire("#lblPageInfo")           private Label    lblPageInfo;
 
-    // Filter / Search
-    @Wire("#cmbFilter")              private Combobox cmbFilter;
-    @Wire("#txtSearch")              private Textbox  txtSearch;
+    @Wire("#cmbFilter")             private Combobox cmbFilter;
+    @Wire("#txtSearch")             private Textbox  txtSearch;
 
-    // Navigation buttons
-    @Wire("#btnGoToFileProcessing")  private Button   btnGoToFileProcessing;
-    @Wire("#btnBackToBatches")       private Button   btnBackToBatches;
-    @Wire("#btnNextStep2")           private Button   btnNextStep2;
-    @Wire("#btnPrevPage")            private Button   btnPrevPage;
-    @Wire("#btnNextPage")            private Button   btnNextPage;
-
-    // Detail panel — close button
-    @Wire("#btnCloseDetail")         private Button   btnCloseDetail;
-
-    // Detail panel — labels
-    @Wire("#lblDetailChequeNo")      private Label    lblDetailChequeNo;
-    @Wire("#lblMicrCodeRaw")         private Label    lblMicrCodeRaw;
-    @Wire("#lblMicrCodeProcessed")   private Label    lblMicrCodeProcessed;
-    @Wire("#lblBankCode")            private Label    lblBankCode;
-    @Wire("#lblBranchCode")          private Label    lblBranchCode;
-    @Wire("#lblTransactionCode")     private Label    lblTransactionCode;
-    @Wire("#lblAmountFigures")       private Label    lblAmountFigures;
-    @Wire("#lblAmountWords")         private Label    lblAmountWords;
-    @Wire("#lblChequeDate")          private Label    lblChequeDate;
-    @Wire("#lblPresentingBank")      private Label    lblPresentingBank;
-    @Wire("#lblInstrumentType")      private Label    lblInstrumentType;
-    @Wire("#lblAccountNo")           private Label    lblAccountNo;
-    @Wire("#lblDraweeBank")          private Label    lblDraweeBank;
-    @Wire("#lblPayeeName")           private Label    lblPayeeName;
-    @Wire("#lblDetailBatchId")       private Label    lblDetailBatchId;
-    @Wire("#lblDetailRepairStatus")  private Label    lblDetailRepairStatus;
+    @Wire("#btnGoToFileProcessing") private Button   btnGoToFileProcessing;
+    @Wire("#btnBackToBatches")      private Button   btnBackToBatches;
+    @Wire("#btnNextStep2")          private Button   btnNextStep2;
+    @Wire("#btnPrevPage")           private Button   btnPrevPage;
+    @Wire("#btnNextPage")           private Button   btnNextPage;
 
     // ── Service ───────────────────────────────────────────────────────────
 
@@ -130,6 +99,11 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     private String             currentBatchId;
     private List<InwardCheque> allCheques;
+
+    // ── Accordion State ───────────────────────────────────────────────────
+
+    private Listitem currentExpandedItem = null;
+    private Listitem currentDetailItem   = null;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -147,17 +121,14 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     private void initWizardBar() {
         int maxStep = getSessionMaxStep();
-
         applyStepStyle(btnStep1, 1, maxStep);
         applyStepStyle(btnStep2, 2, maxStep);
         applyStepStyle(btnStep3, 3, maxStep);
 
-        if (conn1 != null) {
+        if (conn1 != null)
             conn1.setSclass(CURRENT_STEP >= 2 ? "step-connector filled" : "step-connector");
-        }
-        if (conn2 != null) {
+        if (conn2 != null)
             conn2.setSclass(CURRENT_STEP >= 3 ? "step-connector filled" : "step-connector");
-        }
 
         applyLabelStyle(lblStep2Num, lblStep2Desc, 2);
         applyLabelStyle(lblStep3Num, lblStep3Desc, 3);
@@ -165,15 +136,10 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     private void applyStepStyle(Button button, int stepNo, int maxStep) {
         if (button == null) return;
-        if (stepNo == CURRENT_STEP) {
-            button.setSclass("step-circle-btn active");
-        } else if (stepNo < CURRENT_STEP) {
-            button.setSclass("step-circle-btn completed");
-        } else if (stepNo <= maxStep) {
-            button.setSclass("step-circle-btn active");
-        } else {
-            button.setSclass("step-circle-btn disabled-step");
-        }
+        if      (stepNo == CURRENT_STEP)  button.setSclass("step-circle-btn active");
+        else if (stepNo <  CURRENT_STEP)  button.setSclass("step-circle-btn completed");
+        else if (stepNo <= maxStep)       button.setSclass("step-circle-btn active");
+        else                              button.setSclass("step-circle-btn disabled-step");
     }
 
     private void applyLabelStyle(Label numLabel, Label descLabel, int stepNo) {
@@ -205,8 +171,7 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     private void navigateToStep(int targetStep) {
         if (targetStep == CURRENT_STEP) return;
-        if (targetStep > getSessionMaxStep()) return;   // not yet unlocked
-
+        if (targetStep > getSessionMaxStep()) return;
         switch (targetStep) {
             case 1 -> Executions.getCurrent().sendRedirect(PAGE_STEP1);
             case 2 -> Executions.getCurrent().sendRedirect(PAGE_STEP2 + buildBatchParam());
@@ -219,49 +184,37 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
     // =====================================================================
 
     private void loadPage() {
-        // Priority: URL param → session → first eligible batch
         String paramBatch = Executions.getCurrent().getParameter("batchId");
 
         if (paramBatch != null && !paramBatch.trim().isEmpty()) {
             currentBatchId = paramBatch.trim();
             Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
-
         } else {
             Object sessionBatch = Sessions.getCurrent().getAttribute(SESSION_BATCH_ID);
             if (sessionBatch != null) {
                 currentBatchId = sessionBatch.toString();
             } else {
                 List<InwardBatch> batches = rejectRepairService.getRepairEligibleBatches();
-                if (batches == null || batches.isEmpty()) {
-                    showEmptyState();
-                    return;
-                }
+                if (batches == null || batches.isEmpty()) { showEmptyState(); return; }
                 currentBatchId = batches.get(0).getBatchId();
                 Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
             }
         }
 
         List<InwardCheque> fetched = rejectRepairService.getChequesByBatchId(currentBatchId);
+        if (fetched == null || fetched.isEmpty()) { showEmptyState(); return; }
 
-        if (fetched == null || fetched.isEmpty()) {
-            showEmptyState();
-            return;
-        }
-
-        // Show only cheques that actually need repair — skip clean ones
         allCheques = fetched.stream()
                 .filter(c -> c.isMicrError()
                           || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
                           || "REFERRED_BACK".equalsIgnoreCase(c.getRepairStatus()))
                 .collect(Collectors.toList());
 
-        if (allCheques.isEmpty()) {
-            showEmptyState();
-            return;
-        }
+        if (allCheques.isEmpty()) { showEmptyState(); return; }
 
         showChequeList();
     }
+
     // =====================================================================
     // RUNTIME EVENT WIRING
     // =====================================================================
@@ -270,29 +223,25 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         if (cmbFilter != null) {
             cmbFilter.addEventListener(Events.ON_SELECT, e -> {
                 currentPage = 1;
+                collapseDetail();
                 renderTable();
             });
         }
         if (txtSearch != null) {
             txtSearch.addEventListener(Events.ON_CHANGING, e -> {
                 currentPage = 1;
+                collapseDetail();
                 renderTable();
             });
         }
         if (btnPrevPage != null) {
             btnPrevPage.addEventListener(Events.ON_CLICK, e -> {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTable();
-                }
+                if (currentPage > 1) { currentPage--; collapseDetail(); renderTable(); }
             });
         }
         if (btnNextPage != null) {
             btnNextPage.addEventListener(Events.ON_CLICK, e -> {
-                if (currentPage < totalPages()) {
-                    currentPage++;
-                    renderTable();
-                }
+                if (currentPage < totalPages()) { currentPage++; collapseDetail(); renderTable(); }
             });
         }
     }
@@ -341,139 +290,246 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
     private void renderTable() {
         if (chequeListbox == null) return;
 
+        currentExpandedItem = null;
+        currentDetailItem   = null;
+
         List<InwardCheque> filtered  = getFilteredList();
         int total      = filtered.size();
         int totalPages = totalPages(total);
         currentPage    = Math.min(currentPage, Math.max(1, totalPages));
 
-        int fromIdx  = (currentPage - 1) * PAGE_SIZE;
-        int toIdx    = Math.min(fromIdx + PAGE_SIZE, total);
-        List<InwardCheque> pageData = filtered.subList(fromIdx, toIdx);
+        int fromIdx = (currentPage - 1) * PAGE_SIZE;
+        int toIdx   = Math.min(fromIdx + PAGE_SIZE, total);
 
         chequeListbox.getItems().clear();
 
         int rowNum = fromIdx + 1;
-
-        for (InwardCheque c : pageData) {
-            Listitem row = new Listitem();
-            row.setSclass("clickable-row");
-
-            final InwardCheque cheque = c;
-            row.addEventListener(Events.ON_CLICK, ev -> showChequeDetail(cheque));
-
-            // 1  #
-            addCell(row, String.valueOf(rowNum++));
-
-            // 2  Cheque No.
-            addCell(row, nvl(c.getChequeNo()));
-
-            // 3  Presenting Bank
-            addCell(row, nvl(c.getPresentingBankName()));
-
-            // 4  MICR Code (raw)
-            addCell(row, nvl(c.getMicrCodeRaw()));
-
-            // 5  Amount — right aligned
-            Listcell amtCell = new Listcell(
-                    c.getAmount() != null ? "₹ " + formatAmt(c.getAmount()) : "—");
-            amtCell.setStyle("text-align:right");
-            row.appendChild(amtCell);
-
-            // 6  Repair Status badge
-            Listcell statusCell = new Listcell();
-            statusCell.setStyle("text-align:center");
-            Label badge = new Label(resolveStatusLabel(c.getRepairStatus()));
-            badge.setSclass(resolveStatusSclass(c.getRepairStatus()));
-            statusCell.appendChild(badge);
-            row.appendChild(statusCell);
-
-            // 7  Action button
-            Listcell actionCell = new Listcell();
-            actionCell.setStyle("text-align:center");
-            if (c.isMicrError()) {
-                Button repairBtn = new Button("Repair");
-                repairBtn.setSclass("btn-repair-row");
-
-                final Long   chequeId = c.getId();        // ← FIXED: was getChequeId()
-
-                final String batchId  = currentBatchId;
-                repairBtn.addEventListener(Events.ON_CLICK, ev -> {
-                    ev.stopPropagation();
-                    openRepairPage(chequeId, batchId);
-                });
-                actionCell.appendChild(repairBtn);
-            } else {
-                Label noErr = new Label("No Error");
-                noErr.setSclass("action-no-error");
-                actionCell.appendChild(noErr);
-            }
-            row.appendChild(actionCell);
-
-            chequeListbox.appendChild(row);
+        for (InwardCheque c : filtered.subList(fromIdx, toIdx)) {
+            appendChequeRow(c, rowNum++);
         }
 
-        // Pagination info
-        if (lblPageInfo != null) {
-            lblPageInfo.setValue(
-                    "Page " + currentPage + " of " + totalPages + " | " + total + " records");
-        }
+        if (lblPageInfo != null)
+            lblPageInfo.setValue("Page " + currentPage + " of " + totalPages + " | " + total + " records");
         if (btnPrevPage != null) btnPrevPage.setDisabled(currentPage <= 1);
         if (btnNextPage != null) btnNextPage.setDisabled(currentPage >= totalPages);
 
-        // Pending badge
         long pending = allCheques.stream()
                 .filter(c -> "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
                           || (c.getRepairStatus() == null && c.isMicrError()))
                 .count();
-        if (lblPendingBadge != null) {
+        if (lblPendingBadge != null)
             lblPendingBadge.setValue(pending + " PENDING");
+    }
+
+    // ── Build one cheque data row ─────────────────────────────────────────
+
+    private void appendChequeRow(InwardCheque c, int sno) {
+        Listitem row = new Listitem();
+        row.setValue(c);
+        row.setSclass("clickable-row");
+
+        // ── Sno cell with chevron ──
+        Listcell cellSno = new Listcell();
+        Label chevron = new Label("▶");
+        chevron.setSclass("row-chevron");
+        cellSno.appendChild(chevron);
+        cellSno.appendChild(new Label(String.valueOf(sno)));
+        row.appendChild(cellSno);
+
+        // ── Data cells ──
+        addCell(row, nvl(c.getChequeNo()));
+        addCell(row, nvl(c.getPresentingBankName()));
+        addCell(row, nvl(c.getMicrCodeRaw()));
+
+        // Amount — right aligned
+        Listcell amtCell = new Listcell(
+                c.getAmount() != null ? "₹ " + formatAmt(c.getAmount()) : "—");
+        amtCell.setStyle("text-align:right");
+        row.appendChild(amtCell);
+
+        // Repair Status badge
+        Listcell statusCell = new Listcell();
+        statusCell.setStyle("text-align:center");
+        Label badge = new Label(resolveStatusLabel(c.getRepairStatus()));
+        badge.setSclass(resolveStatusSclass(c.getRepairStatus()));
+        statusCell.appendChild(badge);
+        row.appendChild(statusCell);
+
+        // ── Action cell ──
+        // CHANGED: Repair button now opens inline accordion instead of redirecting
+        Listcell actionCell = new Listcell();
+        actionCell.setStyle("text-align:center");
+
+        if (c.isMicrError()) {
+            Button repairBtn = new Button("Repair");
+            repairBtn.setSclass("btn-repair-row");
+            repairBtn.addEventListener(Events.ON_CLICK, ev -> {
+                ev.stopPropagation();                        // don't bubble to row click
+                toggleDetailRow(row, c, chevron);           // same accordion as row click
+            });
+            actionCell.appendChild(repairBtn);
+        } else {
+            Label noErr = new Label("No Error");
+            noErr.setSclass("action-no-error");
+            actionCell.appendChild(noErr);
         }
+        row.appendChild(actionCell);
+
+        // ── Row click → same accordion toggle ──
+        row.addEventListener(Events.ON_CLICK,
+                event -> toggleDetailRow(row, c, chevron));
+
+        chequeListbox.appendChild(row);
     }
 
     // =====================================================================
-    // CHEQUE DETAIL PANEL
+    // ACCORDION — TOGGLE INLINE DETAIL ROW
     // =====================================================================
 
-    @Listen("onClick=#btnCloseDetail")
-    public void onCloseDetail() {
-        if (chequeDetailPanel != null) {
-            chequeDetailPanel.setVisible(false);
+    /**
+     * Called by BOTH row click and Repair button click.
+     * If the row is already open → collapse.
+     * If a different row is open → close it, open this one.
+     */
+    private void toggleDetailRow(Listitem clickedRow,
+                                  InwardCheque cheque,
+                                  Label chevron) {
+
+        // Same row clicked again → collapse
+        if (clickedRow.equals(currentExpandedItem)) {
+            collapseDetail();
+            return;
+        }
+
+        // Close any previously opened detail
+        collapseDetail();
+
+        // Mark clicked row expanded
+        currentExpandedItem = clickedRow;
+        clickedRow.setSclass("clickable-row row-expanded");
+        chevron.setSclass("row-chevron open");
+
+        // ── Build injected detail Listitem ──
+        Listitem detailItem = new Listitem();
+        detailItem.setSclass("cheque-detail-row");
+
+        // Single cell spanning all 7 columns
+        Listcell cell = new Listcell();
+        cell.setSpan(7);
+
+        Div wrap = new Div();
+        wrap.setSclass("detail-inline-wrap");
+
+        // Section 1 — MICR Information
+        wrap.appendChild(buildSection("MICR Information", new String[][]{
+            {"MICR Code (Raw)",       nvl(cheque.getMicrCodeRaw()),       "mono"},
+            {"MICR Code (Corrected)", nvl(cheque.getMicrCodeCorrected()), "mono"},
+            {"Bank Code",             nvl(cheque.getBankCode()),          ""},
+            {"Branch Code",           nvl(cheque.getBranchCode()),        ""},
+            {"Transaction Code",      nvl(cheque.getCityCode()),          ""}
+        }));
+
+        // Section 2 — Amount & Date
+        wrap.appendChild(buildSection("Amount & Date", new String[][]{
+            {"Amount (Figures)",
+             cheque.getAmount() != null ? "₹ " + formatAmt(cheque.getAmount()) : "—",
+             "detail-field-value highlight-amount"},
+            {"Amount (Words)", nvl(cheque.getAmountInWords()), ""},
+            {"Cheque Date",
+             cheque.getChequeDate() != null ? cheque.getChequeDate().toString() : "—", ""}
+        }));
+
+        // Section 3 — Bank & Account
+        wrap.appendChild(buildSection("Bank & Account", new String[][]{
+            {"Presenting Bank",    nvl(cheque.getPresentingBankName()),  ""},
+            {"Instrument Type",    nvl(cheque.getIqaStatus()),           ""},
+            {"Drawee Account No.", nvl(cheque.getDraweeAccountNumber()), "mono"},
+            {"Drawee Bank",        nvl(cheque.getDraweeAccountHolder()), ""}
+        }));
+
+        // Section 4 — Payee & Status
+        wrap.appendChild(buildSection("Payee & Status", new String[][]{
+            {"Payee Name",    nvl(cheque.getPayeeName()),                   ""},
+            {"Batch ID",      nvl(currentBatchId),                         "mono"},
+            {"Repair Status", resolveStatusLabel(cheque.getRepairStatus()), ""}
+        }));
+
+        // ── Close strip ──
+        Div closeStrip = new Div();
+        closeStrip.setSclass("detail-inline-close");
+        Button btnClose = new Button("✕ Close");
+        btnClose.setSclass("btn-cancel");
+        btnClose.addEventListener(Events.ON_CLICK, e -> collapseDetail());
+        closeStrip.appendChild(btnClose);
+        wrap.appendChild(closeStrip);
+
+        cell.appendChild(wrap);
+        detailItem.appendChild(cell);
+
+        // Insert immediately after the clicked row
+        Component nextSibling = clickedRow.getNextSibling();
+        if (nextSibling != null) {
+            chequeListbox.insertBefore(detailItem, nextSibling);
+        } else {
+            chequeListbox.appendChild(detailItem);
+        }
+
+        currentDetailItem = detailItem;
+    }
+
+    // ── Collapse currently open accordion row ─────────────────────────────
+
+    private void collapseDetail() {
+        if (currentDetailItem != null) {
+            currentDetailItem.detach();
+            currentDetailItem = null;
+        }
+        if (currentExpandedItem != null) {
+            currentExpandedItem.setSclass("clickable-row");
+            // Reset chevron in first Listcell
+            currentExpandedItem.getChildren().stream()
+                .filter(c -> c instanceof Listcell)
+                .findFirst()
+                .ifPresent(lc ->
+                    lc.getChildren().stream()
+                        .filter(ch -> ch instanceof Label
+                            && ((Label) ch).getSclass() != null
+                            && ((Label) ch).getSclass().contains("row-chevron"))
+                        .findFirst()
+                        .ifPresent(lbl -> ((Label) lbl).setSclass("row-chevron"))
+                );
+            currentExpandedItem = null;
         }
     }
 
-    private void showChequeDetail(InwardCheque c) {
-        if (chequeDetailPanel == null) return;
+    // ── Build one detail section (title + field rows) ─────────────────────
 
-        // Header
-        setLbl(lblDetailChequeNo, "CHQ: " + nvl(c.getChequeNo()));
+    private Div buildSection(String title, String[][] fields) {
+        Div section = new Div();
+        section.setSclass("detail-inline-section");
 
-        // MICR
-        setLbl(lblMicrCodeRaw,       nvl(c.getMicrCodeRaw()));
-        setLbl(lblMicrCodeProcessed, nvl(c.getMicrCodeCorrected()));
-        setLbl(lblBankCode,          nvl(c.getBankCode()));
-        setLbl(lblBranchCode,        nvl(c.getBranchCode()));
-        setLbl(lblTransactionCode,   nvl(c.getCityCode()));
+        Label heading = new Label(title);
+        heading.setSclass("detail-inline-section-title");
+        section.appendChild(heading);
 
-        // Amount & Date
-        setLbl(lblAmountFigures,
-               c.getAmount() != null ? "₹ " + formatAmt(c.getAmount()) : "—");
-        setLbl(lblAmountWords, nvl(c.getAmountInWords()));
-        setLbl(lblChequeDate,
-               c.getChequeDate() != null ? c.getChequeDate().toString() : "—");
+        for (String[] f : fields) {
+            Div fieldDiv = new Div();
+            fieldDiv.setSclass("detail-inline-field");
 
-        // Bank & Account
-        setLbl(lblPresentingBank, nvl(c.getPresentingBankName()));
-        setLbl(lblInstrumentType, nvl(c.getIqaStatus()));
-        setLbl(lblAccountNo,      nvl(c.getDraweeAccountNumber()));
-        setLbl(lblDraweeBank,     nvl(c.getDraweeAccountHolder()));
+            Label lbl = new Label(f[0]);
+            lbl.setSclass("detail-field-label");
 
-        // Payee & Status
-        setLbl(lblPayeeName,          nvl(c.getPayeeName()));
-        setLbl(lblDetailBatchId,      nvl(currentBatchId));
-        setLbl(lblDetailRepairStatus, resolveStatusLabel(c.getRepairStatus()));
+            Label val = new Label(f[1]);
+            String valSclass = f[2].contains("detail-field-value")
+                    ? f[2]
+                    : ("detail-field-value " + f[2]).trim();
+            val.setSclass(valSclass);
 
-        chequeDetailPanel.setVisible(true);
-        Clients.scrollIntoView(chequeDetailPanel);
+            fieldDiv.appendChild(lbl);
+            fieldDiv.appendChild(val);
+            section.appendChild(fieldDiv);
+        }
+        return section;
     }
 
     // =====================================================================
@@ -494,29 +550,14 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
     @Listen("onClick=#btnNextStep2")
     public void onNextStep2() {
         if (currentBatchId == null) return;
-
         if (!allRepairsDone()) {
             Messagebox.show(
                     "Please complete all MICR repairs before proceeding to Step 2.",
-                    "Validation",
-                    Messagebox.OK,
-                    Messagebox.EXCLAMATION);
+                    "Validation", Messagebox.OK, Messagebox.EXCLAMATION);
             return;
         }
-
         setSessionMaxStep(2);
         Executions.getCurrent().sendRedirect(PAGE_STEP2 + buildBatchParam());
-    }
-
-    // =====================================================================
-    // REPAIR DETAIL PAGE
-    // =====================================================================
-
-    private void openRepairPage(Long chequeId, String batchId) {
-        Executions.getCurrent().sendRedirect(
-                "/inward/inwardMicr/MicrRepairDetail.zul"
-                + "?chequeId=" + chequeId
-                + "&batchId=" + batchId);
     }
 
     // =====================================================================
@@ -548,9 +589,8 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     private void setSessionMaxStep(int step) {
         int current = getSessionMaxStep();
-        if (step > current) {
+        if (step > current)
             Sessions.getCurrent().setAttribute(SESSION_MAX_STEP, step);
-        }
     }
 
     // =====================================================================
@@ -572,9 +612,7 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         return currentBatchId != null ? "?batchId=" + currentBatchId : "";
     }
 
-    private int totalPages() {
-        return totalPages(getFilteredList().size());
-    }
+    private int totalPages() { return totalPages(getFilteredList().size()); }
 
     private int totalPages(int total) {
         return Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
@@ -582,10 +620,6 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 
     private void addCell(Listitem row, String text) {
         row.appendChild(new Listcell(text != null ? text : "—"));
-    }
-
-    private void setLbl(Label lbl, String value) {
-        if (lbl != null) lbl.setValue(value != null ? value : "—");
     }
 
     private String nvl(String val) {
