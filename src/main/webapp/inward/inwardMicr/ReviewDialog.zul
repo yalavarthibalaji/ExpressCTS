@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Review Date & Amount"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardMicr/RejectRepair.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+
+<window id="step2ReviewDialog"
+        title="Review Date &amp; Amount"
+        border="normal"
+        width="520px"
+        closable="true"
+        sclass="rr-dialog"
+        apply="com.iispl.composer.ReviewDialogComposer">
+
+    <div sclass="dialog-body">
+
+        <!-- Cheque info row -->
+        <div sclass="dialog-info-row">
+            <label sclass="dialog-info-label" value="Cheque No:" />
+            <label id="lblChequeNo" sclass="dialog-info-value" />
+        </div>
+        <div sclass="dialog-info-row">
+            <label sclass="dialog-info-label" value="Bank:" />
+            <label id="lblBank" sclass="dialog-info-value" />
+        </div>
+
+        <separator />
+
+        <!-- Processed (CXF declared) values — read-only -->
+        <div sclass="dialog-section-title">Processed (Declared) Values</div>
+        <div sclass="dialog-form-row">
+            <label sclass="dialog-lbl" value="Proc. Date:" />
+            <label id="lblProcDate" sclass="dialog-val" />
+        </div>
+        <div sclass="dialog-form-row">
+            <label sclass="dialog-lbl" value="Proc. Amount:" />
+            <label id="lblProcAmount" sclass="dialog-val" />
+        </div>
+
+        <separator />
+
+        <!-- OCR / Received values — editable -->
+        <div sclass="dialog-section-title">Received (OCR) Values — Correct if needed</div>
+        <div sclass="dialog-form-row">
+            <label sclass="dialog-lbl" value="Rcvd Date:" />
+            <datebox id="dtbRcvdDate" sclass="dialog-input" width="200px"
+                     format="dd/MM/yyyy" />
+        </div>
+        <div sclass="dialog-form-row">
+            <label sclass="dialog-lbl" value="Rcvd Amount:" />
+            <decimalbox id="dbxRcvdAmount" sclass="dialog-input" width="200px"
+                        format="#,##0.00" />
+        </div>
+
+        <separator />
+
+        <!-- Buttons -->
+        <div sclass="dialog-btn-row">
+            <button id="btnSave"   label="Save"   sclass="btn-save-dialog" />
+            <button id="btnCancel" label="Cancel" sclass="btn-cancel-dialog" />
+        </div>
+
+    </div>
+
+</window>
+
+</zk>

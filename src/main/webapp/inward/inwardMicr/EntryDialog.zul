@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Enter Payee &amp; Account"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardMicr/RejectRepair.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+
+<window id="step3EntryDialog"
+        title="Enter Payee &amp; Account"
+        border="normal"
+        width="500px"
+        closable="true"
+        sclass="rr-dialog"
+        apply="com.iispl.composer.EntryDialogComposer">
+
+    <div sclass="dialog-body">
+
+        <!-- Cheque info -->
+        <div sclass="dialog-info-row">
+            <label sclass="dialog-info-label" value="Cheque No:" />
+            <label id="lblChequeNo" sclass="dialog-info-value" />
+        </div>
+        <div sclass="dialog-info-row">
+            <label sclass="dialog-info-label" value="Bank:" />
+            <label id="lblBank" sclass="dialog-info-value" />
+        </div>
+        <div sclass="dialog-info-row">
+            <label sclass="dialog-info-label" value="Amount:" />
+            <label id="lblAmount" sclass="dialog-info-value" />
+        </div>
+
+        <separator />
+
+        <!-- Entry fields -->
+        <div sclass="dialog-section-title">Payee &amp; Account Details</div>
+
+        <div sclass="dialog-form-row">
+            <label sclass="dialog-lbl" value="Payee Name:" />
+            <textbox id="tbxPayeeName" sclass="dialog-input" width="250px"
+                     maxlength="100" placeholder="Enter payee name" />
+        </div>
+        <div sclass="dialog-form-row">
+            <label sclass="dialog-lbl" value="Account No.:" />
+            <textbox id="tbxAccountNo" sclass="dialog-input" width="250px"
+                     maxlength="20" placeholder="Enter account number" />
+        </div>
+
+        <separator />
+
+        <div sclass="dialog-btn-row">
+            <button id="btnSave"   label="Save"   sclass="btn-save-dialog" />
+            <button id="btnCancel" label="Cancel" sclass="btn-cancel-dialog" />
+        </div>
+
+    </div>
+
+</window>
+
+</zk>
