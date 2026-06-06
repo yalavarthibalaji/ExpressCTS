@@ -1,28 +1,23 @@
 package com.iispl.dao;
 
 import com.iispl.entity.inward.InwardBatch;
+import com.iispl.entity.inward.InwardCheque;
+
 import java.util.List;
 
-/**
- * RejectRepairDao
- *
- * DAO interface for Reject & Repair data access.
- */
 public interface RejectRepairDao {
 
-    /**
-     * Fetches all inward batches eligible for repair:
-     *   status IN ('RECEIVED','PARSED') AND micr_error_count > 0
-     *
-     * @return list; may be null (ServiceImpl handles null-safety)
-     */
     List<InwardBatch> findRepairEligibleBatches();
 
-    /**
-     * Fetches a single batch by its batch_id.
-     *
-     * @param batchId  batch identifier
-     * @return InwardBatch or null if not found
-     */
     InwardBatch findBatchById(String batchId);
+
+    List<InwardCheque> findChequesByBatchId(String batchId);
+
+    void updateCheque(InwardCheque cheque);
+
+    List<InwardCheque> findStep2ChequesByBatchId(String batchId);
+
+    List<InwardCheque> findStep3ChequesByBatchId(String batchId);
+
+    void updateBatchStatus(String batchId, String status, String repairStatus);
 }

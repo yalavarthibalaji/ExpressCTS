@@ -29,7 +29,7 @@ public class InwardCheque {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long Chequeid;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batch_id", nullable = false)
@@ -144,8 +144,8 @@ public class InwardCheque {
 
     // ── Getters and Setters ──
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getChequeId() { return Chequeid; }
+    public void setChequeId(Long id) { this.Chequeid = id; }
 
     public InwardBatch getBatch() { return batch; }
     public void setBatch(InwardBatch batch) { this.batch = batch; }

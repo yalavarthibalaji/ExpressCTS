@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Date &amp; Amount Repair — Step 2" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardMicr/RejectRepair.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell"
+     apply="com.iispl.composer.DateAmountComposer">
+
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
+
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="rr-main">
+
+                <!-- ══ Breadcrumb ══════════════════════════════════════ -->
+                <div sclass="breadcrumb">
+                    <label sclass="breadcrumb-parent" value="Inward" />
+                    <label sclass="breadcrumb-sep" value=" › " />
+                    <label sclass="breadcrumb-current" value="Date And Amount" />
+                </div>
+
+                <!-- ══ Page Title ══════════════════════════════════════ -->
+                <div sclass="page-title-block">
+                    <label sclass="page-title"
+                           value="Inward Correction — Maker" />
+                    <label sclass="page-subtitle"
+                           value="OCR Reject &amp; Repair: Step 1 Reject &amp; Repair · Step 2 Date &amp; Amount · Step 3 Payee Name &amp; Account" />
+                </div>
+
+                <!-- ══ Wizard Bar — Step 2 active ══════════════════════
+                     Step 1 = completed (blue), connector 1 = filled (blue)
+                     Step 2 = active (blue)
+                     Step 3 = pending (grey)
+                     ════════════════════════════════════════════════════ -->
+                <div sclass="wizard-bar">
+
+                    <!-- Step 1 — Completed (blue, wrench) — clickable to go back -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep1"
+                                sclass="step-circle-btn completed"
+                                onClick="goToStep(1)"
+                                title="Step 1 — Reject &amp; Repair (completed)">
+                            <span sclass="step-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     width="22" height="22"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round">
+                                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num completed" value="Step 1" />
+                            <label sclass="step-desc completed" value="Reject &amp; Repair" />
+                        </div>
+                    </div>
+
+                    <!-- Connector 1 → 2  (filled / blue — step 1 done) -->
+                    <div sclass="step-connector filled" id="conn1" />
+
+                    <!-- Step 2 — Active (blue, calendar) -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep2"
+                                sclass="step-circle-btn active"
+                                onClick="goToStep(2)"
+                                title="Step 2 — Date &amp; Amount (current)">
+                            <span sclass="step-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     width="22" height="22"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num active" value="Step 2" />
+                            <label sclass="step-desc active" value="Date &amp; Amount" />
+                        </div>
+                    </div>
+
+                    <!-- Connector 2 → 3  (grey — step 2 not yet complete) -->
+                    <div sclass="step-connector" id="conn2" />
+
+                    <!-- Step 3 — Pending (grey, person) — disabled until step 2 done -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep3"
+                                sclass="step-circle-btn disabled-step"
+                                onClick="goToStep(3)"
+                                title="Step 3 — Payee &amp; Account (not yet available)">
+                            <span sclass="step-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     width="22" height="22"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num" id="lblStep3Num" value="Step 3" />
+                            <label sclass="step-desc" id="lblStep3Desc" value="Payee &amp; Account" />
+                        </div>
+                    </div>
+
+                </div><!-- /wizard-bar -->
+
+                <!-- ══ Content panel ══════════════════════════════════ -->
+                <div sclass="content-panel">
+
+                    <!-- Toolbar -->
+                    <div sclass="list-toolbar">
+                        <button sclass="btn-back"
+                                id="btnBackToStep1"
+                                label="← Back to Step 1" />
+
+                        <label sclass="badge-batch"
+                               id="lblBatchBadge"
+                               value="BATCH: —" />
+
+                        <label sclass="badge-pending"
+                               id="lblPendingBadge"
+                               value="0 PENDING" />
+
+                        <div sclass="toolbar-right">
+                            <combobox id="cmbFilter"
+                                      sclass="filter-select"
+                                      readonly="true"
+                                      width="160px"
+                                      placeholder="Filter by status">
+                                <comboitem label="All"           value=""              />
+                                <comboitem label="Needs Repair"  value="NEEDS_REPAIR"  />
+                                <comboitem label="Referred Back" value="REFERRED_BACK" />
+                                <comboitem label="Repaired"      value="REPAIRED"      />
+                            </combobox>
+                        </div>
+                    </div>
+
+                    <!-- Table — Step 2 columns -->
+                    <listbox id="chequeListbox"
+                             sclass="rr-listbox"
+                             emptyMessage="No cheques found."
+                             vflex="1">
+                        <listhead>
+                            <listheader label="#"
+                                        width="50px"
+                                        align="center" />
+                            <listheader label="CHEQUE NO."
+                                        width="120px" />
+                            <listheader label="BANK"
+                                        hflex="1" />
+                            <listheader label="PROC. DATE"
+                                        width="120px" />
+                            <listheader label="RCVD DATE"
+                                        width="120px" />
+                            <listheader label="PROC. AMT"
+                                        width="130px"
+                                        align="right" />
+                            <listheader label="RCVD AMT"
+                                        width="130px"
+                                        align="right" />
+                            <listheader label="STATUS"
+                                        width="140px"
+                                        align="center" />
+                            <listheader label="ACTION"
+                                        width="100px"
+                                        align="center" />
+                        </listhead>
+                        <!-- Rows rendered by DateAmountComposer -->
+                    </listbox>
+
+                    <!-- Pagination -->
+                    <div sclass="pagination-bar">
+                        <button sclass="btn-page" id="btnPrevPage" label="← Prev" />
+                        <label  sclass="page-info" id="lblPageInfo"
+                                value="Page 1 of 1 | 0 records" />
+                        <button sclass="btn-page" id="btnNextPage" label="Next →" />
+                    </div>
+
+                </div><!-- /content-panel -->
+
+                <!-- Bottom action -->
+                <div sclass="action-bar">
+                    <button sclass="btn-next-step"
+                            id="btnNextStep3"
+                            label="Next → Payee &amp; Account Entry" />
+                </div>
+
+            </div><!-- /rr-main -->
+        </div><!-- /main -->
+    </div><!-- /body-row -->
+
+    <!-- ══ Review Popup ═══════════════════════════════════════════ -->
+    <window id="reviewPopup"
+            title="Date &amp; Amount Review"
+            border="normal"
+            mode="modal"
+            visible="false"
+            width="500px"
+            sclass="rr-popup">
+        <div sclass="popup-body">
+
+            <!-- Comparison grid -->
+            <div sclass="compare-grid">
+                <div sclass="compare-col processed">
+                    <label sclass="compare-heading" value="PROCESSED DATA" />
+                    <label sclass="compare-row-label" value="Date:" />
+                    <label id="lblProcDate" value="—" />
+                    <label sclass="compare-row-label" value="Amount:" />
+                    <label id="lblProcAmt"  value="—" />
+                </div>
+                <div sclass="compare-col received">
+                    <label sclass="compare-heading" value="RECEIVED (OCR)" />
+                    <label sclass="compare-row-label" value="Date:" />
+                    <label id="lblRcvdDate" sclass="txt-mismatch" value="—" />
+                    <label sclass="compare-row-label" value="Amount:" />
+                    <label id="lblRcvdAmt"  sclass="txt-mismatch" value="—" />
+                </div>
+            </div>
+
+            <div sclass="fg">
+                <label value="Corrected Date *" sclass="field-label" />
+                <datebox id="dtCorrectedDate"
+                         sclass="fi"
+                         width="100%"
+                         format="dd/MM/yyyy"
+                         placeholder="DD/MM/YYYY" />
+            </div>
+            <div sclass="fg">
+                <label value="Corrected Amount *" sclass="field-label" />
+                <doublebox id="numCorrectedAmt"
+                           sclass="fi"
+                           width="100%"
+                           placeholder="e.g. 15000.00" />
+            </div>
+            <div sclass="fg">
+                <label value="Remarks" sclass="field-label" />
+                <textbox id="txtRemarks"
+                         sclass="fi"
+                         rows="2"
+                         width="100%"
+                         placeholder="Optional remarks..." />
+            </div>
+        </div>
+        <div sclass="popup-footer">
+            <button id="btnAccept"     sclass="btn-accept"       label="✓ Accept" />
+            <button id="btnReject"     sclass="btn-reject-popup" label="✗ Reject" />
+            <button id="btnRefer"      sclass="btn-refer"        label="↩ Refer" />
+            <button id="btnCancelPopup" sclass="btn-cancel"      label="Cancel" />
+        </div>
+    </window>
+
+    <!-- ══ Reject Reason Popup ══════════════════════════════════════ -->
+    <window id="rejectReasonPopup"
+            title="Reject Cheque — Confirm Reason"
+            border="normal"
+            mode="modal"
+            visible="false"
+            width="420px"
+            sclass="rr-popup">
+        <div sclass="popup-body">
+
+            <!-- Cheque ref bar -->
+            <div sclass="cheque-ref-bar">
+                <label sclass="ref-label" value="Cheque No:" />
+                <label id="lblRejChqNo"  sclass="ref-value" value="—" />
+                <label sclass="ref-label" value="Amount:" />
+                <label id="lblRejAmt"    sclass="ref-value" value="—" />
+                <label sclass="ref-label" value="Bank:" />
+                <label id="lblRejBank"   sclass="ref-value" value="—" />
+            </div>
+
+            <div sclass="fg">
+                <label value="Reject Reason *" sclass="field-label" />
+                <combobox id="cmbRejectReason"
+                          sclass="fi"
+                          readonly="true"
+                          width="100%"
+                          placeholder="Select a reason...">
+                    <comboitem label="Amount Mismatch"   value="AMOUNT_MISMATCH"  />
+                    <comboitem label="Date Mismatch"     value="DATE_MISMATCH"    />
+                    <comboitem label="Invalid Date"      value="INVALID_DATE"     />
+                    <comboitem label="Stale Cheque"      value="STALE_CHEQUE"     />
+                    <comboitem label="Post-dated Cheque" value="POSTDATED_CHEQUE" />
+                    <comboitem label="Other"             value="OTHER"            />
+                </combobox>
+            </div>
+            <div sclass="fg">
+                <label value="Remarks" sclass="field-label" />
+                <textbox id="txtRejectRemarks"
+                         sclass="fi"
+                         rows="2"
+                         width="100%"
+                         placeholder="Additional remarks..." />
+            </div>
+        </div>
+        <div sclass="popup-footer">
+            <button id="btnConfirmReject" sclass="btn-reject-popup" label="Confirm Reject" />
+            <button id="btnCancelReject"  sclass="btn-cancel"       label="Cancel" />
+        </div>
+    </window>
+
+    <div sclass="dash-footer">
+        <label value="ExpressClear CTS - IISPL" />
+    </div>
+
+</div>
+</zk>

@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Payee &amp; Account Entry — Step 3" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardMicr/RejectRepair.css"?>
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell"
+     apply="com.iispl.composer.PayeeAccountComposer">
+
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
+
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="rr-main">
+
+                <!-- ══ Breadcrumb ══════════════════════════════════════ -->
+                <div sclass="breadcrumb">
+                    <label sclass="breadcrumb-parent" value="Inward" />
+                    <label sclass="breadcrumb-sep" value=" › " />
+                    <label sclass="breadcrumb-current" value="Payee &amp; Account" />
+                </div>
+
+                <!-- ══ Page Title ══════════════════════════════════════ -->
+                <div sclass="page-title-block">
+                    <label sclass="page-title"
+                           value="Inward Correction — Maker" />
+                    <label sclass="page-subtitle"
+                           value="OCR Reject &amp; Repair: Step 1 Reject &amp; Repair · Step 2 Date &amp; Amount · Step 3 Payee Name &amp; Account" />
+                </div>
+
+                <!-- ══ Wizard Bar — Step 3 active ══════════════════════
+                     Step 1 = completed (blue), connector 1 = blue
+                     Step 2 = completed (blue), connector 2 = blue
+                     Step 3 = active (blue)
+                     ════════════════════════════════════════════════════ -->
+                <div sclass="wizard-bar">
+
+                    <!-- Step 1 — Completed (blue, wrench) — click to go back -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep1"
+                                sclass="step-circle-btn completed"
+                                onClick="goToStep(1)"
+                                title="Step 1 — Reject &amp; Repair (completed)">
+                            <span sclass="step-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     width="22" height="22"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round">
+                                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num completed" value="Step 1" />
+                            <label sclass="step-desc completed" value="Reject &amp; Repair" />
+                        </div>
+                    </div>
+
+                    <!-- Connector 1 → 2  (filled / blue — step 1 done) -->
+                    <div sclass="step-connector filled" id="conn1" />
+
+                    <!-- Step 2 — Completed (blue, calendar) — click to go back -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep2"
+                                sclass="step-circle-btn completed"
+                                onClick="goToStep(2)"
+                                title="Step 2 — Date &amp; Amount (completed)">
+                            <span sclass="step-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     width="22" height="22"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num completed" value="Step 2" />
+                            <label sclass="step-desc completed" value="Date &amp; Amount" />
+                        </div>
+                    </div>
+
+                    <!-- Connector 2 → 3  (filled / blue — step 2 done) -->
+                    <div sclass="step-connector filled" id="conn2" />
+
+                    <!-- Step 3 — Active (blue, person) -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep3"
+                                sclass="step-circle-btn active"
+                                onClick="goToStep(3)"
+                                title="Step 3 — Payee &amp; Account (current)">
+                            <span sclass="step-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     width="22" height="22"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num active" value="Step 3" />
+                            <label sclass="step-desc active" value="Payee &amp; Account" />
+                        </div>
+                    </div>
+
+                </div><!-- /wizard-bar -->
+
+                <!-- ══ Content panel ══════════════════════════════════ -->
+                <div sclass="content-panel">
+
+                    <!-- Toolbar -->
+                    <div sclass="list-toolbar">
+                        <button sclass="btn-back"
+                                id="btnBackToStep2"
+                                label="← Back to Step 2" />
+
+                        <label sclass="badge-batch"
+                               id="lblBatchBadge"
+                               value="BATCH: —" />
+
+                        <label sclass="badge-pending"
+                               id="lblPendingBadge"
+                               value="0 PENDING" />
+
+                        <div sclass="toolbar-right">
+                            <combobox id="cmbFilter"
+                                      sclass="filter-select"
+                                      readonly="true"
+                                      width="160px"
+                                      placeholder="Filter by status">
+                                <comboitem label="All"           value=""              />
+                                <comboitem label="Needs Entry"   value="NEEDS_ENTRY"   />
+                                <comboitem label="Referred Back" value="REFERRED_BACK" />
+                                <comboitem label="Completed"     value="ENTRY_DONE"    />
+                            </combobox>
+                        </div>
+                    </div>
+
+                    <!-- Table — Step 3 columns -->
+                    <listbox id="chequeListbox"
+                             sclass="rr-listbox"
+                             emptyMessage="No cheques found."
+                             vflex="1">
+                        <listhead>
+                            <listheader label="#"
+                                        width="50px"
+                                        align="center" />
+                            <listheader label="CHEQUE NO."
+                                        width="120px" />
+                            <listheader label="BANK"
+                                        hflex="1" />
+                            <listheader label="AMOUNT"
+                                        width="140px"
+                                        align="right" />
+                            <listheader label="PAYEE NAME"
+                                        width="170px" />
+                            <listheader label="ACCOUNT NO."
+                                        width="150px" />
+                            <listheader label="STATUS"
+                                        width="140px"
+                                        align="center" />
+                            <listheader label="ACTION"
+                                        width="100px"
+                                        align="center" />
+                        </listhead>
+                        <!-- Rows rendered by PayeeAccountComposer -->
+                    </listbox>
+
+                    <!-- Pagination -->
+                    <div sclass="pagination-bar">
+                        <button sclass="btn-page" id="btnPrevPage" label="← Prev" />
+                        <label  sclass="page-info" id="lblPageInfo"
+                                value="Page 1 of 1 | 0 records" />
+                        <button sclass="btn-page" id="btnNextPage" label="Next →" />
+                    </div>
+
+                </div><!-- /content-panel -->
+
+                <!-- Bottom action -->
+                <div sclass="action-bar">
+                    <button sclass="btn-next-step"
+                            id="btnProceedChecker"
+                            label="Proceed to Inward Checker →" />
+                </div>
+
+            </div><!-- /rr-main -->
+        </div><!-- /main -->
+    </div><!-- /body-row -->
+
+    <!-- ══ Entry Popup ══════════════════════════════════════════════ -->
+    <window id="entryPopup"
+            title="Payee &amp; Account Entry"
+            border="normal"
+            mode="modal"
+            visible="false"
+            width="480px"
+            sclass="rr-popup">
+        <div sclass="popup-body">
+
+            <!-- Cheque reference bar -->
+            <div sclass="cheque-ref-bar">
+                <label sclass="ref-label" value="Cheque No:" />
+                <label id="lblPopupChqNo" sclass="ref-value" value="—" />
+                <label sclass="ref-label" value="Amount:"   />
+                <label id="lblPopupAmt"   sclass="ref-value" value="—" />
+                <label sclass="ref-label" value="Bank:"     />
+                <label id="lblPopupBank"  sclass="ref-value" value="—" />
+            </div>
+
+            <!-- Info note -->
+            <div sclass="note-info">
+                ℹ Refer to cheque image above to enter the payee name and account number.
+            </div>
+
+            <div sclass="fg">
+                <label value="Payee Name *" sclass="field-label" />
+                <textbox id="txtPayeeName"
+                         sclass="fi"
+                         width="100%"
+                         placeholder="Enter payee name from cheque" />
+            </div>
+            <div sclass="fg">
+                <label value="Drawee Account Number *" sclass="field-label" />
+                <textbox id="txtAccNo"
+                         sclass="fi mono"
+                         width="100%"
+                         placeholder="Enter account number" />
+            </div>
+            <div sclass="fg">
+                <label value="Reference / Remarks" sclass="field-label" />
+                <textbox id="txtEntryRemarks"
+                         sclass="fi"
+                         rows="2"
+                         width="100%"
+                         placeholder="Any reference or notes..." />
+            </div>
+        </div>
+        <div sclass="popup-footer">
+            <button id="btnSaveEntry"   sclass="btn-next-step" label="💾 Save Entry" />
+            <button id="btnReferEntry"  sclass="btn-refer"     label="↩ Refer Back"  />
+            <button id="btnCancelEntry" sclass="btn-cancel"    label="Cancel"         />
+        </div>
+    </window>
+
+    <div sclass="dash-footer">
+        <label value="ExpressClear CTS - IISPL" />
+    </div>
+
+</div>
+</zk>

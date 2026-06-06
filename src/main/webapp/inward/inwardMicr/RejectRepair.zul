@@ -6,7 +6,8 @@
 <?link rel="stylesheet" type="text/css" href="/inward/inwardMicr/RejectRepair.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
-<div sclass="dash-shell" apply="com.iispl.composer.RejectRepairComposer">
+<div sclass="dash-shell"
+     apply="com.iispl.composer.RejectRepairComposer">
 
     <!-- Topbar -->
     <div sclass="topbar">
@@ -20,93 +21,362 @@
         <div sclass="main">
             <div sclass="rr-main">
 
-                <!-- Breadcrumb -->
+                <!-- ══ Breadcrumb ══════════════════════════════════════ -->
                 <div sclass="breadcrumb">
                     <label sclass="breadcrumb-parent" value="Inward" />
-                    <span sclass="breadcrumb-sep">›</span>
+                    <label sclass="breadcrumb-sep" value=" › " />
                     <label sclass="breadcrumb-current" value="Reject &amp; Repair" />
                 </div>
 
-                <!-- Page Title -->
+                <!-- ══ Page Title ══════════════════════════════════════ -->
                 <div sclass="page-title-block">
-                    <label sclass="page-title" value="Inward Correction — Maker" />
+                    <label sclass="page-title"
+                           value="Inward Correction — Maker" />
                     <label sclass="page-subtitle"
-                           value="OCR Reject &amp; Repair: Step 1 Reject &amp; Repair · Step 2 Date &amp; Amount · Step 3 Payee Name &amp; Account" />
+                           value="OCR Reject &amp; Repair" />
                 </div>
 
-                <!-- Step Wizard -->
+                <!-- ══ Wizard Bar ══════════════════════════════════════
+                     Each step circle is a clickable button.
+                     Active / completed = blue.  Pending = grey.
+                     Connectors: filled (blue) when left step is done.
+                     ════════════════════════════════════════════════════ -->
                 <div sclass="wizard-bar">
 
-                    <!-- Step 1 — active -->
-                    <div sclass="wizard-step active" id="wizStep1">
-                        <div sclass="step-circle active">
-                            <span sclass="step-icon">&#x1F527;</span>
-                        </div>
-                        <div sclass="step-connector filled" />
+                    <!-- Step 1 — Active (blue, wrench icon) -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep1"
+                        		label="1"
+                                sclass="step-circle-btn active" 
+                                tooltiptext="Step 1 — Reject &amp; Repair">     
+                        </button>
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num active" value="Step 1" />
-                            <label sclass="step-desc"       value="Reject &amp; Repair" />
+                            <label sclass="step-num active" value = "Step"/>
+                            <label sclass="step-desc active" value="Reject &amp; Repair" />
                         </div>
                     </div>
 
-                    <!-- Step 2 — inactive -->
-                    <div sclass="wizard-step" id="wizStep2">
-                        <div sclass="step-circle">
-                            <span sclass="step-icon">&#x1F4C5;</span>
-                        </div>
-                        <div sclass="step-connector" />
+                    <!-- Connector 1 → 2  (grey — step 1 not yet complete) -->
+                    <div sclass="step-connector" id="conn1" />
+
+                    <!-- Step 2 — Pending (grey, calendar icon) -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep2"
+                        		label="2"
+                                sclass="step-circle-btn disabled-step"
+                                tooltiptext="Step 2 — Date &amp; Amount">
+                        </button>
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num" value="Step 2" />
-                            <label sclass="step-desc" value="Date &amp; Amount" />
+                            <label sclass="step-num" id="lblStep2Num" value = "Step"/>
+                            <label sclass="step-desc" id="lblStep2Desc" value="Date &amp; Amount" />
                         </div>
                     </div>
 
-                    <!-- Step 3 — inactive -->
-                    <div sclass="wizard-step last" id="wizStep3">
-                        <div sclass="step-circle">
-                            <span sclass="step-icon">&#x1F464;</span>
-                        </div>
+                    <!-- Connector 2 → 3  (grey) -->
+                    <div sclass="step-connector" id="conn2" />
+
+                    <!-- Step 3 — Pending (grey, person icon) -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep3"
+                        		label="3"
+                                sclass="step-circle-btn disabled-step"
+                                tooltiptext="Step 3 — Payee &amp; Account">
+                        </button>
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num" value="Step 3" />
-                            <label sclass="step-desc" value="Payee &amp; Account" />
+                            <label sclass="step-num" id="lblStep3Num" value = "Step"/>
+                            <label sclass="step-desc" id="lblStep3Desc" value="Payee &amp; Account" />
                         </div>
                     </div>
 
                 </div><!-- /wizard-bar -->
 
-                <!-- Content Panel -->
-                <div sclass="content-panel" id="contentPanel">
-
-                    <!-- Empty State (shown when no batches) -->
-                    <div sclass="empty-state" id="emptyState">
+                <!-- ══ Empty State ══════════════════════════════════════
+                     Shown when no inward batches exist
+                     ══════════════════════════════════════════════════════ -->
+                <div sclass="content-panel" id="emptyStatePanel" visible="true">
+                    <div sclass="empty-state">
                         <div sclass="empty-icon">&#x1F4CB;</div>
-                        <div sclass="empty-title">No Inward Batches Available</div>
-                        <div sclass="empty-desc">
-                            Upload and parse cheque files in File Processing first.
-                        </div>
+                        <label sclass="empty-title"
+                               value="No Inward Batches Available" />
+                        <label sclass="empty-desc"
+                               value="Upload and parse cheque files in File Processing first." />
                         <button sclass="btn-goto-fp"
                                 id="btnGoToFileProcessing"
                                 label="Go to File Processing" />
                     </div>
+                </div>
 
-                    <!-- Batch list (shown when batches exist) -->
-                    <div sclass="batch-list-wrap" id="batchListWrap" visible="false">
-                        <listbox id="batchListbox" sclass="rr-listbox"
-                                 emptyMessage="No batches found.">
+                <!-- ══ Batch List View ══════════════════════════════════
+                     Shown when batches exist — Step 1 list
+                     ══════════════════════════════════════════════════════ -->
+                <div id="batchListPanel" visible="false">
+
+                    <!-- Toolbar -->
+                    <div sclass="content-panel">
+                        <div sclass="list-toolbar">
+                            <!-- Back button -->
+                            <button sclass="btn-back"
+                                    id="btnBackToBatches"
+                                    label="← Back to Batches" />
+
+                            <!-- Batch badge -->
+                            <label sclass="badge-batch"
+                                   id="lblBatchBadge"
+                                   value="BATCH: —" />
+
+                            <!-- Pending badge -->
+                            <label sclass="badge-pending"
+                                   id="lblPendingBadge"
+                                   value="0 PENDING" />
+
+                            <!-- Right-side: filter + search -->
+                            <div sclass="toolbar-right">
+                                <combobox id="cmbFilter"
+                                          sclass="filter-select"
+                                          readonly="true"
+                                          width="160px"
+                                          placeholder="Filter by status">
+                                    <comboitem label="All"           value=""              />
+                                    <comboitem label="Needs Repair"  value="NEEDS_REPAIR"  />
+                                    <comboitem label="Referred Back" value="REFERRED_BACK" />
+                                    <comboitem label="Repaired"      value="REPAIRED"      />
+                                </combobox>
+
+                                <textbox id="txtSearch"
+                                         sclass="search-box"
+                                         placeholder="Search cheque no. or bank..."
+                                         width="240px" />
+                            </div>
+                        </div>
+
+                        <!-- Cheque table -->
+                        <listbox id="chequeListbox"
+                                 sclass="rr-listbox"
+                                 emptyMessage="No cheques found."
+                                 vflex="1">
                             <listhead>
-                                <listheader label="Batch ID"       width="150px" />
-                                <listheader label="File Name"      hflex="1"    />
-                                <listheader label="Batch Date"     width="130px" />
-                                <listheader label="Total Cheques"  width="130px" />
-                                <listheader label="MICR Errors"    width="120px" />
-                                <listheader label="Status"         width="120px" />
-                                <listheader label="Repair Status"  width="130px" />
-                                <listheader label="Action"         width="100px" />
+                                <listheader label="#"
+                                            width="50px"
+                                            align="center" />
+                                <listheader label="CHEQUE NO."
+                                            width="130px" />
+                                <listheader label="PRESENTING BANK"
+                                            hflex="1" />
+                                <listheader label="MICR CODE"
+                                            width="150px" />
+                                <listheader label="AMOUNT"
+                                            width="140px"
+                                            align="right" />
+                                <listheader label="REPAIR STATUS"
+                                            width="150px"
+                                            align="center" />
+                                <listheader label="ACTION"
+                                            width="110px"
+                                            align="center" />
                             </listhead>
+                            <!-- Rows rendered by RejectRepairComposer -->
                         </listbox>
+
+                        <!-- Pagination -->
+                        <div sclass="pagination-bar">
+                            <button sclass="btn-page"
+                                    id="btnPrevPage"
+                                    label="← Prev" />
+                            <label sclass="page-info"
+                                   id="lblPageInfo"
+                                   value="Page 1 of 1 | 0 records" />
+                            <button sclass="btn-page"
+                                    id="btnNextPage"
+                                    label="Next →" />
+                        </div>
                     </div>
 
-                </div><!-- /content-panel -->
+                    <!-- ══════════════════════════════════════════════════════════
+     CHEQUE DETAIL PANEL
+     Appears below table when a row is clicked.
+     ══════════════════════════════════════════════════════════ -->
+<div id="chequeDetailPanel"
+     sclass="cheque-detail-panel"
+     visible="false">
+
+    <!-- Panel header -->
+    <div sclass="detail-header">
+        <label id="lblDetailChequeNo"
+               sclass="detail-title"
+               value="CHQ: —" />
+
+        <button id="btnCloseDetail"
+                sclass="btn-close-detail"
+                label="✕ Close" />
+    </div>
+
+    <!-- MICR Information -->
+    <div sclass="detail-section">
+        <label sclass="section-heading" value="MICR Information" />
+
+        <div sclass="detail-grid">
+
+            <div sclass="detail-field">
+                <label sclass="field-label" value="MICR Code (Raw)" />
+                <label id="lblMicrCodeRaw"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label" value="MICR Code (Corrected)" />
+                <label id="lblMicrCodeProcessed"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label" value="Bank Code" />
+                <label id="lblBankCode"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label" value="Branch Code" />
+                <label id="lblBranchCode"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label" value="Transaction Code" />
+                <label id="lblTransactionCode"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Amount & Date -->
+    <div sclass="detail-section">
+        <label sclass="section-heading"
+               value="Amount &amp; Date" />
+
+        <div sclass="detail-grid">
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Amount (Figures)" />
+                <label id="lblAmountFigures"
+                       sclass="field-value highlight-amount"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Amount (Words)" />
+                <label id="lblAmountWords"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Cheque Date" />
+                <label id="lblChequeDate"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bank & Account -->
+    <div sclass="detail-section">
+        <label sclass="section-heading"
+               value="Bank &amp; Account" />
+
+        <div sclass="detail-grid">
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Presenting Bank" />
+                <label id="lblPresentingBank"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Instrument Type" />
+                <label id="lblInstrumentType"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Drawee Account No." />
+                <label id="lblAccountNo"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Drawee Bank" />
+                <label id="lblDraweeBank"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Payee & Status -->
+    <div sclass="detail-section">
+        <label sclass="section-heading"
+               value="Payee &amp; Status" />
+
+        <div sclass="detail-grid">
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Payee Name" />
+                <label id="lblPayeeName"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Batch ID" />
+                <label id="lblDetailBatchId"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+            <div sclass="detail-field">
+                <label sclass="field-label"
+                       value="Repair Status" />
+                <label id="lblDetailRepairStatus"
+                       sclass="field-value"
+                       value="—" />
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Bottom Action -->
+<div sclass="action-bar">
+
+    <button sclass="btn-next-step"
+            id="btnNextStep2"
+            label="Next → Date &amp; Amount Repair" />
+
+</div>                    
+
+
+                </div><!-- /batchListPanel -->
 
             </div><!-- /rr-main -->
         </div><!-- /main -->
