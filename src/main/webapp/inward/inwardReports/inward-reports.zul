@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page title="Inward Reports — ExpressClear CTS" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/dashboard/dashboard.css"?>
+<?link rel="stylesheet" type="text/css" href="/inward/inwardReports/inward-reports.css"?>
+
+<!--
+    File    : inward/inwardReports/inward-reports.zul
+    Purpose : Checker Inward Reports page — Generate to Debit workflow.
+
+    Columns : Batch ID | Date | Total Cheques | Total Amount | Status | Action
+    Composer: com.iispl.composer.CheckerInwardReportsComposer
+    Access  : CHECKER_INWARD role only
+-->
+
+<zk xmlns="http://www.zkoss.org/2005/zul">
+<div sclass="dash-shell" apply="com.iispl.composer.CheckerInwardReportsComposer">
+
+    <!-- ① REUSABLE TOPBAR -->
+    <include src="/component/topbar.zul" />
+
+    <div sclass="body-row">
+
+        <!-- ② REUSABLE SIDEBAR -->
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+
+            <!-- ③ BREADCRUMB -->
+            <div id="breadbar" sclass="breadbar">
+                <label sclass="par" value="Home" />
+                <label sclass="sep" value="›" />
+                <label sclass="cur" value="Reports" />
+            </div>
+
+            <!-- ④ PAGE CONTENT -->
+            <div sclass="page rpt-page">
+
+                <!-- Info note -->
+                <div sclass="note info rpt-note">
+                    <label sclass="rpt-note-icon" value="ℹ" />
+                    <label value="Select an eligible batch and click Generate to Debit to initiate the debit generation process for that batch." />
+                </div>
+
+                <!-- Filter bar -->
+                <div sclass="rpt-fbar">
+                    <textbox id="txtBatchSearch"
+                             sclass="fi rpt-fi-search"
+                             placeholder="🔍 Search batches..."
+                             maxlength="30" />
+
+                    <datebox id="dtFrom"
+                             sclass="fi rpt-fi-date"
+                             format="dd/MM/yyyy"
+                             cols="12"
+                             placeholder="From Date" />
+
+                    <datebox id="dtTo"
+                             sclass="fi rpt-fi-date"
+                             format="dd/MM/yyyy"
+                             cols="12"
+                             placeholder="To Date"/>
+
+                    <combobox id="cmbStatus"
+                              sclass="fi rpt-fi-status"
+                              readonly="true"
+                              width="130px" />
+
+                    <button id="btnSearch"
+                            label="Search"
+                            sclass="btn bp rpt-btn-generate" />
+                </div>
+
+                <listbox id="lstReports"
+                         sclass="rpt-listbox"
+                         mold="paging"
+                         pageSize="15"
+                         emptyMessage="No batches found. Adjust filters and click Search."
+                         width="100%">
+
+                    <listhead sizable="true">
+                        <listheader label="BATCH ID"      width="18%" />
+                        <listheader label="DATE"          width="12%" />
+                        <listheader label="TOTAL CHEQUES" width="13%" />
+                        <listheader label="TOTAL AMOUNT"  width="16%" />
+                        <listheader label="STATUS"        width="16%" />
+                        <listheader label="ACTION"        width="25%" />
+                    </listhead>
+
+                </listbox>
+            </div><!-- end .page -->
+
+            <!-- ⑤ REUSABLE STATUSBAR -->
+            <include src="/component/statusbar.zul" />
+
+        </div><!-- end .main -->
+    </div><!-- end .body-row -->
+
+</div>
+</zk>

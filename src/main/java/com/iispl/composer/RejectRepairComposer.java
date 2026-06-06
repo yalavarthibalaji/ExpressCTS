@@ -375,7 +375,7 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
             if (c.isMicrError()) {
                 Button repairBtn = new Button("Repair");
                 repairBtn.setSclass("btn-repair-row");
-                final Long   chequeId = c.getChequeId();        // ← FIXED: was getChequeId()
+                final Long   chequeId = c.getId();        // ← FIXED: was getChequeId()
                 final String batchId  = currentBatchId;
                 repairBtn.addEventListener(Events.ON_CLICK, ev -> {
                     ev.stopPropagation();

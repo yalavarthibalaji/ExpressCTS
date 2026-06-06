@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    File    : components/report-filter.zul
+    Purpose : Reusable filter bar for Inward Reports.
+              Included via:
+                  <include src="/components/report-filter.zul" />
+              inside a ZUL page that has a SelectorComposer applied on a
+              parent div.  The IDs below are wired by CheckerInwardReportsComposer.
+
+    Controls (all wired by ID):
+      txtBatchSearch  — free-text partial batch_id search
+      dtFrom          — From Date  (Datebox)
+      dtTo            — To Date    (Datebox)
+      cmbStatus       — Status filter combobox (populated by composer)
+      btnGenerate     — Triggers report generation
+      btnDownloadCxf  — Triggers CXF XML download
+      btnDownloadBrf  — Triggers BRF XML download
+-->
+
+<div sclass="fbar" xmlns="http://www.zkoss.org/2005/zul">
+
+    <!-- ① Batch ID search -->
+    <div sclass="fg" style="min-width:200px;">
+        <label value="SEARCH BATCH" />
+        <textbox id="txtBatchSearch"
+                 sclass="fi"
+                 placeholder="Search batches…"
+                 maxlength="30" />
+    </div>
+
+    <!-- ② From Date -->
+    <div sclass="fg">
+        <label value="FROM DATE" />
+        <datebox id="dtFrom"
+                 sclass="fi"
+                 format="dd/MM/yyyy"
+                 cols="12" />
+    </div>
+
+    <!-- ③ To Date -->
+    <div sclass="fg">
+        <label value="TO DATE" />
+        <datebox id="dtTo"
+                 sclass="fi"
+                 format="dd/MM/yyyy"
+                 cols="12" />
+    </div>
+
+    <!-- ④ Status combobox — items populated in CheckerInwardReportsComposer -->
+    <div sclass="fg" style="min-width:170px;">
+        <label value="STATUS" />
+        <combobox id="cmbStatus"
+                  sclass="fi"
+                  readonly="true"
+                  width="160px" />
+    </div>
+
+    <!-- ⑤ Generate button -->
+    <div sclass="fg" style="justify-content:flex-end;">
+        <label value="&#160;" />
+        <button id="btnGenerate"
+                label="Generate"
+                sclass="btn bp" />
+    </div>
+
+    <!-- ⑥ Export buttons -->
+    <div sclass="fg" style="justify-content:flex-end;">
+        <label value="&#160;" />
+        <div sclass="btn-grp">
+            <button id="btnDownloadCxf"
+                    label="↓ CXF.xml"
+                    sclass="btn bp"
+                    disabled="true" />
+            <button id="btnDownloadBrf"
+                    label="↓ BRF.xml"
+                    sclass="btn bp"
+                    disabled="true" />
+        </div>
+    </div>
+
+</div>

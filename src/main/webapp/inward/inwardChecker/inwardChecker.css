@@ -1,9 +1,0 @@
-/*
- * File: inward/inwardChecker/inwardChecker.css
- * Purpose: Page-specific styles for Checker Inward Verification.
- *          Import order: global.css → components.css → layout.css → this file.
- *          Styles for CBS validation result display
- */
-
-/* Add inwardChecker-specific styles here only. */
-/* Styles that are shared across pages belong in css/components.css */

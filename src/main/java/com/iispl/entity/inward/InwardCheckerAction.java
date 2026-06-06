@@ -19,70 +19,115 @@ import jakarta.persistence.Table;
 @Table(name = "inward_checker_actions")
 public class InwardCheckerAction {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    // Many Actions -> One Cheque  (two-way: InwardCheque.checkerActions)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "inward_cheque_id", nullable = false)
-    private InwardCheque inwardCheque;
+	// Many Actions -> One Cheque (two-way: InwardCheque.checkerActions)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "inward_cheque_id", nullable = false)
+	private InwardCheque inwardCheque;
 
-    // Many Actions -> One Batch  (two-way: InwardBatch.checkerActions)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "inward_batch_id", nullable = false)
-    private InwardBatch inwardBatch;
+	// Many Actions -> One Batch (two-way: InwardBatch.checkerActions)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "inward_batch_id", nullable = false)
+	private InwardBatch inwardBatch;
 
-    // Unidirectional — checker who took the action
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "checker_id", nullable = false)
-    private User checker;
+	// Unidirectional — checker who took the action
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "checker_id", nullable = false)
+	private User checker;
 
-    // ACCEPTED | RETURNED | SEND_BACK
-    @Column(name = "action", nullable = false, length = 20)
-    private String action;
+	// ACCEPTED | RETURNED | SEND_BACK
+	@Column(name = "action", nullable = false, length = 20)
+	private String action;
 
-    @Column(name = "reason_code", length = 5)
-    private String reasonCode;
+	@Column(name = "reason_code", length = 5)
+	private String reasonCode;
 
-    @Column(name = "reason_text", length = 255)
-    private String reasonText;
+	@Column(name = "reason_text", length = 255)
+	private String reasonText;
 
-    @Column(name = "remarks", length = 500)
-    private String remarks;
+	@Column(name = "remarks", length = 500)
+	private String remarks;
 
-    @Column(name = "actioned_at", nullable = false)
-    private LocalDateTime actionedAt;
+	@Column(name = "actioned_at", nullable = false)
+	private LocalDateTime actionedAt;
 
-    @PrePersist
-    public void prePersist() {
-        this.actionedAt = LocalDateTime.now();
-    }
+	@PrePersist
+	public void prePersist() {
+		this.actionedAt = LocalDateTime.now();
+	}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+	public Long getId() {
+		return id;
+	}
 
-    public InwardCheque getInwardCheque() { return inwardCheque; }
-    public void setInwardCheque(InwardCheque inwardCheque) { this.inwardCheque = inwardCheque; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public InwardBatch getInwardBatch() { return inwardBatch; }
-    public void setInwardBatch(InwardBatch inwardBatch) { this.inwardBatch = inwardBatch; }
+	public InwardCheque getInwardCheque() {
+		return inwardCheque;
+	}
 
-    public User getChecker() { return checker; }
-    public void setChecker(User checker) { this.checker = checker; }
+	public void setInwardCheque(InwardCheque inwardCheque) {
+		this.inwardCheque = inwardCheque;
+	}
 
-    public String getAction() { return action; }
-    public void setAction(String action) { this.action = action; }
+	public InwardBatch getInwardBatch() {
+		return inwardBatch;
+	}
 
-    public String getReasonCode() { return reasonCode; }
-    public void setReasonCode(String reasonCode) { this.reasonCode = reasonCode; }
+	public void setInwardBatch(InwardBatch inwardBatch) {
+		this.inwardBatch = inwardBatch;
+	}
 
-    public String getReasonText() { return reasonText; }
-    public void setReasonText(String reasonText) { this.reasonText = reasonText; }
+	public User getChecker() {
+		return checker;
+	}
 
-    public String getRemarks() { return remarks; }
-    public void setRemarks(String remarks) { this.remarks = remarks; }
+	public void setChecker(User checker) {
+		this.checker = checker;
+	}
 
-    public LocalDateTime getActionedAt() { return actionedAt; }
-    public void setActionedAt(LocalDateTime actionedAt) { this.actionedAt = actionedAt; }
+	public String getAction() {
+		return action;
+	}
+
+	public void setAction(String action) {
+		this.action = action;
+	}
+
+	public String getReasonCode() {
+		return reasonCode;
+	}
+
+	public void setReasonCode(String reasonCode) {
+		this.reasonCode = reasonCode;
+	}
+
+	public String getReasonText() {
+		return reasonText;
+	}
+
+	public void setReasonText(String reasonText) {
+		this.reasonText = reasonText;
+	}
+
+	public String getRemarks() {
+		return remarks;
+	}
+
+	public void setRemarks(String remarks) {
+		this.remarks = remarks;
+	}
+
+	public LocalDateTime getActionedAt() {
+		return actionedAt;
+	}
+
+	public void setActionedAt(LocalDateTime actionedAt) {
+		this.actionedAt = actionedAt;
+	}
 }

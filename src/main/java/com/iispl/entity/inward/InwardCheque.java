@@ -5,9 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.iispl.enums.MicrStatus;
-import com.iispl.enums.RepairStatus;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,219 +24,389 @@ import jakarta.persistence.Table;
 @Table(name = "inward_cheque")
 public class InwardCheque {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long Chequeid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "batch_id", nullable = false)
-    private InwardBatch batch;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "seq_no", nullable = false)
-    private int seqNo;
 
-    @Column(name = "cheque_no", nullable = false, length = 10)
-    private String chequeNo;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "batch_id", nullable = false)
+	private InwardBatch batch;
 
-    // ── From CXF file (declared by presenting bank) ──
-    @Column(name = "cheque_date", nullable = false)
-    private LocalDate chequeDate;
+	@Column(name = "seq_no", nullable = false)
+	private int seqNo;
 
-    @Column(name = "amount", nullable = false, precision = 13, scale = 2)
-    private BigDecimal amount;
+	@Column(name = "cheque_no", nullable = false, length = 10)
+	private String chequeNo;
 
-    // ── From OCR scan of cheque image (NEW Step 2 comparison) ──
-    @Column(name = "cheque_date_ocr")
-    private LocalDate chequeDateOcr;
+	// ── From CXF file (declared by presenting bank) ──
+	@Column(name = "cheque_date", nullable = false)
+	private LocalDate chequeDate;
 
-    @Column(name = "amount_ocr", precision = 13, scale = 2)
-    private BigDecimal amountOcr;
+	@Column(name = "amount", nullable = false, precision = 13, scale = 2)
+	private BigDecimal amount;
 
-    @Column(name = "amount_in_words", length = 255)
-    private String amountInWords;
+	// ── From OCR scan of cheque image (NEW Step 2 comparison) ──
+	@Column(name = "cheque_date_ocr")
+	private LocalDate chequeDateOcr;
 
-    @Column(name = "city_code", length = 3)
-    private String cityCode;
+	@Column(name = "amount_ocr", precision = 13, scale = 2)
+	private BigDecimal amountOcr;
 
-    @Column(name = "bank_code", length = 3)
-    private String bankCode;
+	@Column(name = "amount_in_words", length = 255)
+	private String amountInWords;
 
-    @Column(name = "branch_code", length = 3)
-    private String branchCode;
+	@Column(name = "city_code", length = 3)
+	private String cityCode;
 
-    @Column(name = "micr_code_raw", length = 50)
-    private String micrCodeRaw;
+	@Column(name = "bank_code", length = 3)
+	private String bankCode;
 
-    @Column(name = "micr_code_corrected", length = 50)
-    private String micrCodeCorrected;
+	@Column(name = "branch_code", length = 3)
+	private String branchCode;
 
-    @Column(name = "is_micr_error", nullable = false)
-    private boolean isMicrError = false;
+	@Column(name = "micr_code_raw", length = 50)
+	private String micrCodeRaw;
 
-    @Column(name = "presenting_bank_code", length = 10)
-    private String presentingBankCode;
+	@Column(name = "micr_code_corrected", length = 50)
+	private String micrCodeCorrected;
 
-    @Column(name = "presenting_bank_name", length = 100)
-    private String presentingBankName;
+	@Column(name = "is_micr_error", nullable = false)
+	private boolean isMicrError = false;
 
-    @Column(name = "drawee_account_number", length = 20)
-    private String draweeAccountNumber;
+	@Column(name = "presenting_bank_code", length = 10)
+	private String presentingBankCode;
 
-    @Column(name = "drawee_account_holder", length = 100)
-    private String draweeAccountHolder;
+	@Column(name = "presenting_bank_name", length = 100)
+	private String presentingBankName;
 
-    @Column(name = "account_balance", precision = 15, scale = 2)
-    private BigDecimal accountBalance;
+	@Column(name = "drawee_account_number", length = 20)
+	private String draweeAccountNumber;
 
-    @Column(name = "is_account_valid")
-    private Boolean isAccountValid = false;
+	@Column(name = "drawee_account_holder", length = 100)
+	private String draweeAccountHolder;
 
-    @Column(name = "is_bank_matched")
-    private Boolean isBankMatched = false;
+	@Column(name = "account_balance", precision = 15, scale = 2)
+	private BigDecimal accountBalance;
 
-    @Column(name = "payee_name", length = 100)
-    private String payeeName;
+	@Column(name = "is_account_valid")
+	private Boolean isAccountValid = false;
 
-    @Column(name = "iqa_status", nullable = false, length = 20)
-    private String iqaStatus = "PENDING";
+	@Column(name = "is_bank_matched")
+	private Boolean isBankMatched = false;
 
-    // RECEIVED | ENTRY_DONE | SUBMITTED | ACCEPTED | RETURNED | SEND_BACK
-    @Column(name = "status", nullable = false, length = 30)
-    private String status = "RECEIVED";
+	@Column(name = "payee_name", length = 100)
+	private String payeeName;
 
-    // NOT_REQUIRED | NEEDS_REPAIR | REPAIRED  (covers Step 1 MICR + Step 2 Date/Amt)
-    @Column(name = "repair_status", nullable = false, length = 20)
-    private String repairStatus = "";
+	@Column(name = "iqa_status", nullable = false, length = 20)
+	private String iqaStatus = "PENDING";
 
-    @Column(name = "front_image_path", length = 500)
-    private String frontImagePath;
+	// RECEIVED | ENTRY_DONE | SUBMITTED | ACCEPTED | RETURNED | SEND_BACK
+	@Column(name = "status", nullable = false, length = 30)
+	private String status = "RECEIVED";
 
-    @Column(name = "back_image_path", length = 500)
-    private String backImagePath;
 
-    @Column(name = "remarks", length = 500)
-    private String remarks;
+	// NOT_REQUIRED | NEEDS_REPAIR | REPAIRED (covers Step 1 MICR + Step 2 Date/Amt)
+	@Column(name = "repair_status", nullable = false, length = 20)
+	private String repairStatus = "NOT_REQUIRED";
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+	@Column(name = "front_image_path", length = 500)
+	private String frontImagePath;
 
-    @OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InwardMicrRepair> micrRepairs;
+	@Column(name = "back_image_path", length = 500)
+	private String backImagePath;
 
-    @OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InwardCheckerAction> checkerActions;
+	@Column(name = "remarks", length = 500)
+	private String remarks;
 
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-    }
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
 
-    // ── Getters and Setters ──
+	@OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<InwardMicrRepair> micrRepairs;
 
-    public Long getChequeId() { return Chequeid; }
-    public void setChequeId(Long id) { this.Chequeid = id; }
+	@OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<InwardCheckerAction> checkerActions;
 
-    public InwardBatch getBatch() { return batch; }
-    public void setBatch(InwardBatch batch) { this.batch = batch; }
+	@PrePersist
+	public void prePersist() {
+		this.createdAt = LocalDateTime.now();
+	}
 
-    public int getSeqNo() { return seqNo; }
-    public void setSeqNo(int seqNo) { this.seqNo = seqNo; }
+	@PreUpdate
+	public void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 
-    public String getChequeNo() { return chequeNo; }
-    public void setChequeNo(String chequeNo) { this.chequeNo = chequeNo; }
+	// ── Getters and Setters ──
 
-    public LocalDate getChequeDate() { return chequeDate; }
-    public void setChequeDate(LocalDate chequeDate) { this.chequeDate = chequeDate; }
 
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
+	public Long getId() {
+		return id;
+	}
 
-    public LocalDate getChequeDateOcr() { return chequeDateOcr; }
-    public void setChequeDateOcr(LocalDate chequeDateOcr) { this.chequeDateOcr = chequeDateOcr; }
 
-    public BigDecimal getAmountOcr() { return amountOcr; }
-    public void setAmountOcr(BigDecimal amountOcr) { this.amountOcr = amountOcr; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public String getAmountInWords() { return amountInWords; }
-    public void setAmountInWords(String amountInWords) { this.amountInWords = amountInWords; }
+	public InwardBatch getBatch() {
+		return batch;
+	}
 
-    public String getCityCode() { return cityCode; }
-    public void setCityCode(String cityCode) { this.cityCode = cityCode; }
+	public void setBatch(InwardBatch batch) {
+		this.batch = batch;
+	}
 
-    public String getBankCode() { return bankCode; }
-    public void setBankCode(String bankCode) { this.bankCode = bankCode; }
+	public int getSeqNo() {
+		return seqNo;
+	}
 
-    public String getBranchCode() { return branchCode; }
-    public void setBranchCode(String branchCode) { this.branchCode = branchCode; }
+	public void setSeqNo(int seqNo) {
+		this.seqNo = seqNo;
+	}
 
-    public String getMicrCodeRaw() { return micrCodeRaw; }
-    public void setMicrCodeRaw(String micrCodeRaw) { this.micrCodeRaw = micrCodeRaw; }
+	public String getChequeNo() {
+		return chequeNo;
+	}
 
-    public String getMicrCodeCorrected() { return micrCodeCorrected; }
-    public void setMicrCodeCorrected(String micrCodeCorrected) { this.micrCodeCorrected = micrCodeCorrected; }
+	public void setChequeNo(String chequeNo) {
+		this.chequeNo = chequeNo;
+	}
 
-    public boolean isMicrError() { return isMicrError; }
-    public void setMicrError(boolean micrError) { isMicrError = micrError; }
+	public LocalDate getChequeDate() {
+		return chequeDate;
+	}
 
-    public String getPresentingBankCode() { return presentingBankCode; }
-    public void setPresentingBankCode(String presentingBankCode) { this.presentingBankCode = presentingBankCode; }
+	public void setChequeDate(LocalDate chequeDate) {
+		this.chequeDate = chequeDate;
+	}
 
-    public String getPresentingBankName() { return presentingBankName; }
-    public void setPresentingBankName(String presentingBankName) { this.presentingBankName = presentingBankName; }
+	public BigDecimal getAmount() {
+		return amount;
+	}
 
-    public String getDraweeAccountNumber() { return draweeAccountNumber; }
-    public void setDraweeAccountNumber(String draweeAccountNumber) { this.draweeAccountNumber = draweeAccountNumber; }
+	public void setAmount(BigDecimal amount) {
+		this.amount = amount;
+	}
 
-    public String getDraweeAccountHolder() { return draweeAccountHolder; }
-    public void setDraweeAccountHolder(String draweeAccountHolder) { this.draweeAccountHolder = draweeAccountHolder; }
+	public LocalDate getChequeDateOcr() {
+		return chequeDateOcr;
+	}
 
-    public BigDecimal getAccountBalance() { return accountBalance; }
-    public void setAccountBalance(BigDecimal accountBalance) { this.accountBalance = accountBalance; }
+	public void setChequeDateOcr(LocalDate chequeDateOcr) {
+		this.chequeDateOcr = chequeDateOcr;
+	}
 
-    public Boolean getIsAccountValid() { return isAccountValid; }
-    public void setIsAccountValid(Boolean isAccountValid) { this.isAccountValid = isAccountValid; }
+	public BigDecimal getAmountOcr() {
+		return amountOcr;
+	}
 
-    public Boolean getIsBankMatched() { return isBankMatched; }
-    public void setIsBankMatched(Boolean isBankMatched) { this.isBankMatched = isBankMatched; }
+	public void setAmountOcr(BigDecimal amountOcr) {
+		this.amountOcr = amountOcr;
+	}
 
-    public String getPayeeName() { return payeeName; }
-    public void setPayeeName(String payeeName) { this.payeeName = payeeName; }
+	public String getAmountInWords() {
+		return amountInWords;
+	}
 
-    public String getIqaStatus() { return iqaStatus; }
-    public void setIqaStatus(String iqaStatus) { this.iqaStatus = iqaStatus; }
+	public void setAmountInWords(String amountInWords) {
+		this.amountInWords = amountInWords;
+	}
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+	public String getCityCode() {
+		return cityCode;
+	}
 
-    public String getRepairStatus() { return repairStatus; }
-    public void setRepairStatus(String repairStatus) { this.repairStatus = repairStatus; }
+	public void setCityCode(String cityCode) {
+		this.cityCode = cityCode;
+	}
 
-    public String getFrontImagePath() { return frontImagePath; }
-    public void setFrontImagePath(String frontImagePath) { this.frontImagePath = frontImagePath; }
+	public String getBankCode() {
+		return bankCode;
+	}
 
-    public String getBackImagePath() { return backImagePath; }
-    public void setBackImagePath(String backImagePath) { this.backImagePath = backImagePath; }
+	public void setBankCode(String bankCode) {
+		this.bankCode = bankCode;
+	}
 
-    public String getRemarks() { return remarks; }
-    public void setRemarks(String remarks) { this.remarks = remarks; }
+	public String getBranchCode() {
+		return branchCode;
+	}
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+	public void setBranchCode(String branchCode) {
+		this.branchCode = branchCode;
+	}
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+	public String getMicrCodeRaw() {
+		return micrCodeRaw;
+	}
 
-    public List<InwardMicrRepair> getMicrRepairs() { return micrRepairs; }
-    public void setMicrRepairs(List<InwardMicrRepair> micrRepairs) { this.micrRepairs = micrRepairs; }
+	public void setMicrCodeRaw(String micrCodeRaw) {
+		this.micrCodeRaw = micrCodeRaw;
+	}
+
+	public String getMicrCodeCorrected() {
+		return micrCodeCorrected;
+	}
+
+	public void setMicrCodeCorrected(String micrCodeCorrected) {
+		this.micrCodeCorrected = micrCodeCorrected;
+	}
+
+	public boolean isMicrError() {
+		return isMicrError;
+	}
+
+	public void setMicrError(boolean micrError) {
+		isMicrError = micrError;
+	}
+
+	public String getPresentingBankCode() {
+		return presentingBankCode;
+	}
+
+	public void setPresentingBankCode(String presentingBankCode) {
+		this.presentingBankCode = presentingBankCode;
+	}
+
 
     public List<InwardCheckerAction> getCheckerActions() { return checkerActions; }
     public void setCheckerActions(List<InwardCheckerAction> checkerActions) { this.checkerActions = checkerActions; }
+
+	public String getPresentingBankName() {
+		return presentingBankName;
+	}
+
+	public void setPresentingBankName(String presentingBankName) {
+		this.presentingBankName = presentingBankName;
+	}
+
+	public String getDraweeAccountNumber() {
+		return draweeAccountNumber;
+	}
+
+	public void setDraweeAccountNumber(String draweeAccountNumber) {
+		this.draweeAccountNumber = draweeAccountNumber;
+	}
+
+	public String getDraweeAccountHolder() {
+		return draweeAccountHolder;
+	}
+
+	public void setDraweeAccountHolder(String draweeAccountHolder) {
+		this.draweeAccountHolder = draweeAccountHolder;
+	}
+
+	public BigDecimal getAccountBalance() {
+		return accountBalance;
+	}
+
+	public void setAccountBalance(BigDecimal accountBalance) {
+		this.accountBalance = accountBalance;
+	}
+
+	public Boolean getIsAccountValid() {
+		return isAccountValid;
+	}
+
+	public void setIsAccountValid(Boolean isAccountValid) {
+		this.isAccountValid = isAccountValid;
+	}
+
+	public Boolean getIsBankMatched() {
+		return isBankMatched;
+	}
+
+	public void setIsBankMatched(Boolean isBankMatched) {
+		this.isBankMatched = isBankMatched;
+	}
+
+	public String getPayeeName() {
+		return payeeName;
+	}
+
+	public void setPayeeName(String payeeName) {
+		this.payeeName = payeeName;
+	}
+
+	public String getIqaStatus() {
+		return iqaStatus;
+	}
+
+	public void setIqaStatus(String iqaStatus) {
+		this.iqaStatus = iqaStatus;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getRepairStatus() {
+		return repairStatus;
+	}
+
+	public void setRepairStatus(String repairStatus) {
+		this.repairStatus = repairStatus;
+	}
+
+	public String getFrontImagePath() {
+		return frontImagePath;
+	}
+
+	public void setFrontImagePath(String frontImagePath) {
+		this.frontImagePath = frontImagePath;
+	}
+
+	public String getBackImagePath() {
+		return backImagePath;
+	}
+
+	public void setBackImagePath(String backImagePath) {
+		this.backImagePath = backImagePath;
+	}
+
+	public String getRemarks() {
+		return remarks;
+	}
+
+	public void setRemarks(String remarks) {
+		this.remarks = remarks;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	public List<InwardMicrRepair> getMicrRepairs() {
+		return micrRepairs;
+	}
+
+	public void setMicrRepairs(List<InwardMicrRepair> micrRepairs) {
+		this.micrRepairs = micrRepairs;
+	}
+
+	
 }
+
