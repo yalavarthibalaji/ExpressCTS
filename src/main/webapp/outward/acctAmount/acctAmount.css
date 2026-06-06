@@ -229,3 +229,45 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 .mb16 { margin-bottom: 16px; }
 .mt8  { margin-top: 8px; }
 .mt12 { margin-top: 12px; }
+
+
+/* ════════════════════════════════════════════════════
+   CBS VALIDATION RESULT STATES
+   Three visual states for the validation result area.
+════════════════════════════════════════════════════ */
+
+/* val-ok  = ACTIVE account ✓ */
+.val-ok {
+    display: block;
+    padding: 8px 12px;
+    background: var(--success-bg);
+    border: 1px solid var(--success-b);
+    border-radius: var(--r4);
+    font-size: 12px;
+    color: var(--success);
+    font-weight: 500;
+}
+
+/* val-warn = account found but INACTIVE/CLOSED/FROZEN ⚠ */
+.val-warn {
+    display: block;
+    padding: 8px 12px;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-b);
+    border-radius: var(--r4);
+    font-size: 12px;
+    color: var(--warning);
+    font-weight: 500;
+}
+
+/* val-err = account not found or CBS service error ✗ */
+.val-err {
+    display: block;
+    padding: 8px 12px;
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-b);
+    border-radius: var(--r4);
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 500;
+}

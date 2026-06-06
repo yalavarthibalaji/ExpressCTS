@@ -237,27 +237,59 @@
                                     </div>
                                 </div>
 
-                                <!-- Section 2: Account Number -->
-                                <div sclass="vs">
-                                    <n:div class="vs-title">
-                                        Account Number
-                                    </n:div>
-                                    <div sclass="flex gap8 mb8">
-                                        <textbox id="accountNoBox"
-                                                 sclass="fi mono flex1"
-                                                 placeholder="Enter account number"/>
-                                        <button id="validateBtn"
-                                                sclass="btn bo">
-                                            Validate
-                                        </button>
-                                    </div>
-                                    <div id="valResultDiv"
-                                         visible="false">
-                                        <label id="valResultLabel"
-                                               sclass="val-ok"
-                                               value=""/>
-                                    </div>
-                                </div>
+                                <!-- Section 2: Account & CBS Validation -->
+<div sclass="vs">
+    <n:div class="vs-title">Account Validation (CBS)</n:div>
+
+    <!-- Account number input + validate button -->
+    <div sclass="flex gap8 mb8">
+        <textbox id="accountNoBox"
+                 sclass="fi mono flex1"
+                 placeholder="Enter account number"/>
+        <button id="validateBtn"
+                sclass="btn bo">
+            Validate
+        </button>
+    </div>
+
+    <!-- Validation result area — hidden until validate clicked -->
+    <div id="valResultDiv" visible="false">
+
+        <!-- Status message (success / warning / error) -->
+        <label id="valMessageLabel"
+               sclass="val-ok"
+               value=""/>
+
+        <!-- Account details — shown only when account is found -->
+        <div id="valDetailsDiv" visible="false"
+             style="margin-top:8px;border:1px solid var(--border);
+                    border-radius:var(--r4);padding:10px 12px;
+                    background:var(--alt);">
+            <div sclass="vr">
+                <label sclass="vl" value="Account Holder"/>
+                <label id="valHolderLabel" sclass="vv fw6" value="—"/>
+            </div>
+            <div sclass="vr">
+                <label sclass="vl" value="Account Type"/>
+                <label id="valTypeLabel" sclass="vv" value="—"/>
+            </div>
+            <div sclass="vr">
+                <label sclass="vl" value="CBS Status"/>
+                <label id="valStatusBadge" sclass="badge b-pass" value="ACTIVE"/>
+            </div>
+            <div sclass="vr">
+                <label sclass="vl" value="IFSC Code"/>
+                <label id="valIfscLabel" sclass="vv mono" value="—"/>
+            </div>
+            <div sclass="vr">
+                <label sclass="vl" value="Balance"/>
+                <label id="valBalanceLabel" sclass="vv" value="—"/>
+            </div>
+        </div>
+
+    </div>
+
+</div>
 
                                 <!-- Section 3: Amount Entry -->
                                 <div sclass="vs">
