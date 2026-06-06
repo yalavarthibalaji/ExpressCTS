@@ -8,23 +8,32 @@ import com.iispl.service.CheckerInwardReportsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
 /**
  * File    : com/iispl/serviceImpl/CheckerInwardReportsServiceImpl.java
- * Purpose : Concrete implementation of CheckerInwardReportsService.
  *
- *   - Validates date range before calling DAO
- *   - Normalises status filter ("null" → "ALL")
- *   - Builds CXF and BRF XML strings for file download
- *   - All DB access is delegated to CheckerInwardReportsDaoImpl
+ * Status flow (existing enum values only — no new enum values added):
+ *   Verified      → eligible for Generate to Debit
+ *   CBS_Processed → debit already generated (Completed)
+ *
+ * generateToDebit():
+ *   1. Confirms batch status is exactly "Verified" — prevents duplicate processing.
+ *   2. Executes debit generation via DAO.
+ *   3. Transitions batch status to "CBS_Processed" on success.
+ *   4. On failure, status stays "Verified" so the operator can retry.
  */
 public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsService {
 
-    private static final Logger log = LoggerFactory.getLogger(CheckerInwardReportsServiceImpl.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(CheckerInwardReportsServiceImpl.class);
+
+    /** DB status that makes a batch eligible for debit generation. */
+    private static final String ELIGIBLE_STATUS   = "Verified";
+
+    /** DB status set after successful debit generation (existing enum value). */
+    private static final String COMPLETED_STATUS  = "CBS_Processed";
 
     private final CheckerInwardReportsDao dao = new CheckerInwardReportsDaoImpl();
 
@@ -43,7 +52,7 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
         validateDateRange(fromDate, toDate);
         String normalizedStatus = normalizeStatus(status);
 
-        log.info("getReports called — batchId='{}', from={}, to={}, status='{}'",
+        log.info("getReports — batchId='{}', from={}, to={}, status='{}'",
                  batchIdSearch, fromDate, toDate, normalizedStatus);
 
         return dao.findReports(
@@ -72,111 +81,66 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  XML builders
+    //  Generate to Debit
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Builds a minimal CXF XML (Cheque Transaction File) for the given batch.
-     * In production this would aggregate per-cheque records from the DB;
-     * for the report module we build a batch-level summary envelope.
-     */
     @Override
-    public String buildAckXml(InwardReportDTO dto) {
-        if (dto == null) return "";
+    public void generateToDebit(String batchId) {
 
-        String generatedOn = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        if (batchId == null || batchId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Batch ID must not be blank.");
+        }
 
-        StringBuilder xml = new StringBuilder();
-        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        xml.append("<AcknowledgementFile\n");
-        xml.append("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n");
-        xml.append("    version=\"2.0\">\n");
-        xml.append("\n");
-        xml.append("  <BatchHeader>\n");
-        xml.append("    <BatchId>").append(escapeXml(dto.getBatchId())).append("</BatchId>\n");
-        xml.append("    <BatchDate>").append(escapeXml(dto.getBatchDate())).append("</BatchDate>\n");
-        xml.append("    <TotalCheques>").append(dto.getTotalCheques()).append("</TotalCheques>\n");
-        xml.append("    <MicrErrors>").append(dto.getMicrErrors()).append("</MicrErrors>\n");
-        xml.append("    <IqaFails>").append(dto.getIqaFails()).append("</IqaFails>\n");
-        xml.append("    <PassedCount>").append(dto.getPassedCount()).append("</PassedCount>\n");
-        xml.append("    <RejectedCount>").append(dto.getRejectedCount()).append("</RejectedCount>\n");
-        xml.append("    <ReferredCount>").append(dto.getReferredCount()).append("</ReferredCount>\n");
-        xml.append("    <Status>").append(escapeXml(dto.getStatus())).append("</Status>\n");
-        xml.append("    <GeneratedOn>").append(generatedOn).append("</GeneratedOn>\n");
-        xml.append("  </BatchHeader>\n");
-        xml.append("\n");
-        xml.append("  <!-- Cheque-level records would be populated here in production -->\n");
-        xml.append("  <Cheques/>\n");
-        xml.append("\n");
-        xml.append("</ChequeTransactionFile>\n");
+        String trimmedId = batchId.trim();
+        log.info("generateToDebit — starting for batch '{}'", trimmedId);
 
-        return xml.toString();
-    }
+        // Guard: batch must be in Verified state
+        String currentStatus = dao.getBatchStatus(trimmedId);
+        if (currentStatus == null) {
+            throw new IllegalArgumentException(
+                    "Batch '" + trimmedId + "' not found.");
+        }
+        if (!ELIGIBLE_STATUS.equals(currentStatus)) {
+            throw new IllegalArgumentException(
+                    "Batch '" + trimmedId + "' is not eligible for debit generation. " +
+                    "Current status: " + currentStatus + ".");
+        }
 
-    /**
-     * Builds a minimal BRF XML (Bank Response File) for the given batch.
-     */
-    @Override
-    public String buildRrfXml(InwardReportDTO dto) {
-        if (dto == null) return "";
+        try {
+            // Execute debit entries
+            dao.executeDebitGeneration(trimmedId);
 
-        String generatedOn = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            // Transition to CBS_Processed (Completed)
+            dao.updateBatchStatus(trimmedId, COMPLETED_STATUS);
+            log.info("generateToDebit — batch '{}' set to {}", trimmedId, COMPLETED_STATUS);
 
-        StringBuilder xml = new StringBuilder();
-        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        xml.append("<ReturnResponseFile\n");
-        xml.append("    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n");
-        xml.append("    version=\"1.0\">\n");
-        xml.append("\n");
-        xml.append("  <ResponseHeader>\n");
-        xml.append("    <BatchId>").append(escapeXml(dto.getBatchId())).append("</BatchId>\n");
-        xml.append("    <BatchDate>").append(escapeXml(dto.getBatchDate())).append("</BatchDate>\n");
-        xml.append("    <TotalCheques>").append(dto.getTotalCheques()).append("</TotalCheques>\n");
-        xml.append("    <AcceptedCount>").append(dto.getPassedCount()).append("</AcceptedCount>\n");
-        xml.append("    <RejectedCount>").append(dto.getRejectedCount()).append("</RejectedCount>\n");
-        xml.append("    <ReferredCount>").append(dto.getReferredCount()).append("</ReferredCount>\n");
-        xml.append("    <BatchStatus>").append(escapeXml(dto.getStatus())).append("</BatchStatus>\n");
-        xml.append("    <GeneratedOn>").append(generatedOn).append("</GeneratedOn>\n");
-        xml.append("  </ResponseHeader>\n");
-        xml.append("\n");
-        xml.append("  <!-- Bank response records would be populated here in production -->\n");
-        xml.append("  <Responses/>\n");
-        xml.append("\n");
-        xml.append("</BankResponseFile>\n");
-
-        return xml.toString();
+        } catch (IllegalArgumentException e) {
+            throw e; // re-throw validation errors as-is
+        } catch (Exception e) {
+            // Status stays as Verified so the operator can retry
+            log.error("generateToDebit — batch '{}' FAILED: {}", trimmedId, e.getMessage(), e);
+            throw new RuntimeException(
+                    "Debit generation failed for batch '" + trimmedId + "': " + e.getMessage(), e);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Private helpers
+    //  Helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     private void validateDateRange(Date fromDate, Date toDate) {
         if (fromDate != null && toDate != null && fromDate.after(toDate)) {
-            throw new IllegalArgumentException(
-                    "From Date cannot be after To Date.");
+            throw new IllegalArgumentException("From Date cannot be after To Date.");
         }
     }
 
-    /** Return "ALL" when status is null/blank/unrecognised. */
     private String normalizeStatus(String status) {
         if (status == null || status.trim().isEmpty()) return "ALL";
-        return status.trim().toUpperCase();
+        return status.trim();
     }
 
     private String trimOrNull(String s) {
         if (s == null || s.trim().isEmpty()) return null;
         return s.trim();
-    }
-
-    /** Minimal XML character escaping for element text content. */
-    private String escapeXml(String value) {
-        if (value == null) return "";
-        return value
-                .replace("&",  "&amp;")
-                .replace("<",  "&lt;")
-                .replace(">",  "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'",  "&apos;");
     }
 }

@@ -10,4 +10,10 @@ public interface InwardCheckerService {
 
     /** Returns a single batch by its batch_id string. */
     InwardBatch getBatchById(String batchId);
+
+    /** Total number of inward batches (all statuses). */
+    int getTotalBatchCount();
+
+    /** Number of inward batches that have been cleared. */
+    int getClearedBatchCount();
 }

@@ -7,218 +7,197 @@
 <?link rel="stylesheet" type="text/css" href="/inward/inwardChecker/inwardCheckerVerification.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
-	<div sclass="dash-shell"
-		apply="com.iispl.composer.CheckerInwardVerificationComposer">
+    <div sclass="dash-shell"
+         apply="com.iispl.composer.CheckerInwardVerificationComposer">
 
-		<!-- ── TOPBAR — inlined, same pattern as dashboard ── -->
-		<include src="/component/topbar.zul" />
+        <!-- TOPBAR -->
+        <include src="/component/topbar.zul" />
 
-		<div sclass="body-row">
+        <div sclass="body-row">
 
-			<!-- ── SIDEBAR — reusable component ── -->
-			<include src="/component/sidebar.zul" />
+            <!-- SIDEBAR -->
+            <include src="/component/sidebar.zul" />
 
-			<div sclass="main">
+            <div sclass="main">
 
-				<!-- ── BREADCRUMB — reusable component ── -->
-				<include src="/component/breadcrumb.zul" />
+                <!-- BREADCRUMB -->
+                <include src="/component/breadcrumb.zul" />
 
-				<div sclass="dash-main">
+                <div sclass="dash-main">
 
-					<div sclass="card">
-						<div class="card-body">
+                    <!-- Page Header Card -->
+                    <div sclass="card">
+                        <div sclass="page-hdr">
+                            <div sclass="page-title">Checker Inward Verification</div>
+                            <div sclass="page-sub">
+                                CBS Validation — Accept or Return.
+                                Generates RRF.xml (returns) and ACK.xml (accepted).
+                            </div>
+                        </div>
+                    </div>
 
-							<div sclass="page-hdr">
-								<div>
-									<div sclass="page-title">
-										Checker Inward Verification
-									</div>
+                    <!-- Tab Panel Card -->
+                    <div sclass="card">
 
-									<div sclass="page-sub">
-										CBS Validation + Accept or
-										Return. Generates RRF.xml
-										(returns) and ACK.xml
-										(accepted).
-									</div>
-								</div>
-							</div>
+                        <tabbox id="inwardTabbox" sclass="ci-tabbox">
+                            <tabs>
+                                <tab id="tabPending" label="Pending Batches" />
+                                <tab id="tabCleared" label="Cleared Batches" />
+                                <tab id="tabFailed"  label="Failed / Returned" />
+                            </tabs>
 
-						</div>
-					</div>
+                            <tabpanels>
 
+                                <!-- ══════ TAB 1: Pending Batches ══════ -->
+                                <tabpanel sclass="ci-tabpanel">
 
-					<!-- ── Tab Panel ── -->
-					<div sclass="card">
+                                    <div sclass="rpt-fbar">
+                                        <textbox id="txtSearchPending"
+                                                 sclass="fi rpt-fi-search"
+                                                 placeholder="🔍 Search batch..."
+                                                 maxlength="30"
+                                                 onChanging="onSearchPending()" />
+                                    </div>
 
-						<tabbox id="inwardTabbox" sclass="ci-tabbox">
-							<tabs>
-								<tab id="tabPending"
-									label="Pending Batches" />
-								<tab id="tabCleared"
-									label="Cleared Batches" />
-								<tab id="tabFailed"
-									label="Failed / Returned" />
-							</tabs>
+                                    <listbox id="lstPending"
+                                             sclass="rpt-listbox"
+                                             mold="paging"
+                                             pageSize="15"
+                                             emptyMessage="No pending batches yet."
+                                             width="100%">
 
-							<tabpanels>
+                                        <listhead sizable="true">
+                                            <listheader label="BATCH ID"         width="20%" />
+                                            <listheader label="COUNT"            width="10%" />
+                                            <listheader label="MICR ERRORS"      width="15%" />
+                                            <listheader label="PRESENTING BANKS" hflex="1"  />
+                                            <listheader label="STATUS"           width="13%" />
+                                            <listheader label="ACTION"           width="12%" />
+                                        </listhead>
 
-								<!-- ══════════ TAB 1: Pending Batches ══════════ -->
-								<tabpanel sclass="ci-tabpanel">
+                                        <listfoot />
 
-									<hbox sclass="ci-filter-bar"
-										align="center">
-										<textbox id="txtSearchPending"
-											placeholder="Search batch..." sclass="ci-search-box"
-											onChanging="onSearchPending()" />
-									</hbox>
+                                    </listbox>
 
-									<grid id="gridPending" sclass="dt"
-										emptyMessage="No pending batches yet.">
-										<columns
-											sclass="ci-grid-head">
-											<column label="BATCH ID" />
-											<column label="COUNT"
-												width="90px" />
-											<column label="MICR ERRORS"
-												width="140px" />
-											<column
-												label="PRESENTING BANKS" hflex="1" />
-											<column label="STATUS"
-												width="120px" />
-											<column label="ACTION"
-												width="110px" />
-										</columns>
-										<rows id="rowsPending" />
-									</grid>
+                                </tabpanel>
 
-								</tabpanel>
+                                <!-- ══════ TAB 2: Cleared Batches ══════ -->
+                                <tabpanel sclass="ci-tabpanel">
 
-								<!-- ══════════ TAB 2: Cleared Batches ══════════ -->
-								<tabpanel sclass="ci-tabpanel">
+                                    <div sclass="rpt-fbar">
 
-									<hbox sclass="ci-filter-bar"
-										align="center">
+                                        <textbox id="txtSearchCleared"
+                                                 sclass="fi rpt-fi-search"
+                                                 placeholder="🔍 Search batch..."
+                                                 maxlength="30"
+                                                 onChanging="onSearchCleared()" />
 
-										<textbox id="txtSearchCleared"
-											placeholder="Search batch..."
-											sclass="ci-search-box ci-search-wide"
-											onChanging="onSearchCleared()" />
+                                        <datebox id="dtFromCleared"
+                                                 sclass="fi rpt-fi-date"
+                                                 format="dd/MM/yyyy"
+                                                 cols="12"
+                                                 placeholder="From Date"
+                                                 onChange="onSearchCleared()" />
 
-										<hbox align="center"
-											spacing="6px">
-											<label value="FROM DATE"
-												sclass="ci-date-label" />
-											<datebox id="dtFromCleared"
-												format="dd/MM/yyyy" sclass="ci-datebox"
-												onChange="onSearchCleared()" />
-										</hbox>
+                                        <datebox id="dtToCleared"
+                                                 sclass="fi rpt-fi-date"
+                                                 format="dd/MM/yyyy"
+                                                 cols="12"
+                                                 placeholder="To Date"
+                                                 onChange="onSearchCleared()" />
 
-										<hbox align="center"
-											spacing="6px">
-											<label value="TO DATE"
-												sclass="ci-date-label" />
-											<datebox id="dtToCleared"
-												format="dd/MM/yyyy" sclass="ci-datebox"
-												onChange="onSearchCleared()" />
-										</hbox>
+                                    </div>
 
-									</hbox>
+                                    <listbox id="lstCleared"
+                                             sclass="rpt-listbox"
+                                             mold="paging"
+                                             pageSize="15"
+                                             emptyMessage="No cleared batches yet."
+                                             width="100%">
 
-									<grid id="gridCleared" sclass="dt"
-										emptyMessage="No cleared batches yet.">
-										<columns
-											sclass="ci-grid-head">
-											<column label="BATCH ID" />
-											<column label="TOTAL"
-												width="90px" />
-											<column label="ACCEPTED"
-												width="130px" />
-											<column label="RETURNED"
-												width="130px" />
-											<column label="CLEARED BY"
-												width="150px" />
-											<column label="CLEARED AT"
-												hflex="1" />
-										</columns>
-										<rows id="rowsCleared" />
-									</grid>
+                                        <listhead sizable="true">
+                                            <listheader label="BATCH ID"   width="20%" />
+                                            <listheader label="TOTAL"      width="10%" />
+                                            <listheader label="ACCEPTED"   width="13%" />
+                                            <listheader label="RETURNED"   width="13%" />
+                                            <listheader label="CLEARED BY" width="20%" />
+                                            <listheader label="CLEARED AT" hflex="1"  />
+                                        </listhead>
 
-								</tabpanel>
+                                        <listfoot />
 
-								<!-- ══════════ TAB 3: Failed / Returned ══════════ -->
-								<tabpanel sclass="ci-tabpanel">
+                                    </listbox>
 
-									<hbox sclass="ci-filter-bar"
-										align="center">
+                                </tabpanel>
 
-										<textbox id="txtSearchFailed"
-											placeholder="Search cheques..." sclass="ci-search-box"
-											onChanging="onSearchFailed()" />
+                                <!-- ══════ TAB 3: Failed / Returned ══════ -->
+                                <tabpanel sclass="ci-tabpanel">
 
-										<hbox align="center"
-											spacing="6px">
-											<label value="FROM DATE"
-												sclass="ci-date-label" />
-											<datebox id="dtFromFailed"
-												format="dd/MM/yyyy" sclass="ci-datebox"
-												onChange="onSearchFailed()" />
-										</hbox>
+                                    <div sclass="rpt-fbar">
 
-										<hbox align="center"
-											spacing="6px">
-											<label value="TO DATE"
-												sclass="ci-date-label" />
-											<datebox id="dtToFailed"
-												format="dd/MM/yyyy" sclass="ci-datebox"
-												onChange="onSearchFailed()" />
-										</hbox>
+                                        <textbox id="txtSearchFailed"
+                                                 sclass="fi rpt-fi-search"
+                                                 placeholder="🔍 Search cheques..."
+                                                 maxlength="30"
+                                                 onChanging="onSearchFailed()" />
 
-										<hbox align="center"
-											spacing="6px">
-											<label value="BATCH ID"
-												sclass="ci-date-label" />
-											<textbox
-												id="txtBatchIdFilter" placeholder="Filter by batch..."
-												sclass="ci-batchid-filter" onChanging="onSearchFailed()" />
-										</hbox>
+                                        <datebox id="dtFromFailed"
+                                                 sclass="fi rpt-fi-date"
+                                                 format="dd/MM/yyyy"
+                                                 cols="12"
+                                                 placeholder="From Date"
+                                                 onChange="onSearchFailed()" />
 
-									</hbox>
+                                        <datebox id="dtToFailed"
+                                                 sclass="fi rpt-fi-date"
+                                                 format="dd/MM/yyyy"
+                                                 cols="12"
+                                                 placeholder="To Date"
+                                                 onChange="onSearchFailed()" />
 
-									<grid id="gridFailed" sclass="dt"
-										emptyMessage="No returned cheques yet.">
-										<columns
-											sclass="ci-grid-head">
-											<column label="BATCH ID" />
-											<column label="CHEQUE NO"
-												width="130px" />
-											<column label="AMOUNT"
-												width="120px" />
-											<column
-												label="PRESENTING BANK" hflex="1" />
-											<column
-												label="RETURN REASON" width="180px" />
-											<column label="RETURNED BY"
-												width="140px" />
-											<column label="TIME"
-												width="140px" />
-										</columns>
-										<rows id="rowsFailed" />
-									</grid>
+                                        <textbox id="txtBatchIdFilter"
+                                                 sclass="fi rpt-fi-search"
+                                                 placeholder="Filter by batch ID..."
+                                                 maxlength="30"
+                                                 onChanging="onSearchFailed()" />
 
-								</tabpanel>
+                                    </div>
 
-							</tabpanels>
-						</tabbox>
+                                    <listbox id="lstFailed"
+                                             sclass="rpt-listbox"
+                                             mold="paging"
+                                             pageSize="15"
+                                             emptyMessage="No returned cheques yet."
+                                             width="100%">
 
-					</div><!-- end card -->
+                                        <listhead sizable="true">
+                                            <listheader label="BATCH ID"        width="14%" />
+                                            <listheader label="CHEQUE NO"       width="13%" />
+                                            <listheader label="AMOUNT"          width="12%" />
+                                            <listheader label="PRESENTING BANK" hflex="1"  />
+                                            <listheader label="RETURN REASON"   width="18%" />
+                                            <listheader label="RETURNED BY"     width="15%" />
+                                            <listheader label="TIME"            width="14%" />
+                                        </listhead>
 
-				</div><!-- end dash-main -->
+                                        <listfoot />
 
-				<!-- ── STATUSBAR — reusable component ── -->
-				<include src="/component/statusbar.zul" />
+                                    </listbox>
 
-			</div><!-- end .main -->
-		</div><!-- end .body-row -->
+                                </tabpanel>
 
-	</div>
+                            </tabpanels>
+                        </tabbox>
+
+                    </div><!-- end card -->
+
+                </div><!-- end dash-main -->
+
+                <!-- STATUSBAR -->
+                <include src="/component/statusbar.zul" />
+
+            </div><!-- end .main -->
+        </div><!-- end .body-row -->
+
+    </div>
 </zk>

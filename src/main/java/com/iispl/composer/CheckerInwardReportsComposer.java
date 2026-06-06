@@ -1,10 +1,11 @@
 package com.iispl.composer;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +19,10 @@ import org.zkoss.zul.Button;
 import org.zkoss.zul.Combobox;
 import org.zkoss.zul.Comboitem;
 import org.zkoss.zul.Datebox;
-import org.zkoss.zul.Div;
-import org.zkoss.zul.Filedownload;
 import org.zkoss.zul.Label;
+import org.zkoss.zul.Listbox;
+import org.zkoss.zul.Listcell;
+import org.zkoss.zul.Listitem;
 import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Textbox;
 
@@ -32,47 +34,47 @@ import com.iispl.util.SessionUtil;
 
 /**
  * File    : com/iispl/composer/CheckerInwardReportsComposer.java
- * Purpose : MVC Composer for /inward/inwardReports/inward-reports.zul
  *
- *   CHANGES vs previous version:
- *     - Grid uses HTML divs instead of ZK Grid (flat CSS flexbox layout)
- *     - Renders 6 columns: Batch ID, Count, Accepted, Returned, Presenting Banks, Status
- *     - Removed: MICR Errors, IQA Fails, Passed, Rejected, Referred, Action columns
- *     - New wired buttons: btnDownloadCibf (was btnDownloadBrf),
- *       btnDownloadCibfImages, btnCibfImages
- *     - Inline grid Batch ID filter: txtGridBatchFilter (client-side DOM filter)
- *     - No pager controls (empty state shows "Generate report to view data.")
- *     - Pagination still supported internally; UI simplified per target screenshot
+ * Validations added:
+ *   1.  Session / login guard              — redirect if session expired
+ *   2.  Role guard                         — CHECKER_INWARD only
+ *   3.  Date range validation              — From Date cannot be after To Date
+ *   4.  Future date prevention             — From/To Date cannot be in the future
+ *   5.  Search term length validation      — batch search min 2 chars if provided
+ *   6.  Empty result notification          — friendly toast when no rows match
+ *   7.  Generate to Debit — eligibility    — button disabled for non-Verified batches
+ *   8.  Generate to Debit — confirmation   — confirm dialog before processing
+ *   9.  Generate to Debit — duplicate guard— service re-checks status = Verified
+ *   10. Generate to Debit — error handling — meaningful error message + auto-refresh
+ *   11. Service error isolation            — load failure shows error, does not crash
+ *   12. Null-safe rendering               — null DTO fields never cause NPE
  */
 public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
 
-    private static final Logger log = LoggerFactory.getLogger(CheckerInwardReportsComposer.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(CheckerInwardReportsComposer.class);
 
-    private static final int PAGE_SIZE = 50; // larger page, no pager shown in target UI
+    private static final int PAGE_SIZE = 50;
+
+    private static final NumberFormat AMOUNT_FMT =
+            NumberFormat.getNumberInstance(new Locale("en", "IN"));
+
+    static {
+        AMOUNT_FMT.setMinimumFractionDigits(2);
+        AMOUNT_FMT.setMaximumFractionDigits(2);
+    }
 
     private final CheckerInwardReportsService reportsService =
             new CheckerInwardReportsServiceImpl();
 
     private List<InwardReportDTO> currentRows = new ArrayList<>();
 
-    // ── Wired filter controls ─────────────────────────────────────────────────
     @Wire private Textbox  txtBatchSearch;
     @Wire private Datebox  dtFrom;
     @Wire private Datebox  dtTo;
     @Wire private Combobox cmbStatus;
-
-    // ── Wired grid body (div rendered by composer) ────────────────────────────
-    @Wire private Div rptGridBody;
-
-    // ── Wired buttons ─────────────────────────────────────────────────────────
-    @Wire private Button btnGenerate;
-    @Wire private Button btnDownloadAck;
-    @Wire private Button btnDownloadRrf;   // was btnDownloadBrf — now CIBF.xml
-    @Wire private Button btnRrfImages;          // inline CIBF Images button in filter bar
-    @Wire private Button btnDownloadCibfImages;  // above-filter CIBF Images button
-
-    // ── Inline grid Batch ID filter ───────────────────────────────────────────
-    @Wire private Textbox txtGridBatchFilter;
+    @Wire private Button   btnSearch;
+    @Wire private Listbox  lstReports;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Lifecycle
@@ -82,60 +84,46 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
 
+        // VALIDATION 1 — Session guard
         LoginDTO user = SessionUtil.requireLogin();
-        if (user == null) return;
+        if (user == null) {
+            Executions.sendRedirect("/login/login.zul");
+            return;
+        }
 
+        // VALIDATION 2 — Role guard
         if (!"CHECKER_INWARD".equals(user.getRoleCode())) {
             Executions.sendRedirect(SessionUtil.getDashboardUrlFor(user.getRoleCode()));
             return;
         }
 
         populateStatusCombo();
-        setExportButtonsEnabled(false);
-        showEmptyState();
+        loadPage();
 
         log.info("CheckerInwardReportsComposer initialised for user '{}'",
                  user.getUserLoginId());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Button listeners
+    //  Search button
     // ─────────────────────────────────────────────────────────────────────────
 
-    @Listen("onClick = #btnGenerate")
-    public void onGenerate() {
+    @Listen("onClick = #btnSearch")
+    public void onSearch() {
+
+        // VALIDATION 5 — Batch search minimum length
+        if (txtBatchSearch != null) {
+            String val = txtBatchSearch.getValue();
+            if (val != null && !val.trim().isEmpty() && val.trim().length() < 2) {
+                Clients.showNotification(
+                    "Search term must be at least 2 characters.",
+                    "warning", txtBatchSearch, "after_end", 3000
+                );
+                return;
+            }
+        }
+
         loadPage();
-    }
-
-    @Listen("onClick = #btnDownloadAck")
-    public void onDownloadAck() {
-        if (currentRows.isEmpty()) {
-            Clients.showNotification("Generate a report first.", "warning", null, "top_center", 2500);
-            return;
-        }
-        downloadXml("ACK");
-    }
-
-    /** Download CIBF.xml (replaces BRF.xml in target UI). */
-    @Listen("onClick = #btnDownloadRrf")
-    public void onDownloadRrf() {
-        if (currentRows.isEmpty()) {
-            Clients.showNotification("Generate a report first.", "warning", null, "top_center", 2500);
-            return;
-        }
-        downloadXml("RRF");
-    }
-
-    /** CIBF Images button in filter bar. */
-    @Listen("onClick = #btnRrfImages")
-    public void onRrfImages() {
-        Clients.showNotification("RRF image download is not yet implemented.", "info", null, "top_center", 3000);
-    }
-
-    /** CIBF Images button above filter. */
-    @Listen("onClick = #btnDownloadRrfImages")
-    public void onDownloadRrfImages() {
-        Clients.showNotification("RRF image download is not yet implemented.", "info", null, "top_center", 3000);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -148,23 +136,50 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
         Date   toDate      = (dtTo   != null)         ? dtTo.getValue()           : null;
         String status      = getSelectedStatus();
 
-        try {
-            if (fromDate != null && toDate != null && fromDate.after(toDate)) {
-                Messagebox.show("From Date cannot be after To Date.",
-                                "Validation Error", Messagebox.OK, Messagebox.ERROR);
-                return;
-            }
+        // VALIDATION 3 — Date range check
+        if (fromDate != null && toDate != null && fromDate.after(toDate)) {
+            Messagebox.show("From Date cannot be after To Date.",
+                            "Validation Error", Messagebox.OK, Messagebox.ERROR);
+            return;
+        }
 
+        // VALIDATION 4 — Future date prevention
+        Date today = new Date();
+        if (fromDate != null && fromDate.after(today)) {
+            Clients.showNotification(
+                "From Date cannot be a future date.",
+                "warning", dtFrom, "after_end", 3000
+            );
+            return;
+        }
+        if (toDate != null && toDate.after(today)) {
+            Clients.showNotification(
+                "To Date cannot be a future date.",
+                "warning", dtTo, "after_end", 3000
+            );
+            return;
+        }
+
+        try {
+            // VALIDATION 11 — Isolate service errors
             currentRows = reportsService.getReports(
                     batchSearch, fromDate, toDate, status, 1, PAGE_SIZE);
 
             renderRows(currentRows);
-            setExportButtonsEnabled(!currentRows.isEmpty());
+
+            // VALIDATION 6 — Empty result notification
+            if (currentRows.isEmpty()) {
+                Clients.showNotification(
+                    "No batches found matching the selected filters.",
+                    "info", null, "top_center", 3000
+                );
+            }
 
             log.info("loadPage — rows={}", currentRows.size());
 
         } catch (IllegalArgumentException e) {
-            Messagebox.show(e.getMessage(), "Validation Error", Messagebox.OK, Messagebox.ERROR);
+            Messagebox.show(e.getMessage(),
+                            "Validation Error", Messagebox.OK, Messagebox.ERROR);
         } catch (Exception e) {
             log.error("loadPage error: {}", e.getMessage(), e);
             Messagebox.show("An error occurred while loading reports. Please try again.",
@@ -173,122 +188,128 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Grid rendering  (flat CSS div rows — matches target screenshot)
+    //  Grid rendering
     // ─────────────────────────────────────────────────────────────────────────
 
     private void renderRows(List<InwardReportDTO> rows) {
-        if (rptGridBody == null) return;
-        rptGridBody.getChildren().clear();
+        if (lstReports == null) return;
+        lstReports.getItems().clear();
 
-        if (rows == null || rows.isEmpty()) {
-            showEmptyState();
-            return;
-        }
+        if (rows == null || rows.isEmpty()) return;
 
         for (InwardReportDTO dto : rows) {
 
-            // Row div  ─────────────────────────────────────────────────────
-            Div row = new Div();
-            row.setSclass("rpt-row");
+            // VALIDATION 12 — Skip null DTO entries
+            if (dto == null) continue;
 
-            // Col 1 — Batch ID
-            Div cBatchId = cell("rpt-cell rpt-cell-batchid rpt-col-batchid",
-                                nullSafe(dto.getBatchId()));
-            row.appendChild(cBatchId);
+            Listitem item = new Listitem();
 
-            // Col 2 — Count
-            Div cCount = cell("rpt-cell rpt-col-count",
-                              String.valueOf(dto.getTotalCheques()));
-            row.appendChild(cCount);
+            // Col 1: Batch ID
+            item.appendChild(new Listcell(nullSafe(dto.getBatchId())));
 
-            // Col 3 — Accepted
-            Div cAccepted = cell("rpt-cell rpt-col-accepted",
-                                 String.valueOf(dto.getAcceptedCount()));
-            row.appendChild(cAccepted);
+            // Col 2: Date
+            item.appendChild(new Listcell(nullSafe(dto.getBatchDate())));
 
-            // Col 4 — Returned
-            Div cReturned = cell("rpt-cell rpt-col-returned",
-                                 String.valueOf(dto.getReturnedCount()));
-            row.appendChild(cReturned);
+            // Col 3: Total Cheques
+            item.appendChild(new Listcell(String.valueOf(dto.getTotalCheques())));
 
-            // Col 5 — Presenting Banks
-            Div cBanks = cell("rpt-cell rpt-col-banks",
-                              nullSafe(dto.getPresentingBanks()));
-            row.appendChild(cBanks);
+            // Col 4: Total Amount
+            BigDecimal amt = dto.getTotalAmount();
+            String amtStr  = (amt != null) ? "₹ " + AMOUNT_FMT.format(amt) : "₹ 0.00";
+            item.appendChild(new Listcell(amtStr));
 
-            // Col 6 — Status badge
-            Div cStatus = new Div();
-            cStatus.setSclass("rpt-cell rpt-col-status");
-            Label lStatus = new Label(nullSafe(dto.getStatus()));
-            lStatus.setSclass(resolveStatusBadgeClass(dto.getStatus()));
-            cStatus.appendChild(lStatus);
-            row.appendChild(cStatus);
+            // Col 5: Status badge
+            Listcell statusCell = new Listcell();
+            Label statusLabel   = new Label(nullSafe(dto.getStatus()));
+            statusLabel.setSclass(resolveStatusBadgeClass(dto.getStatus()));
+            statusCell.appendChild(statusLabel);
+            item.appendChild(statusCell);
 
-            rptGridBody.appendChild(row);
+            // Col 6: Action
+            // VALIDATION 7 — Button disabled for non-eligible batches
+            Listcell actionCell = new Listcell();
+            Button btnDebit     = new Button("Generate to Debit");
+            btnDebit.setSclass("btn rpt-btn-debit" +
+                               (dto.isDebitEligible() ? "" : " disabled"));
+            btnDebit.setDisabled(!dto.isDebitEligible());
+            btnDebit.setTooltiptext(
+                dto.isDebitEligible()
+                    ? "Click to generate debit entries for this batch"
+                    : "Batch is not eligible. Only Pending (Verified) batches can be processed."
+            );
+
+            if (dto.isDebitEligible()) {
+                final String batchId = dto.getBatchId();
+                btnDebit.addEventListener("onClick", event -> onGenerateToDebit(batchId));
+            }
+
+            actionCell.appendChild(btnDebit);
+            item.appendChild(actionCell);
+
+            lstReports.appendChild(item);
         }
     }
 
-    /** Show the "Generate report to view data." centred empty state. */
-    private void showEmptyState() {
-        if (rptGridBody == null) return;
-        rptGridBody.getChildren().clear();
-        Div empty = new Div();
-        empty.setSclass("rpt-empty-state");
-        Label msg = new Label("Generate report to view data.");
-        empty.appendChild(msg);
-        rptGridBody.appendChild(empty);
-    }
-
-    /** Helper: create a cell div with a text label. */
-    private Div cell(String sclass, String text) {
-        Div d = new Div();
-        d.setSclass(sclass);
-        d.appendChild(new Label(text));
-        return d;
-    }
-
     // ─────────────────────────────────────────────────────────────────────────
-    //  Export helpers
+    //  Generate to Debit
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Bulk XML download.
-     * type = "CXFFFFFF"  → CXFFFFF.xml   (cheque transaction data)
-     * type = "CIBF" → CIBF.xml  (was BRF — NPCI bank response file)
-     */
-    private void downloadXml(String type) {
-        try {
-            StringBuilder combined = new StringBuilder();
-            combined.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            combined.append("<InwardReportExport type=\"").append(type).append("\">\n");
+    // VALIDATION 8 — Confirmation dialog before processing
+    private void onGenerateToDebit(String batchId) {
 
-            for (InwardReportDTO dto : currentRows) {
-                String singleXml;
-                if ("ACK".equals(type)) {
-                    singleXml = reportsService.buildAckXml(dto);
-                } else {
-                    // CIBF uses BRF builder — same structure, renamed file
-                    singleXml = reportsService.buildRrfXml(dto);
+        // VALIDATION 12 — Null batch ID guard
+        if (batchId == null || batchId.trim().isEmpty()) {
+            Clients.showNotification("Invalid batch ID.", "error", null, "top_center", 3000);
+            return;
+        }
+
+        Messagebox.show(
+            "Are you sure you want to generate debit entries for batch:\n" + batchId + "?\n\n"
+            + "This action cannot be undone.",
+            "Confirm Generate to Debit",
+            Messagebox.YES | Messagebox.NO,
+            Messagebox.QUESTION,
+            event -> {
+                if (Messagebox.ON_YES.equals(event.getName())) {
+                    executeDebit(batchId);
                 }
-                singleXml = singleXml.replaceFirst("<\\?xml[^?]*\\?>\\s*", "");
-                combined.append(singleXml).append("\n");
             }
-            combined.append("</InwardReportExport>\n");
+        );
+    }
 
-            String filename = "inward-report-export." + type.toLowerCase() + ".xml";
-            pushDownload(combined.toString(), filename);
+    private void executeDebit(String batchId) {
+        try {
+            // VALIDATION 9 — Duplicate guard handled inside service
+            // (service re-confirms status = Verified before processing)
+            reportsService.generateToDebit(batchId);
+
+            Clients.showNotification(
+                "Debit generation completed successfully for batch: " + batchId,
+                "info", null, "top_center", 4000
+            );
+            log.info("executeDebit — batch '{}' completed", batchId);
+
+            // Auto-refresh so the status updates to Completed and button disables
+            loadPage();
+
+        } catch (IllegalArgumentException e) {
+            // VALIDATION 9 — Duplicate / ineligible batch caught here
+            Messagebox.show(e.getMessage(),
+                            "Cannot Process", Messagebox.OK, Messagebox.EXCLAMATION);
+            log.warn("executeDebit — validation error for '{}': {}", batchId, e.getMessage());
+            loadPage();
 
         } catch (Exception e) {
-            log.error("XML export error ({}): {}", type, e.getMessage(), e);
-            Messagebox.show("Export failed: " + e.getMessage(),
-                            "Export Error", Messagebox.OK, Messagebox.ERROR);
+            // VALIDATION 10 — Meaningful error message on failure
+            log.error("executeDebit — error for '{}': {}", batchId, e.getMessage(), e);
+            Messagebox.show(
+                "Debit generation failed for batch '" + batchId + "'.\n"
+                + "The batch remains in Pending state and can be retried.\n\n"
+                + "Error: " + e.getMessage(),
+                "Processing Error", Messagebox.OK, Messagebox.ERROR
+            );
+            loadPage();
         }
-    }
-
-    private void pushDownload(String content, String filename) {
-        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        Filedownload.save(new ByteArrayInputStream(bytes), "application/xml", filename);
-        log.info("File download initiated: {}", filename);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -298,13 +319,12 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
     private void populateStatusCombo() {
         if (cmbStatus == null) return;
         cmbStatus.getChildren().clear();
-        // "All Status" label shown in the combobox to match target screenshot
+
         String[][] items = {
-            { "All Status",       "ALL"             },
-            { "PENDING_CHECKER",  "PENDING_CHECKER" },
-            { "ACCEPTED",         "ACCEPTED"        },
-            { "RETURNED",         "RETURNED"        },
-            { "REJECTED",         "REJECTED"        }
+            { "All Status", "ALL"          },
+            { "Pending",    "Verified"      },
+            { "Completed",  "CBS_Processed" },
+            { "Failed",     "Rejected"      }
         };
         for (String[] item : items) {
             Comboitem ci = new Comboitem(item[0]);
@@ -321,20 +341,13 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
         return sel.getValue() != null ? sel.getValue().toString() : "ALL";
     }
 
-    private void setExportButtonsEnabled(boolean enabled) {
-        if (btnDownloadAck  != null) btnDownloadAck.setDisabled(!enabled);
-        if (btnDownloadRrf != null) btnDownloadRrf.setDisabled(!enabled);
-        if (btnRrfImages   != null) btnRrfImages.setDisabled(!enabled);
-    }
-
-    private String resolveStatusBadgeClass(String status) {
-        if (status == null) return "badge b-grey";
-        switch (status.toUpperCase()) {
-            case "PENDING_CHECKER": return "badge b-pend";
-            case "ACCEPTED":        return "badge b-pass";
-            case "RETURNED":        return "badge b-info";
-            case "REJECTED":        return "badge b-fail";
-            default:                return "badge b-grey";
+    private String resolveStatusBadgeClass(String displayStatus) {
+        if (displayStatus == null) return "badge b-grey";
+        switch (displayStatus) {
+            case "Pending":   return "badge b-pend";
+            case "Completed": return "badge b-pass";
+            case "Failed":    return "badge b-fail";
+            default:          return "badge b-grey";
         }
     }
 

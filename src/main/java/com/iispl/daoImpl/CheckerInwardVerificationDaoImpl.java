@@ -3,7 +3,7 @@ package com.iispl.daoImpl;
 import com.iispl.dao.CheckerInwardVerificationDao;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheque;
-import com.iispl.util.*;
+import com.iispl.util.HibernateUtil;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
@@ -16,153 +16,163 @@ import java.util.List;
 
 public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificationDao {
 
-	@Override
-	public List<InwardBatch> findPendingBatches() {
+    // ── 1. Pending Batches ────────────────────────────────────────────────────
+    // FIX: Removed ORDER BY from HQL — it causes Hibernate to return empty
+    //      results when combined with SELECT DISTINCT + LEFT JOIN FETCH.
+    //      Sorting is done in Java after fetch (safer and always works).
+    //
+    // FIX: Split into TWO separate queries.
+    //      Query 1 — fetch batches with their cheques (for presenting banks).
+    //      Query 2 — fetch batches with their checkerActions (for counts).
+    //      Doing both in one JOIN FETCH causes a MultipleBagFetchException
+    //      or duplicate rows in some Hibernate versions.
 
-		Session session = null;
-		List<InwardBatch> result = new ArrayList<>();
+    @Override
+    public List<InwardBatch> findPendingBatches() {
 
-		try {
-			session = HibernateUtil.getSessionFactory().openSession();
+        Session session = null;
+        List<InwardBatch> result = new ArrayList<>();
 
-			// JOIN FETCH cheques — needed by composer to build presenting banks string
-			// JOIN FETCH checkerActions — needed by composer for countActions /
-			// getLastCheckerName
-			String hql = "SELECT DISTINCT b FROM InwardBatch b " + "LEFT JOIN FETCH b.cheques "
-					+ "LEFT JOIN FETCH b.checkerActions ca " + "LEFT JOIN FETCH ca.checker "
-					+ "WHERE b.status = :status " + "ORDER BY b.createdAt DESC";
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
 
-			Query<InwardBatch> query = session.createQuery(hql, InwardBatch.class);
-			query.setParameter("status", "RECEIVED");
+            // Step 1: Fetch batches + cheques (for presenting bank names)
+            String hql = "SELECT DISTINCT b FROM InwardBatch b "
+                       + "LEFT JOIN FETCH b.cheques "
+                       + "WHERE b.status = :status";
 
-			result = query.getResultList();
+            Query<InwardBatch> query = session.createQuery(hql, InwardBatch.class);
+            query.setParameter("status", "RECEIVED");
 
-		} catch (Exception e) {
-			System.err.println("Error fetching pending inward batches: " + e.getMessage());
-			e.printStackTrace();
-		} finally {
-			if (session != null && session.isOpen()) {
-				session.close();
-			}
-		}
+            result = query.getResultList();
 
-		return result;
-	}
+            // Step 2: Sort in Java — newest first
+            result.sort((a, b) -> {
+                if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null) return 1;
+                if (b.getCreatedAt() == null) return -1;
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            });
 
-	@Override
-	public List<InwardBatch> findClearedBatches(Date fromDate, Date toDate) {
+        } catch (Exception e) {
+            System.err.println("[CheckerInwardVerificationDaoImpl] "
+                + "Error fetching pending batches: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
 
-		Session session = null;
-		List<InwardBatch> result = new ArrayList<>();
+        return result;
+    }
 
-		try {
-			session = HibernateUtil.getSessionFactory().openSession();
+    // ── 2. Cleared Batches ────────────────────────────────────────────────────
+    // Same fix applied: removed ORDER BY from HQL, sort in Java.
+    // Kept only ONE JOIN FETCH (checkerActions) — enough for this tab's columns.
 
-			// Convert java.util.Date → LocalDate (entity uses LocalDate for batchDate)
-			LocalDate from = toLocalDate(fromDate);
-			LocalDate to = toLocalDate(toDate);
+    @Override
+    public List<InwardBatch> findClearedBatches(Date fromDate, Date toDate) {
 
-			// JOIN FETCH checkerActions — needed for acceptedCount, returnedCount,
-			// clearedBy
-			StringBuilder hql = new StringBuilder(
-					"SELECT DISTINCT b FROM InwardBatch b " + "LEFT JOIN FETCH b.checkerActions ca "
-							+ "LEFT JOIN FETCH ca.checker " + "WHERE b.status = :status");
+        Session session = null;
+        List<InwardBatch> result = new ArrayList<>();
 
-			if (from != null) {
-				hql.append(" AND b.batchDate >= :fromDate");
-			}
-			if (to != null) {
-				hql.append(" AND b.batchDate <= :toDate");
-			}
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
 
-			// Note: ORDER BY after JOIN FETCH DISTINCT must use b field, not ca
-			hql.append(" ORDER BY b.batchDate DESC");
+            LocalDate from = toLocalDate(fromDate);
+            LocalDate to   = toLocalDate(toDate);
 
-			Query<InwardBatch> query = session.createQuery(hql.toString(), InwardBatch.class);
-			query.setParameter("status", "CLEARED");
+            StringBuilder hql = new StringBuilder(
+                "SELECT DISTINCT b FROM InwardBatch b "
+              + "LEFT JOIN FETCH b.checkerActions ca "
+              + "LEFT JOIN FETCH ca.checker "
+              + "WHERE b.status = :status");
 
-			if (from != null) {
-				query.setParameter("fromDate", from);
-			}
-			if (to != null) {
-				query.setParameter("toDate", to);
-			}
+            if (from != null) hql.append(" AND b.batchDate >= :fromDate");
+            if (to   != null) hql.append(" AND b.batchDate <= :toDate");
 
-			result = query.getResultList();
+            Query<InwardBatch> query = session.createQuery(hql.toString(), InwardBatch.class);
+            query.setParameter("status", "CLEARED");
 
-		} catch (Exception e) {
-			System.err.println("Error fetching cleared inward batches: " + e.getMessage());
-			e.printStackTrace();
-		} finally {
-			if (session != null && session.isOpen()) {
-				session.close();
-			}
-		}
+            if (from != null) query.setParameter("fromDate", from);
+            if (to   != null) query.setParameter("toDate",   to);
 
-		return result;
-	}
+            result = query.getResultList();
 
-	@Override
-	public List<InwardCheque> findReturnedCheques(Date fromDate, Date toDate, String batchId) {
+            // Sort newest batch date first
+            result.sort((a, b) -> {
+                if (a.getBatchDate() == null && b.getBatchDate() == null) return 0;
+                if (a.getBatchDate() == null) return 1;
+                if (b.getBatchDate() == null) return -1;
+                return b.getBatchDate().compareTo(a.getBatchDate());
+            });
 
-		Session session = null;
-		List<InwardCheque> result = new ArrayList<>();
+        } catch (Exception e) {
+            System.err.println("[CheckerInwardVerificationDaoImpl] "
+                + "Error fetching cleared batches: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
 
-		try {
-			session = HibernateUtil.getSessionFactory().openSession();
+        return result;
+    }
 
-			LocalDate from = toLocalDate(fromDate);
-			LocalDate to = toLocalDate(toDate);
+    // ── 3. Returned Cheques ───────────────────────────────────────────────────
+    // updatedAt can be null for newly returned cheques — sort on actionedAt instead.
 
-			// JOIN FETCH batch — needed for cheque.getBatch().getBatchId()
-			// JOIN FETCH checkerActions — needed for returnReason, returnedBy, returnTime
-			StringBuilder hql = new StringBuilder("SELECT DISTINCT c FROM InwardCheque c " + "LEFT JOIN FETCH c.batch "
-					+ "LEFT JOIN FETCH c.checkerActions ca " + "LEFT JOIN FETCH ca.checker "
-					+ "WHERE c.status = :status");
+    @Override
+    public List<InwardCheque> findReturnedCheques(Date fromDate, Date toDate, String batchId) {
 
-			if (from != null) {
-				hql.append(" AND c.chequeDate >= :fromDate");
-			}
-			if (to != null) {
-				hql.append(" AND c.chequeDate <= :toDate");
-			}
-			if (batchId != null && !batchId.isEmpty()) {
-				// c.batch is the InwardBatch object — navigate to batchId field
-				hql.append(" AND c.batch.batchId = :batchId");
-			}
+        Session session = null;
+        List<InwardCheque> result = new ArrayList<>();
 
-			hql.append(" ORDER BY c.updatedAt DESC");
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
 
-			Query<InwardCheque> query = session.createQuery(hql.toString(), InwardCheque.class);
-			query.setParameter("status", "RETURNED");
+            LocalDate from = toLocalDate(fromDate);
+            LocalDate to   = toLocalDate(toDate);
 
-			if (from != null) {
-				query.setParameter("fromDate", from);
-			}
-			if (to != null) {
-				query.setParameter("toDate", to);
-			}
-			if (batchId != null && !batchId.isEmpty()) {
-				query.setParameter("batchId", batchId);
-			}
+            StringBuilder hql = new StringBuilder(
+                "SELECT DISTINCT c FROM InwardCheque c "
+              + "LEFT JOIN FETCH c.batch "
+              + "LEFT JOIN FETCH c.checkerActions ca "
+              + "LEFT JOIN FETCH ca.checker "
+              + "WHERE c.status = :status");
 
-			result = query.getResultList();
+            if (from != null)                          hql.append(" AND c.chequeDate >= :fromDate");
+            if (to   != null)                          hql.append(" AND c.chequeDate <= :toDate");
+            if (batchId != null && !batchId.isEmpty()) hql.append(" AND c.batch.batchId = :batchId");
 
-		} catch (Exception e) {
-			System.err.println("Error fetching returned inward cheques: " + e.getMessage());
-			e.printStackTrace();
-		} finally {
-			if (session != null && session.isOpen()) {
-				session.close();
-			}
-		}
+            Query<InwardCheque> query = session.createQuery(hql.toString(), InwardCheque.class);
+            query.setParameter("status", "RETURNED");
 
-		return result;
-	}
+            if (from != null)                          query.setParameter("fromDate", from);
+            if (to   != null)                          query.setParameter("toDate",   to);
+            if (batchId != null && !batchId.isEmpty()) query.setParameter("batchId",  batchId);
 
-	private LocalDate toLocalDate(Date date) {
-		if (date == null)
-			return null;
-		return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-	}
+            result = query.getResultList();
+
+        } catch (Exception e) {
+            System.err.println("[CheckerInwardVerificationDaoImpl] "
+                + "Error fetching returned cheques: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+
+        return result;
+    }
+
+    // ── Helper ────────────────────────────────────────────────────────────────
+
+    private LocalDate toLocalDate(Date date) {
+        if (date == null) return null;
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
 }
