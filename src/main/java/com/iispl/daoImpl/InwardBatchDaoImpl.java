@@ -17,7 +17,7 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
         try {
             NativeQuery<InwardBatch> q = session.createNativeQuery(
                 "SELECT * FROM inward_batch " +
-                "WHERE status IN ('RECEIVED', 'PENDING_CHECKER') " +
+                "WHERE status = 'MakerVerified' " +
                 "ORDER BY created_at ASC",
                 InwardBatch.class
             );
@@ -43,6 +43,39 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        } finally {
+            session.close();
+        }
+    }
+
+    @Override
+    public int countAllBatches() {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            Number result = (Number) session.createNativeQuery(
+                "SELECT COUNT(*) FROM inward_batch"
+            ).uniqueResult();
+            return result != null ? result.intValue() : 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        } finally {
+            session.close();
+        }
+    }
+
+    @Override
+    public int countClearedBatches() {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            Number result = (Number) session.createNativeQuery(
+                "SELECT COUNT(*) FROM inward_batch " +
+                "WHERE status IN ('CBS_Processed', 'Verified', 'Rejected')"
+            ).uniqueResult();
+            return result != null ? result.intValue() : 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
         } finally {
             session.close();
         }

@@ -1,89 +1,90 @@
 package com.iispl.dto;
 
+import java.math.BigDecimal;
+
 /**
- * File    : com/iispl/dto/InwardReportDTO.java
- * Purpose : Data transfer object for one row of the Inward Reports grid.
+ * File : com/iispl/dto/InwardReportDTO.java Purpose : Data transfer object for
+ * one row of the Checker Inward Reports grid.
  *
- *   Redesigned columns (matching target UI screenshot):
- *     batchId          → inward_batch.batch_id
- *     batchDate        → inward_batch.batch_date (formatted dd/MM/yyyy)
- *     totalCheques     → inward_batch.total_cheques
- *     acceptedCount    → COUNT(ic) WHERE ic.status = 'ACCEPTED'
- *     returnedCount    → COUNT(ic) WHERE ic.status = 'RETURNED'
- *     presentingBanks  → distinct presenting_bank_name values (comma-joined)
- *     status           → inward_batch.status
+ * Columns displayed: batchId → inward_batch.batch_id batchDate →
+ * inward_batch.batch_date (formatted dd/MM/yyyy) totalCheques →
+ * inward_batch.total_cheques totalAmount → inward_batch.total_amount status →
+ * inward_batch.status (Pending | Processing | Completed | Failed)
  *
- *   Legacy fields (micrErrors, iqaFails, passedCount, rejectedCount,
- *   referredCount) are RETAINED for backward compatibility with
- *   XML export builders (buildCxfXml / buildBrfXml) — they are simply
- *   no longer displayed in the grid.
+ * debitEligible flag drives the "Generate to Debit" button enable/disable
+ * state.
  */
 public class InwardReportDTO {
 
-    // ── Display fields (new target columns) ───────────────────────────────────
-    private String batchId;
-    private String batchDate;           // formatted for display
-    private int    totalCheques;
-    private int    acceptedCount;       // was passedCount — maps to ic.status='ACCEPTED'
-    private int    returnedCount;       // new — maps to ic.status='RETURNED'
-    private String presentingBanks;     // new — distinct bank names, comma-joined
+	// ── Display fields ────────────────────────────────────────────────────────
+	private String batchId;
+	private String batchDate; // formatted dd/MM/yyyy
+	private int totalCheques;
+	private BigDecimal totalAmount;
+	private String status; // Pending | Processing | Completed | Failed
 
-    // ── Legacy fields (kept for XML export logic) ─────────────────────────────
-    private int    micrErrors;
-    private int    iqaFails;
-    private int    passedCount;         // kept as alias for acceptedCount
-    private int    rejectedCount;
-    private int    referredCount;
+	// ── Business logic flag ───────────────────────────────────────────────────
+	/** True when the batch is eligible for Generate to Debit (status = PENDING). */
+	private boolean debitEligible;
 
-    private String status;
+	// ── Constructors ──────────────────────────────────────────────────────────
 
-    // ── Constructors ──────────────────────────────────────────────────────────
+	public InwardReportDTO() {
+	}
 
-    public InwardReportDTO() {}
+	// ── Getters & Setters ─────────────────────────────────────────────────────
 
-    // ── Getters & Setters ─────────────────────────────────────────────────────
+	public String getBatchId() {
+		return batchId;
+	}
 
-    public String getBatchId()                              { return batchId; }
-    public void   setBatchId(String batchId)                { this.batchId = batchId; }
+	public void setBatchId(String batchId) {
+		this.batchId = batchId;
+	}
 
-    public String getBatchDate()                            { return batchDate; }
-    public void   setBatchDate(String batchDate)            { this.batchDate = batchDate; }
+	public String getBatchDate() {
+		return batchDate;
+	}
 
-    public int    getTotalCheques()                         { return totalCheques; }
-    public void   setTotalCheques(int totalCheques)         { this.totalCheques = totalCheques; }
+	public void setBatchDate(String batchDate) {
+		this.batchDate = batchDate;
+	}
 
-    public int    getAcceptedCount()                        { return acceptedCount; }
-    public void   setAcceptedCount(int acceptedCount)       { this.acceptedCount = acceptedCount; }
+	public int getTotalCheques() {
+		return totalCheques;
+	}
 
-    public int    getReturnedCount()                        { return returnedCount; }
-    public void   setReturnedCount(int returnedCount)       { this.returnedCount = returnedCount; }
+	public void setTotalCheques(int totalCheques) {
+		this.totalCheques = totalCheques;
+	}
 
-    public String getPresentingBanks()                      { return presentingBanks; }
-    public void   setPresentingBanks(String presentingBanks){ this.presentingBanks = presentingBanks; }
+	public BigDecimal getTotalAmount() {
+		return totalAmount;
+	}
 
-    // Legacy — kept for XML export compatibility
-    public int    getMicrErrors()                           { return micrErrors; }
-    public void   setMicrErrors(int micrErrors)             { this.micrErrors = micrErrors; }
+	public void setTotalAmount(BigDecimal totalAmount) {
+		this.totalAmount = totalAmount;
+	}
 
-    public int    getIqaFails()                             { return iqaFails; }
-    public void   setIqaFails(int iqaFails)                 { this.iqaFails = iqaFails; }
+	public String getStatus() {
+		return status;
+	}
 
-    public int    getPassedCount()                          { return passedCount; }
-    public void   setPassedCount(int passedCount)           { this.passedCount = passedCount; }
+	public void setStatus(String status) {
+		this.status = status;
+	}
 
-    public int    getRejectedCount()                        { return rejectedCount; }
-    public void   setRejectedCount(int rejectedCount)       { this.rejectedCount = rejectedCount; }
+	public boolean isDebitEligible() {
+		return debitEligible;
+	}
 
-    public int    getReferredCount()                        { return referredCount; }
-    public void   setReferredCount(int referredCount)       { this.referredCount = referredCount; }
+	public void setDebitEligible(boolean debitEligible) {
+		this.debitEligible = debitEligible;
+	}
 
-    public String getStatus()                               { return status; }
-    public void   setStatus(String status)                  { this.status = status; }
-
-    @Override
-    public String toString() {
-        return "InwardReportDTO{batchId='" + batchId + "', status='" + status +
-               "', totalCheques=" + totalCheques + ", accepted=" + acceptedCount +
-               ", returned=" + returnedCount + ", banks='" + presentingBanks + "'}";
-    }
+	@Override
+	public String toString() {
+		return "InwardReportDTO{batchId='" + batchId + "', status='" + status + "', totalCheques=" + totalCheques
+				+ ", totalAmount=" + totalAmount + "}";
+	}
 }

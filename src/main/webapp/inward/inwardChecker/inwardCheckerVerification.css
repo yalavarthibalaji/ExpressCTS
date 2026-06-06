@@ -1,94 +1,114 @@
-/* ============================================================
-   Checker Inward Verification — CSS
-   File: src/main/webapp/css/checkerInward.css
-   
-   KEY RULE: ZK renders its own HTML. We must use !important
-   to override ZK default styles on grid, tabs, datebox etc.
-   ============================================================ */
+/*
+ * File: inward/inwardChecker/inwardCheckerVerification.css
+ * Page: Checker Inward Verification — tabbed batch list
+ * Import order: global.css → components.css → layout.css → dashboard.css → this file
+ *
+ * KEY RULE: ZK renders its own HTML. Use !important to override
+ * ZK default styles on grid, tabs, datebox etc.
+ *
+ * FIXES
+ * ─────
+ * FIX A — Full page height (ZK flex chain)
+ * FIX B — Calendar popup clipped
+ * FIX C — Filter bar alignment (force flex row)
+ * FIX D — Grid header color (ci-grid-head targeted directly)
+ */
 
-/* ── Page Wrapper ─────────────────────────────────────────── */
-.ci-main-wrapper {
-    padding: 24px 32px;
-    background-color: #f4f6f9;
-    min-height: 100vh;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    box-sizing: border-box;
+/* ═══════════════════════════════════════════════════════════
+   FIX A — Shell height + ZK include wrapper fix
+   ═══════════════════════════════════════════════════════════ */
+
+.dash-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
 }
 
-/* ── Breadcrumb ──────────────────────────────────────────── */
-.ci-breadcrumb {
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: #6b7280;
-    display: block;
+.dash-shell > .z-div            { flex-shrink: 0; }
+.dash-shell > .body-row         { flex: 1; min-height: 0; }
+.body-row   > .z-div            { height: 100%; display: flex; }
+.body-row   > .main             { flex: 1; display: flex; flex-direction: column;
+                                   overflow: hidden; min-height: 0; }
+.main       > .dash-main        { flex: 1; overflow-y: auto; min-height: 0; }
+.main       > .z-div:last-child { flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   Page padding
+   ═══════════════════════════════════════════════════════════ */
+
+.dash-main {
+    padding: 16px 24px 24px !important;
 }
 
-.ci-breadcrumb-link {
-    color: #4b83cd !important;
-    cursor: pointer;
-    font-size: 13px;
+/* ═══════════════════════════════════════════════════════════
+   Card shell
+   ═══════════════════════════════════════════════════════════ */
+
+.card {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r8) !important;
+    margin-bottom: 14px !important;
+    min-height: 0 !important;
 }
 
-.ci-breadcrumb-sep {
-    color: #9ca3af;
-    margin: 0 4px;
-    font-size: 13px;
+/* ═══════════════════════════════════════════════════════════
+   Page header (inside first card)
+   ═══════════════════════════════════════════════════════════ */
+
+.page-hdr {
+    padding: 16px 20px !important;
+    border-bottom: 1px solid var(--border) !important;
 }
 
-.ci-breadcrumb-current {
-    color: #374151;
-    font-weight: 500;
-    font-size: 13px;
-}
-
-/* ── Page Title ──────────────────────────────────────────── */
-.ci-page-title {
-    display: block !important;
-    font-size: 22px !important;
+.page-title {
+    font-size: 18px !important;
     font-weight: 700 !important;
-    color: #1e293b !important;
-    margin-bottom: 4px !important;
-    line-height: 1.3;
+    color: var(--t1) !important;
+    font-family: var(--font) !important;
+    margin-bottom: 3px !important;
 }
 
-.ci-page-subtitle {
-    display: block !important;
-    font-size: 13px !important;
-    color: #64748b !important;
-    margin-bottom: 20px !important;
+.page-sub {
+    font-size: 12px !important;
+    color: var(--t2) !important;
+    font-family: var(--font) !important;
+    line-height: 1.5 !important;
 }
 
-/* ── Tab Container ───────────────────────────────────────── */
-/* Remove ZK's default tabbox border and background */
-.ci-tabbox {
-    border: none !important;
-    background: transparent !important;
-}
+/* ═══════════════════════════════════════════════════════════
+   Tabbox — strip ZK default chrome
+   ═══════════════════════════════════════════════════════════ */
 
+.ci-tabbox,
 .ci-tabbox .z-tabbox {
     border: none !important;
     background: transparent !important;
 }
 
-/* ── Tab Bar ─────────────────────────────────────────────── */
+/* Tab bar */
 .ci-tabbox .z-tabs {
     background: transparent !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    padding: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0 20px !important;
 }
 
-/* ── Each Tab ────────────────────────────────────────────── */
+/* Individual tab */
 .ci-tabbox .z-tab {
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-weight: 500 !important;
-    color: #64748b !important;
-    padding: 10px 20px !important;
+    color: var(--t2) !important;
+    padding: 10px 18px !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
     background: transparent !important;
     cursor: pointer !important;
     margin-bottom: -1px !important;
     border-radius: 0 !important;
+    font-family: var(--font) !important;
+    transition: color 0.15s !important;
 }
 
 .ci-tabbox .z-tab:hover {
@@ -96,336 +116,388 @@
     background: transparent !important;
 }
 
-/* ── Selected Tab ────────────────────────────────────────── */
-.ci-tabbox .z-tab-selected {
+.ci-tabbox .z-tab-selected,
+.ci-tabbox .z-tab-selected .z-tab-text {
     color: #1e3a5f !important;
     border-bottom: 2px solid #1e3a5f !important;
     font-weight: 600 !important;
     background: transparent !important;
 }
 
-/* ZK adds a z-tab-selected class on the anchor inside tab */
-.ci-tabbox .z-tab-selected .z-tab-text {
-    color: #1e3a5f !important;
-}
-
-/* ── Tab Panel ───────────────────────────────────────────── */
+/* Tabpanels strip */
 .ci-tabbox .z-tabpanels {
     border: none !important;
     background: transparent !important;
     padding: 0 !important;
 }
 
+/* Each tabpanel content area */
 .ci-tabpanel {
-    background: #ffffff !important;
-    border-radius: 8px !important;
-    padding: 20px !important;
-    margin-top: 12px !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
-    border: 1px solid #e2e8f0 !important;
+    padding: 16px 20px !important;
+    background: transparent !important;
 }
 
-/* ── Filter Bar ──────────────────────────────────────────── */
-/* THIS IS THE KEY FIX — ZK stacks items, we force horizontal */
+/* ═══════════════════════════════════════════════════════════
+   FIX C — Filter bar (force horizontal flex)
+   ═══════════════════════════════════════════════════════════ */
+
 .ci-filter-bar {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 12px !important;
-    margin-bottom: 16px !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
     flex-wrap: wrap !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    overflow: visible !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
-/* ── Search Box ──────────────────────────────────────────── */
+/* Search textbox */
 .ci-search-box .z-textbox {
-    width: 260px !important;
-    height: 36px !important;
+    height: 34px !important;
+    width: 240px !important;
     border: 1px solid #d1d5db !important;
     border-radius: 6px !important;
-    padding: 6px 12px !important;
+    padding: 0 10px !important;
     font-size: 13px !important;
     color: #374151 !important;
-    background-color: #ffffff !important;
+    background: #ffffff !important;
+    font-family: var(--font) !important;
     box-sizing: border-box !important;
 }
 
 .ci-search-wide .z-textbox {
-    width: 460px !important;
+    height: 34px !important;
+    width: 380px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+    background: #ffffff !important;
+    font-family: var(--font) !important;
+    box-sizing: border-box !important;
 }
 
 .ci-search-box .z-textbox:focus,
 .ci-search-wide .z-textbox:focus {
     outline: none !important;
-    border-color: #4b83cd !important;
-    box-shadow: 0 0 0 2px rgba(75, 131, 205, 0.15) !important;
+    border-color: #1e3a5f !important;
+    box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.12) !important;
 }
 
-/* ── Date Group — force horizontal layout ────────────────── */
-.ci-date-group {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    white-space: nowrap !important;
-}
-
-.ci-date-label {
-    font-size: 12px !important;
+/* Date label */
+.ci-date-label.z-label {
+    font-size: 11px !important;
     font-weight: 600 !important;
     color: #6b7280 !important;
     white-space: nowrap !important;
+    font-family: var(--font) !important;
+    letter-spacing: 0.03em !important;
 }
 
-/* ── Datebox ─────────────────────────────────────────────── */
+/* Datebox outer */
 .ci-datebox .z-datebox {
-    height: 36px !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 6px !important;
-    background-color: #ffffff !important;
-}
-
-.ci-datebox {
-    margin-right: 12px !important;
-}
-
-.ci-datebox .z-datebox-input {
     height: 34px !important;
-    border: none !important;
-    padding: 4px 8px !important;
-    font-size: 13px !important;
-    color: #374151 !important;
-    width: 130px !important;
-    background-color: transparent !important;
-}
-
-/* Batch ID filter textbox (same style as datebox) */
-.ci-batchid-filter .z-textbox {
-    height: 36px !important;
     border: 1px solid #d1d5db !important;
     border-radius: 6px !important;
-    padding: 4px 10px !important;
+    background: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    overflow: visible !important;
+}
+
+/* Datebox inner input */
+.ci-datebox .z-datebox-input {
+    height: 32px !important;
+    border: none !important;
+    padding: 0 8px !important;
     font-size: 13px !important;
     color: #374151 !important;
+    width: 120px !important;
+    background: transparent !important;
+    font-family: var(--font) !important;
+}
+
+/* Batch ID filter */
+.ci-batchid-filter .z-textbox {
+    height: 34px !important;
     width: 140px !important;
-    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+    background: #ffffff !important;
+    font-family: var(--font) !important;
     box-sizing: border-box !important;
 }
 
-/* ── Grid — override ZK blue header ──────────────────────── */
-.ci-grid .z-grid {
-    border: none !important;
+/* ═══════════════════════════════════════════════════════════
+   FIX B — Datebox calendar popup (ZK 10)
+   ═══════════════════════════════════════════════════════════ */
+
+.z-datebox-popup {
+    height: auto !important;
+    min-height: 260px !important;
+    overflow: visible !important;
+    z-index: 99999 !important;
+}
+
+.z-datebox-popup .z-calendar {
+    height: auto !important;
+    min-height: 260px !important;
+    display: block !important;
+}
+
+.z-datebox-popup .z-calendar-body {
+    display: table !important;
+    visibility: visible !important;
+}
+
+.z-datebox-popup table {
+    display: table !important;
+    visibility: visible !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FIX D — Data Grid Header
+   ZUL uses: <grid sclass="dt"> and <columns sclass="ci-grid-head">
+   ZK renders columns as: <tr class="z-columns ci-grid-head">
+   Each column as:         <th class="z-column">
+   Label text inside:      <span class="z-column-cnt">
+   So we target ci-grid-head directly — NOT via a parent .ci-grid
+   ═══════════════════════════════════════════════════════════ */
+
+/* Grid outer wrapper */
+.dt .z-grid {
+    border: 1px solid #e2e8f0 !important;
     border-radius: 6px !important;
     overflow: hidden !important;
     width: 100% !important;
 }
 
-/* THIS IS THE KEY FIX for blue header — override ZK default */
-.ci-grid .z-columns-bar,
-.ci-grid .z-columns {
+/* Header row — ZK renders <columns sclass="ci-grid-head">
+   as <tr class="z-columns ci-grid-head"> */
+.ci-grid-head,
+.z-columns.ci-grid-head {
     background-color: #1e3a5f !important;
     border-bottom: 2px solid #16304f !important;
 }
 
-.ci-grid .z-column {
+/* Each header cell */
+.ci-grid-head .z-column,
+.z-columns.ci-grid-head .z-column {
     background-color: #1e3a5f !important;
     color: #ffffff !important;
-    font-size: 12px !important;
+    font-size: 11px !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
     padding: 11px 14px !important;
-    border-right: 1px solid #2d5492 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+    font-family: var(--font) !important;
 }
 
-.ci-grid .z-column:last-child {
-    border-right: none !important;
-}
-
-/* Remove ZK sort arrow color issues on header */
-.ci-grid .z-column-sort-icon {
-    color: #ffffff !important;
-}
-
-/* ── Grid Rows ───────────────────────────────────────────── */
-.ci-grid .z-row {
-    border-bottom: 1px solid #f1f5f9 !important;
-    background-color: #ffffff !important;
-}
-
-.ci-grid .z-row:hover > .z-cell {
-    background-color: #f8fafc !important;
-}
-
-/* Alternating row color */
-.ci-grid .z-row-even {
-    background-color: #fafbfc !important;
-}
-
-.ci-grid .z-cell {
-    font-size: 13px !important;
-    color: #374151 !important;
-    padding: 11px 14px !important;
-    vertical-align: middle !important;
-    border-right: none !important;
-}
-
-/* ── Empty Message ───────────────────────────────────────── */
-.ci-grid .z-grid-empty-body td,
-.ci-grid .z-empty-body td {
-    text-align: center !important;
-    color: #9ca3af !important;
-    padding: 40px 0 !important;
-    font-size: 14px !important;
-    background-color: #ffffff !important;
-}
-
-/* ── Bold Cell for Batch ID ──────────────────────────────── */
-.ci-bold-cell {
-    font-weight: 600 !important;
-    color: #1e293b !important;
-}
-
-/* ── Status Badges ───────────────────────────────────────── */
-.ci-badge-pending,
-.ci-badge-cleared,
-.ci-badge-returned,
-.ci-badge-default {
-    display: inline-block !important;
-    padding: 3px 10px !important;
-    border-radius: 12px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.03em !important;
-}
-
-.ci-badge-pending {
-    background-color: #fef3c7 !important;
-    color: #92400e !important;
-    border: 1px solid #fcd34d !important;
-}
-
-.ci-badge-cleared {
-    background-color: #d1fae5 !important;
-    color: #065f46 !important;
-    border: 1px solid #6ee7b7 !important;
-}
-
-.ci-badge-returned {
-    background-color: #fee2e2 !important;
-    color: #991b1b !important;
-    border: 1px solid #fca5a5 !important;
-}
-
-.ci-badge-default {
-    background-color: #f1f5f9 !important;
-    color: #475569 !important;
-    border: 1px solid #cbd5e1 !important;
-}
-
-/* ── Process Button ──────────────────────────────────────── */
-.ci-btn-process .z-button {
-    background-color: #1e3a5f !important;
-    color: #ffffff !important;
-    border: none !important;
-    border-radius: 5px !important;
-    padding: 6px 14px !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-}
-
-.ci-btn-process .z-button:hover {
-    background-color: #2d5492 !important;
-}
-
-
-.z-columns.ci-grid-head {
-    background-color: #1e3a5f !important;
-}
-
-.z-columns.ci-grid-head .z-column-cnt {
-    background-color: #1e3a5f !important;
-    color: #ffffff !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-}
-
-.z-columns.ci-grid-head .z-column {
-    background-color: #1e3a5f !important;
-    color: #ffffff !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-    border-right: 1px solid #2d5492 !important;
-}
-
+.ci-grid-head .z-column:last-child,
 .z-columns.ci-grid-head .z-column:last-child {
     border-right: none !important;
 }
 
-/* Main page spacing */
-.dash-main {
-    padding: 24px !important;
+/* ZK 10 wraps label text inside z-column-cnt span.
+   Without this, text stays black even if background turns blue. */
+.ci-grid-head .z-column-cnt,
+.z-columns.ci-grid-head .z-column-cnt {
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    display: block !important;
 }
 
-/* Page header */
-.page-hdr {
-    margin-bottom: 24px !important;
-    padding: 0 !important;
+/* Sort icon on header — keep it white */
+.ci-grid-head .z-column-sort-icon,
+.z-columns.ci-grid-head .z-column-sort-icon {
+    color: #ffffff !important;
+    opacity: 0.7 !important;
 }
 
-/* Verification card */
-.card {
-    margin-top: 10px;
-}
-/* ============================================================
-   DASHBOARD HEIGHT FIX
-   Fixes ZK include wrapper height issues
-   ============================================================ */
-
-/* Root shell fills viewport */
-.dash-shell {
-    height: 100vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
+/* ── Data rows ── */
+.dt .z-row {
+    border-bottom: 1px solid #f1f5f9 !important;
+    background: #ffffff !important;
+    transition: background 0.1s !important;
 }
 
-/* Body area fills space between topbar and statusbar */
-.dash-shell > .body-row {
-    flex: 1 !important;
-    display: flex !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
+.dt .z-row:hover > .z-cell {
+    background: #f8fafc !important;
 }
 
-/* ZK-generated wrapper around sidebar */
-.body-row > .z-div {
-    height: 100% !important;
-    display: flex !important;
+.dt .z-row-even {
+    background: #fafbfc !important;
 }
 
-/* Main content area */
-.body-row > .main {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
+.dt .z-cell {
+    font-size: 13px !important;
+    color: #374151 !important;
+    padding: 10px 14px !important;
+    vertical-align: middle !important;
+    border-right: none !important;
+    font-family: var(--font) !important;
 }
 
-/* Dashboard content */
-.main > .dash-main {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    min-height: 0 !important;
+/* Empty grid message */
+.dt .z-grid-empty-body td {
+    text-align: center !important;
+    color: #9ca3af !important;
+    padding: 40px 0 !important;
+    font-size: 13px !important;
+    background: #ffffff !important;
+    font-family: var(--font) !important;
 }
 
-/* Cards can shrink correctly */
-.card {
-    min-height: 0 !important;
+/* Bold Batch ID cell */
+.ci-bold-cell {
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    font-family: var(--mono) !important;
+    font-size: 12px !important;
 }
-	
+
+/* ═══════════════════════════════════════════════════════════
+   Action Button — Process
+   ═══════════════════════════════════════════════════════════ */
+
+.ci-btn-process .z-button {
+    background: #1e3a5f !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 5px !important;
+    height: 30px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    font-family: var(--font) !important;
+    transition: background 0.15s !important;
+    white-space: nowrap !important;
+}
+
+.ci-btn-process .z-button:hover {
+    background: #2d5492 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Status Badges — unified with inward-reports badge system
+   ═══════════════════════════════════════════════════════════ */
+
+.badge {
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 9px !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    white-space: nowrap !important;
+    font-family: var(--font) !important;
+}
+
+/* Pending / Awaiting */
+.badge.b-pend {
+    background: #fef9c3 !important;
+    color: #854d0e !important;
+    border: 1px solid #fde68a !important;
+}
+
+/* Cleared / Accepted / Pass */
+.badge.b-pass {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+/* Failed / Returned */
+.badge.b-fail {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fecaca !important;
+}
+
+/* Info / Processing */
+.badge.b-info {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+/* Neutral / Default */
+.badge.b-grey {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* Legacy badge names — kept for backward compatibility
+   in case any composer still writes these class names */
+.ci-badge-pending {
+    background: #fef9c3 !important;
+    color: #854d0e !important;
+    border: 1px solid #fde68a !important;
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 9px !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    white-space: nowrap !important;
+}
+
+.ci-badge-cleared {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 9px !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    white-space: nowrap !important;
+}
+
+.ci-badge-returned {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fecaca !important;
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 9px !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    white-space: nowrap !important;
+}
+
+.ci-badge-default {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 9px !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    white-space: nowrap !important;
+}

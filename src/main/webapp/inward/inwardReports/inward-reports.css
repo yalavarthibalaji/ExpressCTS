@@ -2,24 +2,20 @@
  * File: inward/inwardReports/inward-reports.css
  * Import order: global.css → components.css → layout.css → dashboard.css → this file.
  *
- * FIXES IN THIS VERSION
- * ─────────────────────
+ * CHANGES IN THIS VERSION
+ * ───────────────────────
+ * - Removed: .btn.bg (green export button styles for ACK/RRF download buttons)
+ * - Removed: .rpt-btn-export styles
+ * - Removed: .rpt-cibf-row / .rpt-cibf-btn (CIBF image download row)
+ * - Updated: info note text colour to neutral (no longer ACK/RRF specific)
+ * - Added  : .rpt-btn-debit — "Generate to Debit" per-row action button
+ * - Updated: status badge classes — Pending | Processing | Completed | Failed
+ *
+ * FIXES RETAINED
+ * ──────────────
  * FIX A — Full page height (ZK flex chain)
  * FIX B — Calendar popup clipped / only header visible
- *          Root cause: .rpt-fbar and .rpt-grid-wrap had overflow:hidden,
- *          and .main also has overflow:hidden. ZK 10 renders the datebox
- *          popup inside the DOM; any ancestor with overflow:hidden clips it.
- *          Fix: set overflow:visible on the filter bar and remove
- *          overflow:hidden from .rpt-grid-wrap (use border-radius via
- *          clip-path instead, which does not clip positioned descendants).
- *          Also force the ZK calendar popup z-index above everything.
  * FIX C — Filter bar alignment
- *          ZK datebox renders as a compound widget (.z-datebox wrapping
- *          an input + an icon button). Without explicit height and
- *          vertical-align rules the input sits lower than the textbox.
- *          Fix: normalize all filter elements to the same height (34px)
- *          with consistent border/padding, and use align-items:stretch
- *          on the fbar so everything auto-sizes to the same row height.
  */
 
 /* ═══════════════════════════════════════════════════════════════
@@ -74,36 +70,25 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Download CIBF Images button row
-   ═══════════════════════════════════════════════════════════════ */
-.rpt-cibf-row { margin-bottom: 8px; }
-.rpt-cibf-btn {
-    font-size: 13px !important;
-    padding: 5px 12px !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════
    FIX B + C — Filter bar
    ═══════════════════════════════════════════════════════════════ */
 .rpt-fbar {
     display: flex;
-    align-items: center;        /* vertically centre all children */
+    align-items: center;
     gap: 8px;
-    flex-wrap: nowrap;          /* keep on one line */
+    flex-wrap: nowrap;
     background: #fff;
     border: 1px solid #dde3ec;
     border-radius: 6px;
     padding: 8px 12px;
     margin-bottom: 10px;
-    /* FIX B: do NOT set overflow:hidden here — datebox popup must escape */
+    /* FIX B: do NOT set overflow:hidden — datebox popup must escape */
     overflow: visible;
-    position: relative;         /* establishes stacking context */
+    position: relative;
     z-index: 1;
 }
 
-/* ── FIX C: Normalize all ZK widget wrappers inside the filter bar ──────── */
-
-/* Textbox wrapper (Search batches) */
+/* Textbox (Search batches) */
 .rpt-fbar .rpt-fi-search,
 .rpt-fbar .rpt-fi-search.z-textbox {
     height: 34px !important;
@@ -117,7 +102,7 @@
     vertical-align: middle;
 }
 
-/* Datebox outer wrapper — ZK renders .z-datebox as a flex container */
+/* Datebox outer wrapper */
 .rpt-fbar .rpt-fi-date,
 .rpt-fbar .rpt-fi-date.z-datebox {
     height: 34px !important;
@@ -129,10 +114,10 @@
     align-items: center !important;
     box-sizing: border-box !important;
     vertical-align: middle;
-    overflow: visible !important;   /* FIX B: must NOT clip the popup */
+    overflow: visible !important; /* FIX B */
 }
 
-/* Datebox inner input field */
+/* Datebox inner input */
 .rpt-fbar .rpt-fi-date .z-datebox-input {
     height: 32px !important;
     border: none !important;
@@ -172,7 +157,7 @@
     vertical-align: middle;
 }
 
-/* Buttons — match height */
+/* All buttons in filter bar */
 .rpt-fbar .z-button {
     height: 34px !important;
     line-height: 34px !important;
@@ -184,177 +169,136 @@
     white-space: nowrap;
 }
 
-/* ── FIX B: ZK 10 datebox calendar popup — full date grid fix ────────────
- *
- * Root cause (confirmed from ZK 10 source jar):
- *
- *   ZK renders the popup as:
- *     <div class="z-datebox-popup">        ← position:absolute, appended to <body>
- *       <div class="z-calendar">
- *         <div class="z-calendar-header">  ← always visible (static height)
- *         <table class="z-calendar-body">  ← height:100% → needs parent height
- *           <div class="z-calendar-anima"> ← overflow:hidden; position:relative
- *             <div class="z-calendar-anima-inner"> ← position:absolute; height:100%
- *               <table>...</table>         ← THE DATE GRID
- *
- *   The chain: .z-calendar-body { height:100% } → .z-calendar-anima-inner
- *   { height:100%; position:absolute } → both need an ancestor with a
- *   fixed/explicit height to resolve "100%" against.
- *
- *   When .z-calendar has no explicit height, .z-calendar-body's 100%
- *   resolves to 0 → .z-calendar-anima-inner collapses → dates invisible.
- *
- *   Fix: give .z-calendar a min-height so the body chain has something
- *   to resolve against, and convert .z-calendar-anima-inner from
- *   position:absolute to position:relative so it participates in normal
- *   flow and the date table renders at natural height.
- * ─────────────────────────────────────────────────────────────────────── */
-/* Force calendar popup size */
+/* ── FIX B: ZK 10 datebox calendar popup fix ────────────────── */
 .z-datebox-popup {
     height: auto !important;
     min-height: 260px !important;
     overflow: visible !important;
+    z-index: 99999 !important;
 }
-
 .z-datebox-popup .z-calendar {
     height: auto !important;
     min-height: 260px !important;
     display: block !important;
 }
-
 .z-datebox-popup .z-calendar-body {
     display: table !important;
     visibility: visible !important;
 }
-
 .z-datebox-popup table {
     display: table !important;
     visibility: visible !important;
 }
-.z-datebox-popup {
-    z-index: 99999 !important;
-}
 
 /* ═══════════════════════════════════════════════════════════════
-   Green export buttons
+   Results listbox
    ═══════════════════════════════════════════════════════════════ */
-.btn.bg {
-    background: #1e8449 !important;
-    color: #fff !important;
-    border: 1px solid #196f3d !important;
-}
-.btn.bg:hover {
-    background: #196f3d !important;
-}
-.rpt-btn-export.z-button {
-    min-width: 88px;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Results grid wrapper
-   FIX B: remove overflow:hidden — use border + border-radius only.
-   overflow:hidden on this element was clipping the datebox popup.
-   ═══════════════════════════════════════════════════════════════ */
-.rpt-grid-wrap {
+.rpt-listbox {
+    border: 1px solid #dde3ec !important;
+    border-radius: 6px !important;
     background: #fff;
-    border: 1px solid #dde3ec;
-    border-radius: 6px;
-    /* NO overflow:hidden here — it clips the datebox popup */
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Grid header — dark navy, same as verification page
-   ═══════════════════════════════════════════════════════════════ */
-.rpt-grid-hdr {
-    display: flex;
-    align-items: flex-start;
-    background-color: #1e3a5f;
-    border-radius: 5px 5px 0 0;    /* round top corners to match wrapper */
-    padding: 10px 0;
+.rpt-listbox .z-listhead {
+    background: #1e3a5f !important;
 }
 
-.rpt-hdr-col {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #ffffff;
-    letter-spacing: 0.04em;
-    padding: 0 12px;
-    text-transform: uppercase;
-    border-right: 1px solid #2d5492;
+.rpt-listbox .z-listheader {
+    background: #1e3a5f !important;
+    border-right: 1px solid #2d5492 !important;
 }
-.rpt-hdr-col:last-child { border-right: none; }
 
-/* Inline filter textbox in Batch ID header — on dark background */
-.rpt-grid-filter.z-textbox {
-    width: 130px !important;
-    font-size: 12px !important;
-    height: 26px !important;
-    background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.30) !important;
-    border-radius: 4px !important;
-    padding: 2px 6px !important;
+.rpt-listbox .z-listheader-content {
     color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: .04em;
 }
-.rpt-grid-filter.z-textbox::placeholder {
-    color: rgba(255,255,255,0.55) !important;
-}
 
-/* Column flex widths */
-.rpt-col-batchid   { flex: 3; }
-.rpt-col-count     { flex: 1; }
-.rpt-col-accepted  { flex: 1; }
-.rpt-col-returned  { flex: 1; }
-.rpt-col-banks     { flex: 3; }
-.rpt-col-status    { flex: 2; }
-
-/* ═══════════════════════════════════════════════════════════════
-   Grid body + rows
-   ═══════════════════════════════════════════════════════════════ */
-.rpt-grid-body { min-height: 80px; }
-
-.rpt-row {
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #edf2f7;
-    padding: 8px 0;
+.rpt-listbox .z-listcell-content {
     font-size: 13px;
     color: #2d3748;
-    transition: background 0.15s;
+    padding: 8px 12px;
 }
-.rpt-row:last-child { border-bottom: none; }
-.rpt-row:hover      { background: #f0f4fb; }
 
-.rpt-cell {
-    padding: 0 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.rpt-listbox .z-listitem:hover {
+    background: #f0f4fb !important;
 }
-.rpt-cell-batchid {
-    font-family: var(--mono, monospace);
-    font-size: 12px;
+
+.rpt-listbox .z-paging {
+    border-top: 1px solid #dde3ec;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Empty state
+   "Generate to Debit" per-row action button
    ═══════════════════════════════════════════════════════════════ */
-.rpt-empty-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 36px 20px;
-    color: #718096;
-    font-size: 14px;
-    font-style: italic;
+.rpt-btn-debit.z-button {
+    background: #1a5276 !important;
+    color: #fff !important;
+    border: 1px solid #154360 !important;
+    border-radius: 5px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 5px 11px !important;
+    height: 30px !important;
+    line-height: 20px !important;
+    cursor: pointer !important;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+.rpt-btn-debit.z-button:hover {
+    background: #154360 !important;
+}
+.rpt-btn-debit.disabled.z-button,
+.rpt-btn-debit.z-button[disabled] {
+    background: #aab4be !important;
+    border-color: #9aa4af !important;
+    color: #fff !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
 }
 
 /* ═══════════════════════════════════════════════════════════════
    Status badges
+   Pending    → amber/yellow  (.b-pend)
+   Processing → blue          (.b-info)
+   Completed  → green         (.b-pass)
+   Failed     → red           (.b-fail)
    ═══════════════════════════════════════════════════════════════ */
-.rpt-row .badge {
+.badge {
+    display: inline-block;
     font-size: 11px;
-    padding: 3px 8px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    white-space: nowrap;
+}
+
+.badge.b-pend {
+    background: #fef9c3;
+    color: #854d0e;
+    border: 1px solid #fde68a;
+}
+.badge.b-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+.badge.b-pass {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+.badge.b-fail {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+.badge.b-grey {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }

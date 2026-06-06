@@ -24,36 +24,60 @@
 
             <div sclass="dash-main">
 
-                <!-- Page header — .page-hdr .page-title from components.css -->
-               
+    <div sclass="stat-cards-row">
 
-                <!-- Action cards — .card .card-body .card-title .page-sub .btn .bp .bo -->
-                <div sclass="ci-action-row">
+        <div sclass="stat-card stat-card--pending" id="statPending">
+            <label sclass="stat-number"
+                   id="lblPendingCount"
+                   value="0"/>
+            <label sclass="stat-label"
+                   value="Pending batches"/>
+        </div>
 
-                    <div sclass="card ci-action-card">
-                        <div sclass="card-body ci-action-card-body">
-                            <div sclass="ci-card-icon">✔</div>
-                            <div sclass="ci-card-info">
-                                <div sclass="card-title">Checker Inward Verification</div>
-                                <div sclass="page-sub">CBS validation &amp; accept/return</div>
-                            </div>
-                            <button id="goVerificationBtn" sclass="btn bp" label="Go →" />
-                        </div>
-                    </div>
+        <div sclass="stat-card stat-card--cleared" id="statCleared">
+            <label sclass="stat-number"
+                   id="lblClearedCount"
+                   value="0"/>
+            <label sclass="stat-label"
+                   value="Cleared batches"/>
+        </div>
 
-                    <div sclass="card ci-action-card">
-                        <div sclass="card-body ci-action-card-body">
-                            <div sclass="ci-card-icon">📊</div>
-                            <div sclass="ci-card-info">
-                                <div sclass="card-title">Reports</div>
-                                <div sclass="page-sub">Download ACK + RRF reports</div>
-                            </div>
-                            <button id="goReportsBtn" sclass="btn bo" label="Go →" />
-                        </div>
-                    </div>
+        <div sclass="stat-card stat-card--inprocess" id="statTotal">
+            <label sclass="stat-number"
+                   id="lblTotalCount"
+                   value="0"/>
+            <label sclass="stat-label"
+                   value="Total batches"/>
+        </div>
 
-                </div>
+    </div>
 
+    <!-- Action cards -->
+  <div sclass="ci-action-row">
+
+    <div sclass="action-card">
+        <div sclass="card-left">
+            <div sclass="card-icon file-icon">✔</div>
+            <div sclass="card-text">
+                <div sclass="card-title">Checker Inward Verification</div>
+                <div sclass="card-desc">CBS validation &amp; accept/return</div>
+            </div>
+        </div>
+        <button id="goVerificationBtn" sclass="go-btn go-btn-blue" label="Go →" />
+    </div>
+
+    <div sclass="action-card">
+        <div sclass="card-left">
+            <div sclass="card-icon repair-icon">📊</div>
+            <div sclass="card-text">
+                <div sclass="card-title">Reports</div>
+                <div sclass="card-desc">Download ACK + RRF reports</div>
+            </div>
+        </div>
+        <button id="goReportsBtn" sclass="go-btn go-btn-gold" label="Go →" />
+    </div>
+
+</div>
                 <!-- Pending Batches — ZK grid, rows populated by CheckerInwardDashboardComposer -->
                 <div sclass="card">
                     <div sclass="card-hdr">

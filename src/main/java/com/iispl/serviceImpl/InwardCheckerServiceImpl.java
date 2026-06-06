@@ -20,4 +20,14 @@ public class InwardCheckerServiceImpl implements InwardCheckerService {
     public InwardBatch getBatchById(String batchId) {
         return inwardBatchDao.findByBatchId(batchId);
     }
+
+    @Override
+    public int getTotalBatchCount() {
+        return inwardBatchDao.countAllBatches();
+    }
+
+    @Override
+    public int getClearedBatchCount() {
+        return inwardBatchDao.countClearedBatches();
+    }
 }

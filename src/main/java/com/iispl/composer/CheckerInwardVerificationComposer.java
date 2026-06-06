@@ -6,13 +6,15 @@ import java.util.List;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Sessions;
 import org.zkoss.zk.ui.select.SelectorComposer;
+import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Datebox;
 import org.zkoss.zul.Label;
+import org.zkoss.zul.Listbox;
+import org.zkoss.zul.Listcell;
+import org.zkoss.zul.Listitem;
 import org.zkoss.zul.Messagebox;
-import org.zkoss.zul.Row;
-import org.zkoss.zul.Rows;
 import org.zkoss.zul.Textbox;
 
 import com.iispl.dto.LoginDTO;
@@ -25,262 +27,412 @@ import com.iispl.util.SessionUtil;
 
 public class CheckerInwardVerificationComposer extends SelectorComposer<Component> {
 
-	// ── Pending Batches wires ─────────────────────────────────────────────────
-	@Wire
-	private Textbox txtSearchPending;
+    // ── Tab 1: Pending Batches ────────────────────────────────────────────────
+    @Wire private Textbox  txtSearchPending;
+    @Wire private Listbox  lstPending;
 
-	@Wire
-	private Rows rowsPending;
+    // ── Tab 2: Cleared Batches ────────────────────────────────────────────────
+    @Wire private Textbox  txtSearchCleared;
+    @Wire private Datebox  dtFromCleared;
+    @Wire private Datebox  dtToCleared;
+    @Wire private Listbox  lstCleared;
 
-	// ── Cleared Batches wires ─────────────────────────────────────────────────
-	@Wire
-	private Textbox txtSearchCleared;
+    // ── Tab 3: Failed / Returned ──────────────────────────────────────────────
+    @Wire private Textbox  txtSearchFailed;
+    @Wire private Datebox  dtFromFailed;
+    @Wire private Datebox  dtToFailed;
+    @Wire private Textbox  txtBatchIdFilter;
+    @Wire private Listbox  lstFailed;
 
-	@Wire
-	private Datebox dtFromCleared;
+    private final CheckerInwardVerificationService verificationService =
+            new CheckerInwardVerificationServiceImpl();
 
-	@Wire
-	private Datebox dtToCleared;
+    // ─────────────────────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────────────────────
 
-	@Wire
-	private Rows rowsCleared;
+    @Override
+    public void doAfterCompose(Component comp) throws Exception {
+        super.doAfterCompose(comp);
 
-	// ── Failed / Returned wires ───────────────────────────────────────────────
-	@Wire
-	private Textbox txtSearchFailed;
+        // Session guard — only CHECKER_INWARD can access this page
+        LoginDTO user = SessionUtil.requireLogin();
+        if (user == null) return;
 
-	@Wire
-	private Datebox dtFromFailed;
+        // Null-check wired components — if @Wire fails the field stays null.
+        // This gives a clear log message instead of a silent blank page.
+        if (lstPending == null || lstCleared == null || lstFailed == null) {
+            System.err.println(
+                "[CheckerInwardVerificationComposer] WIRE FAILED — " +
+                "lstPending / lstCleared / lstFailed not found in ZUL. " +
+                "Check IDs in inwardCheckerVerification.zul."
+            );
+            return;
+        }
 
-	@Wire
-	private Datebox dtToFailed;
+        // Load all three tabs on page open
+        loadPendingBatches("");
+        loadClearedBatches("", null, null);
+        loadFailedCheques("", null, null, "");
+    }
 
-	@Wire
-	private Textbox txtBatchIdFilter;
+    // ─────────────────────────────────────────────────────────────────────────
+    // EVENT HANDLERS — called from ZUL onChanging / onChange
+    // ─────────────────────────────────────────────────────────────────────────
 
-	@Wire
-	private Rows rowsFailed;
+    public void onSearchPending() {
+        String keyword = txtSearchPending != null
+                ? txtSearchPending.getValue().trim() : "";
+        loadPendingBatches(keyword);
+    }
 
-	@Wire
-	private Label userAvatar;
+    public void onSearchCleared() {
+        String keyword = txtSearchCleared != null
+                ? txtSearchCleared.getValue().trim() : "";
+        Date from = dtFromCleared != null ? dtFromCleared.getValue() : null;
+        Date to   = dtToCleared   != null ? dtToCleared.getValue()   : null;
+        loadClearedBatches(keyword, from, to);
+    }
 
-	@Wire
-	private Label userName;
+    public void onSearchFailed() {
+        String keyword  = txtSearchFailed  != null ? txtSearchFailed.getValue().trim()  : "";
+        String batchId  = txtBatchIdFilter != null ? txtBatchIdFilter.getValue().trim() : "";
+        Date   from     = dtFromFailed     != null ? dtFromFailed.getValue()             : null;
+        Date   to       = dtToFailed       != null ? dtToFailed.getValue()               : null;
+        loadFailedCheques(keyword, from, to, batchId);
+    }
 
-	@Wire
-	private Label userRole;
+    // ─────────────────────────────────────────────────────────────────────────
+    // LOAD: Tab 1 — Pending Batches
+    // Columns: BATCH ID | COUNT | MICR ERRORS | PRESENTING BANKS | STATUS | ACTION
+    // ─────────────────────────────────────────────────────────────────────────
 
-	private CheckerInwardVerificationService checkerInwardVerificationService = new CheckerInwardVerificationServiceImpl();
+    private void loadPendingBatches(String keyword) {
+        lstPending.getItems().clear();
 
-//	@Override
-//	public void doAfterCompose(Component comp) throws Exception {
-//		super.doAfterCompose(comp);
-//		// User loggedInUser = (User)
-//		// Sessions.getCurrent().getAttribute("loggedInUser");
-//		LoginDTO loggedInUser = (LoginDTO) Sessions.getCurrent().getAttribute(SessionUtil.SESSION_KEY);
-//		loadPendingBatches("");
-//
-//		if (loggedInUser != null) {
-//			userAvatar.setValue(String.valueOf(loggedInUser.getUserLoginId().charAt(0)).toUpperCase());
-//			userName.setValue(loggedInUser.getFullName());
-//			userRole.setValue(loggedInUser.getRoleCode());
-//		}
-//	}
-	
-	@Override
-	public void doAfterCompose(Component comp) throws Exception {
-	    super.doAfterCompose(comp);
+        List<InwardBatch> batches;
 
-	    loadPendingBatches("");
-	}
+        try {
+            batches = verificationService.getPendingBatches(keyword);
+        } catch (Exception e) {
+            System.err.println("[loadPendingBatches] Error: " + e.getMessage());
+            e.printStackTrace();
+            Messagebox.show(
+                "Failed to load pending batches:\n" + e.getMessage(),
+                "Error", Messagebox.OK, Messagebox.ERROR
+            );
+            return;
+        }
 
-	public void onTabChange() {
-	}
+        if (batches.isEmpty()) {
+            // emptyMessage on listbox handles the empty state — nothing to do
+            return;
+        }
 
-	public void onSearchPending() {
-		loadPendingBatches(txtSearchPending.getValue().trim());
-	}
+        for (InwardBatch batch : batches) {
 
-	private void loadPendingBatches(String keyword) {
-		rowsPending.getChildren().clear();
+            Listitem item = new Listitem();
 
-		List<InwardBatch> batches = checkerInwardVerificationService.getPendingBatches(keyword);
+            // Cell 1 — Batch ID (bold mono style)
+            Listcell cellBatchId = new Listcell();
+            Label lblBatchId = new Label(batch.getBatchId());
+            lblBatchId.setSclass("ci-bold-cell");
+            cellBatchId.appendChild(lblBatchId);
 
-		for (InwardBatch batch : batches) {
-			Row row = new Row();
+            // Cell 2 — Total cheque count
+            Listcell cellCount = new Listcell(
+                String.valueOf(batch.getTotalCheques())
+            );
 
-			// Batch ID — bold
-			Label batchIdLabel = new Label(batch.getBatchId());
-			batchIdLabel.setSclass("ci-bold-cell");
+            // Cell 3 — MICR error count
+            Listcell cellMicr = new Listcell(
+                String.valueOf(batch.getMicrErrorCount())
+            );
 
-			// Status badge
-			Label statusBadge = new Label(batch.getStatus());
-			statusBadge.setSclass(getStatusSclass(batch.getStatus()));
+            // Cell 4 — Presenting banks (comma-separated, deduplicated)
+            Listcell cellBanks = new Listcell(
+                getPresentingBanks(batch)
+            );
 
-			// Process button
-			Button btnProcess = new Button("Process");
-			btnProcess.setSclass("ci-btn-process");
-			btnProcess.addEventListener("onClick", event -> onProcessBatch(batch.getBatchId()));
+            // Cell 5 — Status badge
+            Listcell cellStatus = new Listcell();
+            Label lblStatus = new Label(batch.getStatus());
+            lblStatus.setSclass(resolveStatusBadge(batch.getStatus()));
+            cellStatus.appendChild(lblStatus);
 
-			// Presenting banks — derived from cheques list
-			String presentingBanks = getPresentingBanks(batch);
+            // Cell 6 — Process button
+            Listcell cellAction = new Listcell();
+            Button btnProcess = new Button("Process");
+            btnProcess.setSclass("ci-btn-process");
+            btnProcess.addEventListener("onClick",
+                event -> onProcessBatch(batch.getBatchId())
+            );
+            cellAction.appendChild(btnProcess);
 
-			row.appendChild(batchIdLabel);
-			row.appendChild(new Label(String.valueOf(batch.getTotalCheques())));
-			row.appendChild(new Label(String.valueOf(batch.getMicrErrorCount())));
-			row.appendChild(new Label(presentingBanks));
-			row.appendChild(statusBadge);
-			row.appendChild(btnProcess);
+            // Assemble row
+            item.appendChild(cellBatchId);
+            item.appendChild(cellCount);
+            item.appendChild(cellMicr);
+            item.appendChild(cellBanks);
+            item.appendChild(cellStatus);
+            item.appendChild(cellAction);
 
-			rowsPending.appendChild(row);
-		}
-	}
+            lstPending.appendChild(item);
+        }
+    }
 
-	public void onSearchCleared() {
-		Date fromDate = dtFromCleared.getValue();
-		Date toDate = dtToCleared.getValue();
-		loadClearedBatches(txtSearchCleared.getValue().trim(), fromDate, toDate);
-	}
+    // ─────────────────────────────────────────────────────────────────────────
+    // LOAD: Tab 2 — Cleared Batches
+    // Columns: BATCH ID | TOTAL | ACCEPTED | RETURNED | CLEARED BY | CLEARED AT
+    // ─────────────────────────────────────────────────────────────────────────
 
-	private void loadClearedBatches(String keyword, Date from, Date to) {
-		rowsCleared.getChildren().clear();
+    private void loadClearedBatches(String keyword, Date from, Date to) {
+        lstCleared.getItems().clear();
 
-		List<InwardBatch> batches = checkerInwardVerificationService.getClearedBatches(keyword, from, to);
+        List<InwardBatch> batches;
 
-		for (InwardBatch batch : batches) {
-			Row row = new Row();
+        try {
+            batches = verificationService.getClearedBatches(keyword, from, to);
+        } catch (Exception e) {
+            System.err.println("[loadClearedBatches] Error: " + e.getMessage());
+            e.printStackTrace();
+            Messagebox.show(
+                "Failed to load cleared batches:\n" + e.getMessage(),
+                "Error", Messagebox.OK, Messagebox.ERROR
+            );
+            return;
+        }
 
-			// Accepted and returned counts — computed from checkerActions
-			int acceptedCount = countActions(batch, "ACCEPTED");
-			int returnedCount = countActions(batch, "RETURNED");
+        if (batches.isEmpty()) return;
 
-			// Cleared by — checker who took the last action on this batch
-			String clearedBy = getLastCheckerName(batch);
-			String clearedAt = batch.getUpdatedAt() != null ? batch.getUpdatedAt().toString() : "—";
+        for (InwardBatch batch : batches) {
 
-			row.appendChild(new Label(batch.getBatchId()));
-			row.appendChild(new Label(String.valueOf(batch.getTotalCheques())));
-			row.appendChild(new Label(String.valueOf(acceptedCount)));
-			row.appendChild(new Label(String.valueOf(returnedCount)));
-			row.appendChild(new Label(clearedBy));
-			row.appendChild(new Label(clearedAt));
+            Listitem item = new Listitem();
 
-			rowsCleared.appendChild(row);
-		}
-	}
+            int acceptedCount = countActions(batch, "ACCEPTED");
+            int returnedCount = countActions(batch, "RETURNED");
+            String clearedBy  = getLastCheckerName(batch);
 
-	public void onSearchFailed() {
-		Date fromDate = dtFromFailed.getValue();
-		Date toDate = dtToFailed.getValue();
-		String batchId = txtBatchIdFilter.getValue().trim();
-		loadFailedCheques(txtSearchFailed.getValue().trim(), fromDate, toDate, batchId);
-	}
+            // updatedAt can be null — fall back to createdAt
+            String clearedAt = "—";
+            if (batch.getUpdatedAt() != null) {
+                clearedAt = batch.getUpdatedAt().toString();
+            } else if (batch.getCreatedAt() != null) {
+                clearedAt = batch.getCreatedAt().toString();
+            }
 
-	private void loadFailedCheques(String keyword, Date from, Date to, String batchId) {
-		rowsFailed.getChildren().clear();
+            // Cell 1 — Batch ID
+            Listcell cellBatchId = new Listcell();
+            Label lblBatchId = new Label(batch.getBatchId());
+            lblBatchId.setSclass("ci-bold-cell");
+            cellBatchId.appendChild(lblBatchId);
 
-		List<InwardCheque> cheques = checkerInwardVerificationService.getReturnedCheques(keyword, from, to, batchId);
+            // Cell 2 — Total
+            Listcell cellTotal = new Listcell(
+                String.valueOf(batch.getTotalCheques())
+            );
 
-		for (InwardCheque cheque : cheques) {
-			Row row = new Row();
+            // Cell 3 — Accepted count (green badge)
+            Listcell cellAccepted = new Listcell();
+            Label lblAccepted = new Label(String.valueOf(acceptedCount));
+            lblAccepted.setSclass("badge b-pass");
+            cellAccepted.appendChild(lblAccepted);
 
-			// batchId lives inside the batch object — not directly on cheque
-			String batchIdValue = cheque.getBatch() != null ? cheque.getBatch().getBatchId() : "—";
+            // Cell 4 — Returned count (red badge)
+            Listcell cellReturned = new Listcell();
+            Label lblReturned = new Label(String.valueOf(returnedCount));
+            lblReturned.setSclass(returnedCount > 0 ? "badge b-fail" : "badge b-grey");
+            cellReturned.appendChild(lblReturned);
 
-			// returnReason, returnedBy, returnTime — all live in InwardCheckerAction
-			InwardCheckerAction lastAction = getLastCheckerAction(cheque);
+            // Cell 5 — Cleared by
+            Listcell cellClearedBy = new Listcell(clearedBy);
 
-			String returnReason = lastAction != null ? lastAction.getReasonText() : "—";
-			String returnedBy = (lastAction != null && lastAction.getChecker() != null)
-					? lastAction.getChecker().getUserLoginId()
-					: "—";
-			String returnTime = lastAction != null ? lastAction.getActionedAt().toString() : "—";
+            // Cell 6 — Cleared at
+            Listcell cellClearedAt = new Listcell(clearedAt);
 
-			row.appendChild(new Label(batchIdValue));
-			row.appendChild(new Label(cheque.getChequeNo()));
-			row.appendChild(new Label(cheque.getAmount().toPlainString()));
-			row.appendChild(new Label(cheque.getPresentingBankName() != null ? cheque.getPresentingBankName() : "—"));
-			row.appendChild(new Label(returnReason));
-			row.appendChild(new Label(returnedBy));
-			row.appendChild(new Label(returnTime));
+            // Assemble row
+            item.appendChild(cellBatchId);
+            item.appendChild(cellTotal);
+            item.appendChild(cellAccepted);
+            item.appendChild(cellReturned);
+            item.appendChild(cellClearedBy);
+            item.appendChild(cellClearedAt);
 
-			rowsFailed.appendChild(row);
-		}
-	}
+            lstCleared.appendChild(item);
+        }
+    }
 
-	private void onProcessBatch(String batchId) {
-		// TODO: Navigate to process batch detail page
-		Messagebox.show("Processing batch: " + batchId, "Info", Messagebox.OK, Messagebox.INFORMATION);
-	}
+    // ─────────────────────────────────────────────────────────────────────────
+    // LOAD: Tab 3 — Failed / Returned Cheques
+    // Columns: BATCH ID | CHEQUE NO | AMOUNT | PRESENTING BANK |
+    //          RETURN REASON | RETURNED BY | TIME
+    // ─────────────────────────────────────────────────────────────────────────
 
-	private String getStatusSclass(String status) {
-		if (status == null)
-			return "ci-badge-default";
-		switch (status.toUpperCase()) {
-		case "RECEIVED":
-			return "ci-badge-pending";
-		case "CLEARED":
-			return "ci-badge-cleared";
-		case "RETURNED":
-			return "ci-badge-returned";
-		default:
-			return "ci-badge-default";
-		}
-	}
+    private void loadFailedCheques(String keyword, Date from, Date to, String batchId) {
+        lstFailed.getItems().clear();
 
-	private String getPresentingBanks(InwardBatch batch) {
-		if (batch.getCheques() == null || batch.getCheques().isEmpty()) {
-			return "—";
-		}
+        List<InwardCheque> cheques;
 
-		StringBuilder banks = new StringBuilder();
-		for (InwardCheque cheque : batch.getCheques()) {
-			if (cheque.getPresentingBankName() != null) {
-				String bankName = cheque.getPresentingBankName().trim();
-				// Only add if not already in the string (avoid duplicates)
-				if (banks.indexOf(bankName) == -1) {
-					if (banks.length() > 0) {
-						banks.append(", ");
-					}
-					banks.append(bankName);
-				}
-			}
-		}
+        try {
+            cheques = verificationService.getReturnedCheques(keyword, from, to, batchId);
+        } catch (Exception e) {
+            System.err.println("[loadFailedCheques] Error: " + e.getMessage());
+            e.printStackTrace();
+            Messagebox.show(
+                "Failed to load returned cheques:\n" + e.getMessage(),
+                "Error", Messagebox.OK, Messagebox.ERROR
+            );
+            return;
+        }
 
-		return banks.length() > 0 ? banks.toString() : "—";
-	}
+        if (cheques.isEmpty()) return;
 
-	private int countActions(InwardBatch batch, String actionType) {
-		if (batch.getCheckerActions() == null)
-			return 0;
+        for (InwardCheque cheque : cheques) {
 
-		int count = 0;
-		for (InwardCheckerAction action : batch.getCheckerActions()) {
-			if (actionType.equalsIgnoreCase(action.getAction())) {
-				count++;
-			}
-		}
-		return count;
-	}
+            Listitem item = new Listitem();
 
-	private String getLastCheckerName(InwardBatch batch) {
-		List<InwardCheckerAction> actions = batch.getCheckerActions();
-		if (actions == null || actions.isEmpty())
-			return "—";
+            // Resolve batch ID safely
+            String batchIdValue = (cheque.getBatch() != null)
+                    ? cheque.getBatch().getBatchId() : "—";
 
-		InwardCheckerAction lastAction = actions.get(actions.size() - 1);
-		if (lastAction.getChecker() != null) {
-			return lastAction.getChecker().getUserLoginId();
-		}
-		return "—";
-	}
+            // Resolve last checker action safely
+            InwardCheckerAction lastAction = getLastCheckerAction(cheque);
+            String returnReason = (lastAction != null && lastAction.getReasonText() != null)
+                    ? lastAction.getReasonText() : "—";
+            String returnedBy   = (lastAction != null && lastAction.getChecker() != null)
+                    ? lastAction.getChecker().getUserLoginId() : "—";
+            String returnTime   = (lastAction != null && lastAction.getActionedAt() != null)
+                    ? lastAction.getActionedAt().toString() : "—";
+            String bankName     = (cheque.getPresentingBankName() != null)
+                    ? cheque.getPresentingBankName() : "—";
+            String amount       = (cheque.getAmount() != null)
+                    ? "₹ " + cheque.getAmount().toPlainString() : "—";
 
-	// Gets the last checker action for a specific cheque (for return
-	// reason/by/time)
-	private InwardCheckerAction getLastCheckerAction(InwardCheque cheque) {
-		List<InwardCheckerAction> actions = cheque.getCheckerActions();
-		if (actions == null || actions.isEmpty())
-			return null;
-		return actions.get(actions.size() - 1);
-	}
+            // Cell 1 — Batch ID
+            Listcell cellBatchId = new Listcell();
+            Label lblBatchId = new Label(batchIdValue);
+            lblBatchId.setSclass("ci-bold-cell");
+            cellBatchId.appendChild(lblBatchId);
+
+            // Cell 2 — Cheque No
+            Listcell cellChequeNo = new Listcell(cheque.getChequeNo());
+
+            // Cell 3 — Amount
+            Listcell cellAmount = new Listcell(amount);
+
+            // Cell 4 — Presenting bank
+            Listcell cellBank = new Listcell(bankName);
+
+            // Cell 5 — Return reason
+            Listcell cellReason = new Listcell(returnReason);
+
+            // Cell 6 — Returned by
+            Listcell cellReturnedBy = new Listcell(returnedBy);
+
+            // Cell 7 — Time
+            Listcell cellTime = new Listcell(returnTime);
+
+            // Assemble row
+            item.appendChild(cellBatchId);
+            item.appendChild(cellChequeNo);
+            item.appendChild(cellAmount);
+            item.appendChild(cellBank);
+            item.appendChild(cellReason);
+            item.appendChild(cellReturnedBy);
+            item.appendChild(cellTime);
+
+            lstFailed.appendChild(item);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // NAVIGATION — go to processBatch page
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void onProcessBatch(String batchId) {
+        Sessions.getCurrent().setAttribute("selectedBatchId", batchId);
+        org.zkoss.zk.ui.Executions.getCurrent()
+            .sendRedirect("/inward/inwardChecker/processBatch.zul");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Maps batch status string to the correct badge CSS class.
+     * Uses the unified badge system (badge b-*) from inward-reports.css.
+     */
+    private String resolveStatusBadge(String status) {
+        if (status == null) return "badge b-grey";
+        switch (status.toUpperCase()) {
+            case "RECEIVED":
+            case "PENDING":
+                return "badge b-pend";
+            case "CLEARED":
+            case "ACCEPTED":
+            case "CBS_PROCESSED":
+                return "badge b-pass";
+            case "RETURNED":
+            case "REJECTED":
+                return "badge b-fail";
+            case "PROCESSING":
+                return "badge b-info";
+            default:
+                return "badge b-grey";
+        }
+    }
+
+    /**
+     * Builds a deduplicated comma-separated list of presenting bank names
+     * from all cheques in the batch.
+     */
+    private String getPresentingBanks(InwardBatch batch) {
+        if (batch.getCheques() == null || batch.getCheques().isEmpty()) return "—";
+
+        StringBuilder banks = new StringBuilder();
+        for (InwardCheque cheque : batch.getCheques()) {
+            if (cheque.getPresentingBankName() != null) {
+                String name = cheque.getPresentingBankName().trim();
+                if (banks.indexOf(name) == -1) {
+                    if (banks.length() > 0) banks.append(", ");
+                    banks.append(name);
+                }
+            }
+        }
+        return banks.length() > 0 ? banks.toString() : "—";
+    }
+
+    /**
+     * Counts how many checker actions of a given type exist on a batch.
+     * actionType: "ACCEPTED" or "RETURNED"
+     */
+    private int countActions(InwardBatch batch, String actionType) {
+        if (batch.getCheckerActions() == null) return 0;
+        int count = 0;
+        for (InwardCheckerAction action : batch.getCheckerActions()) {
+            if (actionType.equalsIgnoreCase(action.getAction())) count++;
+        }
+        return count;
+    }
+
+    /**
+     * Returns the userLoginId of the last checker who acted on the batch.
+     */
+    private String getLastCheckerName(InwardBatch batch) {
+        List<InwardCheckerAction> actions = batch.getCheckerActions();
+        if (actions == null || actions.isEmpty()) return "—";
+        InwardCheckerAction last = actions.get(actions.size() - 1);
+        return (last.getChecker() != null) ? last.getChecker().getUserLoginId() : "—";
+    }
+
+    /**
+     * Returns the last InwardCheckerAction recorded on a cheque.
+     * Returns null if no actions exist.
+     */
+    private InwardCheckerAction getLastCheckerAction(InwardCheque cheque) {
+        List<InwardCheckerAction> actions = cheque.getCheckerActions();
+        if (actions == null || actions.isEmpty()) return null;
+        return actions.get(actions.size() - 1);
+    }
 }
