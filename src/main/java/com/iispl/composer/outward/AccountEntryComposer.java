@@ -25,31 +25,37 @@ import org.zkoss.zul.Row;
 import org.zkoss.zul.Rows;
 import org.zkoss.zul.Textbox;
 
+import com.iispl.dto.CbsValidationResult;
 import com.iispl.dto.LoginDTO;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.service.AccountEntryService;
+import com.iispl.service.CbsService;
 import com.iispl.serviceImpl.AccountEntryServiceImpl;
+import com.iispl.serviceImpl.CbsServiceImpl;
 import com.iispl.util.AmountToWords;
 import com.iispl.util.SessionUtil;
 
 /**
  * File    : com/iispl/composer/outward/AccountEntryComposer.java
- * Purpose : Handles the Account and Amount Entry screen.
+ * Purpose : Account & Amount Entry screen for Maker Outward.
  *
- * Two access modes:
- *   1. From MICR Repair "Proceed" → URL has ?batchId → skip batch select
- *   2. From sidebar "Account & Amount" → no batchId → show batch select
- *
- * Three views:
- *   emptyStateView  → no batches ready
- *   batchSelectView → batch selection table
- *   entryView       → split screen entry form
+ * CBS Validation Rules:
+ *   1. Maker must click "Validate" before clicking "Save & Next"
+ *   2. If not validated → Save is blocked with notification
+ *   3. If account ACTIVE → Save allowed, CBS holder name stored
+ *   4. If account INACTIVE/CLOSED/FROZEN → Save blocked,
+ *      reject panel auto-opens with appropriate reason
+ *   5. If account NOT FOUND → Save blocked, reject panel opens
+ *   6. If CBS service error → Retry allowed (save still blocked)
+ *   7. Changing account number after validation → resets validation
+ *   8. Loading a new cheque → always resets validation
  */
 public class AccountEntryComposer extends SelectorComposer<Component> {
 
     private final AccountEntryService entryService = new AccountEntryServiceImpl();
-    private final DecimalFormat       moneyFmt     = new DecimalFormat("#,##0.00");
+    private final CbsService          cbsService   = new CbsServiceImpl();
+    private final DecimalFormat        moneyFmt     = new DecimalFormat("#,##0.00");
 
     // ── Topbar ──
     @Wire private Label  userAvatar;
@@ -71,21 +77,28 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     @Wire private Label statsRemCount;
 
     // ── Entry View — Navigation ──
-    @Wire private Label  navLabel;
+    @Wire private Label navLabel;
 
     // ── Left Panel — Cheque Images ──
-    @Wire private Image  frontImage;
-    @Wire private Image  backImage;
+    @Wire private Image frontImage;
+    @Wire private Image backImage;
 
     // ── Right Panel — Cheque Info (read-only) ──
-    @Wire private Label  chqNoDisplay;
-    @Wire private Label  chqDateDisplay;
-    @Wire private Label  entryStatusBadge;
+    @Wire private Label chqNoDisplay;
+    @Wire private Label chqDateDisplay;
+    @Wire private Label entryStatusBadge;
 
-    // ── Right Panel — Account Section ──
+    // ── Right Panel — Account & CBS Validation ──
     @Wire private Textbox accountNoBox;
+    @Wire private Button  validateBtn;
     @Wire private Div     valResultDiv;
-    @Wire private Label   valResultLabel;
+    @Wire private Label   valMessageLabel;  // success / warning / error message
+    @Wire private Div     valDetailsDiv;    // account details panel
+    @Wire private Label   valHolderLabel;   // account holder name
+    @Wire private Label   valTypeLabel;     // SAVINGS / CURRENT
+    @Wire private Label   valStatusBadge;   // ACTIVE / INACTIVE badge
+    @Wire private Label   valIfscLabel;     // IFSC code
+    @Wire private Label   valBalanceLabel;  // balance
 
     // ── Right Panel — Amount Entry ──
     @Wire private Decimalbox amountBox;
@@ -108,6 +121,10 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     private Long                currentMakerId;
     private boolean             cameFromSidebar = false;
     private int                 totalCheques    = 0;
+
+    // ── CBS Validation State (reset per cheque) ──
+    private boolean             isValidated   = false;
+    private CbsValidationResult cbsResult     = null;
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -136,7 +153,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         batchId = Executions.getCurrent().getParameter("batchId");
 
         if (batchId != null && !batchId.trim().isEmpty()) {
-            // Access mode 1: came from MICR Repair (batchId in URL)
             cameFromSidebar = false;
             currentBatch    = entryService.getBatch(batchId.trim());
 
@@ -150,9 +166,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             }
             showView("entry");
             loadEntryView();
-
         } else {
-            // Access mode 2: came from sidebar
             cameFromSidebar = true;
             loadBatchSelectView();
         }
@@ -209,7 +223,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     private Row buildBatchSelectRow(int idx, final OutwardBatch b) {
         Row row = new Row();
-
         row.appendChild(new Label(String.valueOf(idx)));
 
         Label batchIdLbl = new Label(safe(b.getBatchId()));
@@ -221,7 +234,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             b.getActualAmount() != null
             ? "₹" + moneyFmt.format(b.getActualAmount()) : "—"));
 
-        // Pending = count from DB
         int pending = 0;
         try {
             pending = entryService.getPendingCheques(b.getId()).size();
@@ -244,7 +256,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
                 }
             });
         row.appendChild(selectBtn);
-
         return row;
     }
 
@@ -267,7 +278,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         refreshStatsBar();
 
         if (pendingList.isEmpty()) {
-            // All cheques already entered
             Clients.showNotification(
                 "All entries already done for this batch.",
                 "info", null, "top_center", 3000);
@@ -277,21 +287,13 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         loadChequeForm(pendingList.get(currentIndex));
     }
 
-    // ════════════════════════════════════════════════════
-    //  Stats Bar
-    // ════════════════════════════════════════════════════
-
     private void refreshStatsBar() {
         statsBatchId.setValue(safe(batchId));
-
-        String totalAmt = currentBatch.getActualAmount() != null
-            ? "₹" + moneyFmt.format(currentBatch.getActualAmount()) : "—";
-        statsTotal.setValue(totalAmt);
-
-        int done      = totalCheques - pendingList.size();
-        int remaining = pendingList.size();
-        statsDoneCount.setValue(String.valueOf(done));
-        statsRemCount.setValue(String.valueOf(remaining));
+        statsTotal.setValue(currentBatch.getActualAmount() != null
+            ? "₹" + moneyFmt.format(currentBatch.getActualAmount()) : "—");
+        statsDoneCount.setValue(
+            String.valueOf(totalCheques - pendingList.size()));
+        statsRemCount.setValue(String.valueOf(pendingList.size()));
     }
 
     // ════════════════════════════════════════════════════
@@ -299,69 +301,247 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     // ════════════════════════════════════════════════════
 
     private void loadChequeForm(OutwardCheque cheque) {
-        // Navigation label
         navLabel.setValue((currentIndex + 1) + " of " + pendingList.size());
 
-        // Status badge
         entryStatusBadge.setValue("Pending");
         entryStatusBadge.setSclass("badge b-pend");
 
-        // Cheque info (read-only)
+        // Cheque info
         chqNoDisplay.setValue(safe(cheque.getChequeNo()));
         chqDateDisplay.setValue(
             cheque.getChequeDate() != null
             ? cheque.getChequeDate().toString() : "—");
 
-        // Account section — clear validate result
+        // Account section
         accountNoBox.setValue(safe(cheque.getAccountNo()));
-        valResultDiv.setVisible(false);
-        valResultLabel.setValue("");
 
-        // Amount entry — pre-fill from XML parse
+        // ── RESET CBS validation state for every new cheque ──
+        resetCbsValidation();
+
+        // Amount pre-fill
         if (cheque.getAmount() != null) {
             amountBox.setValue(cheque.getAmount());
             amountInWordsBox.setValue(
                 AmountToWords.convert(cheque.getAmount().doubleValue()));
         } else {
-        	amountBox.setValue((BigDecimal) null);
+            amountBox.setValue((BigDecimal) null);
             amountInWordsBox.setValue("");
         }
 
-        // Cheque date
         chequeDateBox.setValue(
             cheque.getChequeDate() != null
             ? cheque.getChequeDate().toString() : "");
 
-        // Payee name — pre-fill from XML parse
         payeeNameBox.setValue(safe(cheque.getPayeeName()));
 
-        // Load actual images via ImageServlet
         loadImages(cheque);
-
-        // Hide reject panel
         rejectPanel.setVisible(false);
     }
 
     private void loadImages(OutwardCheque cheque) {
-        String frontPath = cheque.getFrontImagePath();
-        String backPath  = cheque.getBackImagePath();
-
         try {
-            if (frontPath != null && !frontPath.trim().isEmpty()) {
-                frontImage.setSrc("/imageServlet?path="
-                    + URLEncoder.encode(frontPath.trim(), "UTF-8"));
-            } else {
-                frontImage.setSrc("");
-            }
-            if (backPath != null && !backPath.trim().isEmpty()) {
-                backImage.setSrc("/imageServlet?path="
-                    + URLEncoder.encode(backPath.trim(), "UTF-8"));
-            } else {
-                backImage.setSrc("");
-            }
+            String fp = cheque.getFrontImagePath();
+            frontImage.setSrc(fp != null && !fp.trim().isEmpty()
+                ? "/imageServlet?path="
+                  + URLEncoder.encode(fp.trim(), "UTF-8") : "");
+
+            String bp = cheque.getBackImagePath();
+            backImage.setSrc(bp != null && !bp.trim().isEmpty()
+                ? "/imageServlet?path="
+                  + URLEncoder.encode(bp.trim(), "UTF-8") : "");
         } catch (UnsupportedEncodingException e) {
             System.err.println("AccountEntryComposer → image URL encode failed: "
                     + e.getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  CBS Validation State Reset
+    // ════════════════════════════════════════════════════
+
+    private void resetCbsValidation() {
+        isValidated = false;
+        cbsResult   = null;
+        valResultDiv.setVisible(false);
+        valDetailsDiv.setVisible(false);
+        valMessageLabel.setValue("");
+        valMessageLabel.setSclass("val-ok");
+        validateBtn.setSclass("btn bo");
+        validateBtn.setLabel("Validate");
+        validateBtn.setDisabled(false);
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Account Number Change — Reset Validation
+    //  If maker edits the account number after validating,
+    //  the validation result is no longer valid.
+    // ════════════════════════════════════════════════════
+
+    @Listen("onChange = #accountNoBox; onChanging = #accountNoBox")
+    public void onAccountNoChange() {
+        if (isValidated || cbsResult != null) {
+            resetCbsValidation();
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  CBS Validate Button
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #validateBtn")
+    public void onValidate() {
+        String accNo = accountNoBox.getValue();
+
+        if (isBlank(accNo)) {
+            Clients.showNotification(
+                "Please enter an account number before validating.",
+                "warning", null, "top_center", 2000);
+            return;
+        }
+
+        // ── Show loading state ──
+        validateBtn.setLabel("Validating...");
+        validateBtn.setDisabled(true);
+        valResultDiv.setVisible(false);
+        valDetailsDiv.setVisible(false);
+
+        System.out.println("AccountEntryComposer → CBS validate: " + accNo.trim());
+
+        // ── Call CBS (Firebase) ──
+        CbsValidationResult result = cbsService.validateAccount(accNo.trim());
+        cbsResult = result;
+
+        // ── Reset button ──
+        validateBtn.setLabel("Validate");
+        validateBtn.setDisabled(false);
+
+        // ── Display result ──
+        displayCbsResult(result);
+    }
+
+    /**
+     * Displays the CBS validation result in the UI.
+     * Updates: valResultDiv, valMessageLabel, valDetailsDiv,
+     *          valHolderLabel, valTypeLabel, valStatusBadge,
+     *          valIfscLabel, valBalanceLabel
+     */
+    private void displayCbsResult(CbsValidationResult result) {
+        valResultDiv.setVisible(true);
+
+        if (result.isFound() && result.isActive()) {
+            // ══ Case 1: ACTIVE account — save allowed ══
+            isValidated = true;
+            validateBtn.setSclass("btn bs");   // green button = validated
+
+            valMessageLabel.setValue(
+                "✓ Account validated — " + safe(result.getAccountHolderName()));
+            valMessageLabel.setSclass("val-ok");
+
+            valDetailsDiv.setVisible(true);
+            valHolderLabel.setValue(safe(result.getAccountHolderName()));
+            valTypeLabel.setValue(safe(result.getAccountType()));
+            valStatusBadge.setValue("ACTIVE");
+            valStatusBadge.setSclass("badge b-pass");
+            valIfscLabel.setValue(safe(result.getIfscCode()));
+            valBalanceLabel.setValue("₹" + moneyFmt.format(result.getBalance()));
+
+            System.out.println("AccountEntryComposer → Validation PASSED: "
+                    + result.getAccountHolderName());
+
+        } else if (result.isFound() && !result.isActive()) {
+            // ══ Case 2: Account found but INACTIVE/CLOSED/FROZEN ══
+            isValidated = false;
+            validateBtn.setSclass("btn bo");
+
+            String status = result.getStatusLabel();
+            valMessageLabel.setValue(
+                "⚠ Account is " + status
+                + ". This cheque must be rejected.");
+            valMessageLabel.setSclass("val-warn");
+
+            valDetailsDiv.setVisible(true);
+            valHolderLabel.setValue(safe(result.getAccountHolderName()));
+            valTypeLabel.setValue("—");
+            valStatusBadge.setValue(result.getAccountStatus());
+            valStatusBadge.setSclass("badge b-fail");
+            valIfscLabel.setValue("—");
+            valBalanceLabel.setValue("—");
+
+            // Auto-open reject panel with appropriate reason pre-selected
+            openRejectPanelForInactiveAccount(result.getAccountStatus());
+
+            System.out.println("AccountEntryComposer → Account is "
+                    + status + " — reject required");
+
+        } else {
+            // ══ Case 3: NOT FOUND or CBS error ══
+            isValidated = false;
+            validateBtn.setSclass("btn bo");
+
+            String msg = result.getErrorMessage() != null
+                ? result.getErrorMessage()
+                : "Account not found in CBS.";
+            valMessageLabel.setValue("✗ " + msg);
+            valMessageLabel.setSclass("val-err");
+
+            valDetailsDiv.setVisible(false);
+
+            if (!result.isFound()) {
+                // Account not found — open reject panel
+                openRejectPanelForNotFoundAccount();
+            }
+
+            System.out.println("AccountEntryComposer → Validation FAILED: "
+                    + msg);
+        }
+    }
+
+    /**
+     * Opens reject panel and pre-selects the reason code for
+     * INACTIVE / CLOSED / FROZEN accounts.
+     */
+    private void openRejectPanelForInactiveAccount(String accountStatus) {
+        rejectPanel.setVisible(true);
+        rejectRemarksBox.setValue(
+            "CBS validation failed — Account status: " + accountStatus);
+
+        // Pre-select appropriate reason code
+        if ("FROZEN".equalsIgnoreCase(accountStatus)) {
+            selectRejectReason("14"); // Account Blocked or Frozen
+        } else if ("CLOSED".equalsIgnoreCase(accountStatus)) {
+            selectRejectReason("13"); // Account Closed or Transferred
+        } else {
+            selectRejectReason("14"); // Inactive = Blocked
+        }
+
+        Clients.showNotification(
+            "Account is " + accountStatus
+            + ". Please reject this cheque using the panel below.",
+            "warning", null, "top_center", 4000);
+    }
+
+    /**
+     * Opens reject panel when account is not found in CBS.
+     */
+    private void openRejectPanelForNotFoundAccount() {
+        rejectPanel.setVisible(true);
+        rejectRemarksBox.setValue("CBS validation failed — Account not found in CBS records.");
+        selectRejectReason("15"); // Not Drawn on Us
+        Clients.showNotification(
+            "Account not found in CBS. Please reject this cheque.",
+            "warning", null, "top_center", 4000);
+    }
+
+    /**
+     * Pre-selects a rejection reason in the dropdown by value code.
+     */
+    private void selectRejectReason(String reasonCode) {
+        for (int i = 0; i < rejectReasonBox.getItemCount(); i++) {
+            Object val = rejectReasonBox.getItemAtIndex(i).getValue();
+            if (reasonCode.equals(val != null ? val.toString() : "")) {
+                rejectReasonBox.setSelectedIndex(i);
+                return;
+            }
         }
     }
 
@@ -376,29 +556,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             amountInWordsBox.setValue(
                 AmountToWords.convert(amt.doubleValue()));
         }
-    }
-
-    // ════════════════════════════════════════════════════
-    //  Validate Account (CBS Mock)
-    // ════════════════════════════════════════════════════
-
-    @Listen("onClick = #validateBtn")
-    public void onValidate() {
-        String accNo = accountNoBox.getValue();
-        if (isBlank(accNo)) {
-            Clients.showNotification(
-                "Please enter an account number first.",
-                "warning", null, "top_center", 2000);
-            return;
-        }
-        // CBS on hold — show mock validated status
-        valResultLabel.setValue(
-            "Validated  (CBS integration pending)");
-        valResultLabel.setSclass("val-ok");
-        valResultDiv.setVisible(true);
-
-        System.out.println("AccountEntryComposer → Mock validate for acc: "
-                + accNo);
     }
 
     // ════════════════════════════════════════════════════
@@ -428,14 +585,33 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     public void onSaveNext() {
         OutwardCheque cheque = pendingList.get(currentIndex);
 
-        // Gather values
-        String     accNo     = accountNoBox.getValue();
-        BigDecimal amount    = amountBox.getValue();
-        String     dateStr   = chequeDateBox.getValue();
-        String     words     = amountInWordsBox.getValue();
-        String     payee     = payeeNameBox.getValue();
+        String     accNo   = accountNoBox.getValue();
+        BigDecimal amount  = amountBox.getValue();
+        String     dateStr = chequeDateBox.getValue();
+        String     words   = amountInWordsBox.getValue();
+        String     payee   = payeeNameBox.getValue();
 
-        // Validate required fields
+        // ── Validation 1: CBS must be validated first ──
+        if (!isValidated) {
+            Clients.showNotification(
+                "⚠ Account must be validated via CBS before saving. "
+                + "Click the 'Validate' button first.",
+                "warning", null, "top_center", 3500);
+            return;
+        }
+
+        // ── Validation 2: CBS result must be ACTIVE ──
+        // This is a safety check in case state gets out of sync
+        if (cbsResult != null && !cbsResult.isActive()) {
+            Clients.showNotification(
+                "Account is " + cbsResult.getStatusLabel()
+                + ". This cheque cannot be saved — it must be rejected.",
+                "error", null, "top_center", 4000);
+            rejectPanel.setVisible(true);
+            return;
+        }
+
+        // ── Validation 3: Required entry fields ──
         if (isBlank(accNo)) {
             Clients.showNotification(
                 "Account number is required.",
@@ -467,16 +643,22 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             return;
         }
 
-        // Auto-fill words if empty
         if (isBlank(words) && amount != null) {
             words = AmountToWords.convert(amount.doubleValue());
         }
 
-        // Save to DB
+        // ── Get CBS account holder name to store ──
+        String accountHolder = (cbsResult != null
+                && cbsResult.getAccountHolderName() != null
+                && !cbsResult.getAccountHolderName().isEmpty())
+            ? cbsResult.getAccountHolderName()
+            : "Validated";
+
+        // ── Save to DB ──
         boolean ok = entryService.saveEntry(
             cheque.getId(),
             accNo.trim(),
-            "Validated",      // CBS mock account holder
+            accountHolder,      // ← real CBS account holder name
             amount,
             words.trim(),
             dateStr.trim(),
@@ -491,24 +673,21 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         }
 
         Clients.showNotification(
-            "Cheque " + cheque.getChequeNo() + " entry saved.",
+            "✓ Cheque " + cheque.getChequeNo() + " entry saved.",
             "info", null, "top_center", 2000);
 
-        // Remove from pending list
         pendingList.remove(currentIndex);
 
-        // Check if all done
         if (entryService.isAllEntriesDone(currentBatch.getId())) {
             entryService.submitBatch(currentBatch.getId());
             Clients.showNotification(
-                "All entries done! Batch "
-                + batchId + " submitted to Checker queue.",
+                "All entries done! Batch " + batchId
+                + " submitted to Checker queue.",
                 "info", null, "top_center", 4000);
             showBatchSubmittedState();
             return;
         }
 
-        // Move to next cheque
         if (pendingList.isEmpty()) {
             showBatchSubmittedState();
         } else {
@@ -522,11 +701,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     private void showBatchSubmittedState() {
         refreshStatsBar();
-        Clients.showNotification(
-            "Batch " + batchId
-            + " is now in the Checker queue.",
-            "info", null, "top_center", 5000);
-        // Redirect back to batch upload after short delay
         Executions.sendRedirect("/outward/batchUpload/batchUpload.zul");
     }
 
@@ -598,7 +772,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  Navigation — Back buttons
+    //  Navigation — Back
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #backBtn")
@@ -614,11 +788,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     //  Helpers
     // ════════════════════════════════════════════════════
 
-    private String safe(String s) {
-        return s != null ? s.trim() : "";
-    }
-
-    private boolean isBlank(String s) {
-        return s == null || s.trim().isEmpty();
-    }
+    private String  safe(String s)    { return s != null ? s.trim() : ""; }
+    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 }
