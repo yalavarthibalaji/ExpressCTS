@@ -1,69 +1,268 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
-<?link rel="stylesheet" type="text/css" href="/inward/bpxfUpload/bpxfUpload.css"?>
+<?page title="ExpressCTS — Inward View Batches"
+      contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
+<?link rel="stylesheet" type="text/css"
+      href="/inward/viewBatches/viewBatches.css"?>
 
-<!--
-    File    : inward/bpxfUpload/bpxfUpload.zul
-    Purpose : Inward File Processing — Upload incoming CTS cheque files. One file per batch.
-    Composer: com.iispl.composer.BpxfUploadComposer
--->
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
 
-<div xmlns="http://www.zkoss.org/2005/zul"
-     apply="com.iispl.composer.ViewBatchesComposer">
+<div apply="com.iispl.composer.ViewBatchesComposer"
+     sclass="shell">
 
-    <!-- Topbar -->
+    <!-- TOPBAR -->
     <div sclass="topbar">
-        <include src="/component/topbar.zul" />
-    </div>
-
-    <!-- Body: Sidebar + Main -->
-    <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
-
-        <div sclass="main">
-            <div sclass="dash-main">
-
-                <!-- Breadcrumb -->
-                <div sclass="breadcrumb">
-                    <label sclass="breadcrumb-home" value="Home" />
-                    <span sclass="breadcrumb-sep">›</span>
-                    <label sclass="breadcrumb-current" value="View Batches" />
-                </div>
-
-                <!-- Page Title -->
-                <div sclass="page-title-block">
-                    <label sclass="page-title" value="Inward — View Batches" />
-                </div>
-
-
-                <!-- File Details Card -->
-                <div sclass="details-card">
-                    <div sclass="details-header">
-                        <label sclass="card-section-title" value="Batches" />
-                        <textbox id="searchBox"
-                                 sclass="search-box"
-                                 placeholder="🔍 Search by batch ID or file..." />
-                    </div>
-
-                    <listbox id="fileListbox" sclass="file-listbox"
-                             emptyMessage="No files uploaded yet. Upload a file above to begin.">
-                        <listhead sclass="listhead-row">
-                            <listheader label="#"              width="50px"  style="color:black;font-weight:700;font-size:12px;" />
-                            <listheader label="BATCH ID"       width="150px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="FILE NAME"       width="200px"    style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="TOTAL CHEQUES"  width="200px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="MICR ERRORS"    width="140px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="PARSED AT"      width="160px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="STATUS"         width="110px" style="color:black;font-weight:700;font-size:12px;"/>
-                             <listheader label="Action"         width="220px" style="color:black;font-weight:700;font-size:12px;"/>
-                        </listhead>
-                    </listbox>
-                </div>
-
+        <div sclass="logo">
+            <n:div class="logo-box">EC</n:div>
+            <n:div class="logo-txt">
+                Express<n:span style="color:var(--accent)">Clear</n:span> CTS
+            </n:div>
+        </div>
+        <div sclass="topbar-right">
+            <label id="userAvatar" sclass="uavatar" value="--"/>
+            <div>
+                <label id="userName" sclass="uname" value="—"/>
+                <label id="userRole" sclass="urole" value="—"/>
             </div>
+            <button id="logoutBtn" sclass="logbtn">↩ Logout</button>
         </div>
     </div>
 
+    <!-- BODY ROW -->
+    <div sclass="body-row">
+
+        <include src="/component/sidebar.zul"/>
+
+        <div sclass="main">
+
+            <!-- BREADBAR -->
+            <div sclass="breadbar">
+                <n:span class="par">Home</n:span>
+                <n:span class="sep">›</n:span>
+                <n:span class="par">Inward</n:span>
+                <n:span class="sep">›</n:span>
+                <n:span class="cur">View Batches</n:span>
+            </div>
+
+            <!-- PAGE -->
+            <div sclass="page">
+
+                <!-- Page Header -->
+                <div sclass="page-hdr">
+                    <div>
+                        <n:div class="page-title">Inward — View Batches</n:div>
+                        <n:div class="page-sub">
+                            All inward BPXF batches — search, filter, and inspect cheque details
+                        </n:div>
+                    </div>
+                </div>
+
+                <!-- SECTION 1: BATCH LIST -->
+                <div id="batchSection" visible="true">
+
+                    <div sclass="fbar mb12">
+                        <div sclass="fg flex1">
+                            <textbox id="searchBox"
+                                     sclass="fi w100"
+                                     placeholder="Search by Batch ID or file name..."
+                                     instant="true"/>
+                        </div>
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">Status</n:label>
+                            <listbox id="statusFilter"
+                                     sclass="fs"
+                                     mold="select">
+                                <listitem label="All Status"  value=""/>
+                                <listitem label="Received"    value="RECEIVED"/>
+                                <listitem label="Processing"  value="PROCESSING"/>
+                                <listitem label="Processed"   value="PROCESSED"/>
+                                <listitem label="Rejected"    value="REJECTED"/>
+                            </listbox>
+                        </div>
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">From Date</n:label>
+                            <textbox id="fromDateBox"
+                                     sclass="fi"
+                                     placeholder="YYYY-MM-DD"
+                                     maxlength="10"/>
+                        </div>
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">To Date</n:label>
+                            <textbox id="toDateBox"
+                                     sclass="fi"
+                                     placeholder="YYYY-MM-DD"
+                                     maxlength="10"/>
+                        </div>
+                    </div>
+
+                    <div sclass="card">
+                        <div sclass="card-hdr">
+                            <n:div class="card-title">Batches</n:div>
+                            <label id="batchCountBadge"
+                                   sclass="badge b-info"
+                                   value="0 Batches"/>
+                        </div>
+                        <div sclass="tbl-wrap">
+                            <grid sclass="dt-grid">
+                                <columns>
+                                    <column label="S.No"          width="55px"/>
+                                    <column label="Batch ID"      width="160px"/>
+                                    <column label="File Name"     width="200px"/>
+                                    <column label="Total Cheques" width="120px"/>
+                                    <column label="MICR Errors"   width="110px"/>
+                                    <column label="Parsed At"     width="150px"/>
+                                    <column label="Status"        width="130px"/>
+                                    <column label="Action"        width="80px"/>
+                                </columns>
+                                <rows id="batchRows"/>
+                            </grid>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- end batchSection -->
+
+                <!-- SECTION 2: CHEQUE SPLIT VIEW -->
+                <div id="chequeSection" visible="false">
+
+                    <div sclass="flex gap8 items-c mb12">
+                        <button id="backToBatchesBtn"
+                                sclass="btn bo btn-sm">
+                            ← Back to Batches
+                        </button>
+                        <label id="curBatchBadge"
+                               sclass="badge b-info mono"
+                               value="—"/>
+                    </div>
+
+                    <div sclass="fbar mb12">
+                        <div sclass="fg flex1">
+                            <textbox id="chqSearchBox"
+                                     sclass="fi w100"
+                                     placeholder="Search cheque no. or bank..."
+                                     instant="true"/>
+                        </div>
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">IQA</n:label>
+                            <listbox id="iqaFilterBox"
+                                     sclass="fs"
+                                     mold="select">
+                                <listitem label="All"  value=""/>
+                                <listitem label="PASS" value="PASS"/>
+                                <listitem label="FAIL" value="FAIL"/>
+                            </listbox>
+                        </div>
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">MICR</n:label>
+                            <listbox id="micrFilterBox"
+                                     sclass="fs"
+                                     mold="select">
+                                <listitem label="All"        value=""/>
+                                <listitem label="Normal"     value="NORMAL"/>
+                                <listitem label="MICR Error" value="MICR_ERROR"/>
+                            </listbox>
+                        </div>
+                    </div>
+
+                    <div sclass="split">
+
+                        <!-- LEFT: Cheque List -->
+                        <div sclass="split-l">
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">Cheques in Batch</n:span>
+                                <label id="chequeCountBadge"
+                                       sclass="badge b-pass"
+                                       value="0 cheques"/>
+                            </div>
+                            <div sclass="split-body p0">
+                                <grid sclass="dt-grid-sm">
+                                    <columns>
+                                        <column label="#"          width="40px"/>
+                                        <column label="Cheque No." width="105px"/>
+                                        <column label="Bank"       width="60px"/>
+                                        <column label="Amount"     width="105px"/>
+                                        <column label="IQA"        width="100px"/>
+                                        <column label="Status"     width="95px"/>
+                                    </columns>
+                                    <rows id="chequeRows"/>
+                                </grid>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT: Cheque Detail Panel -->
+                        <div sclass="split-r">
+                            <div sclass="split-hdr">
+                                <n:span class="fw6">Cheque Detail</n:span>
+                                <label id="detailStatusBadge"
+                                       sclass="badge b-grey"
+                                       value="Select a cheque"/>
+                            </div>
+                            <div sclass="split-body">
+
+                                <div id="detailEmpty"
+                                     sclass="detail-empty"
+                                     visible="true">
+                                    <n:div style="font-size:32px">👈</n:div>
+                                    <n:div class="detail-empty-txt">
+                                        Select a cheque to view details
+                                    </n:div>
+                                </div>
+
+                                <!-- ── Image section — static wired components ── -->
+                                <div id="detailImgWrapper"
+                                     sclass="detail-img-wrapper"
+                                     visible="false">
+                                    <label sclass="detail-section-lbl"
+                                           value="Cheque Image"/>
+                                    <div sclass="chq-tabs">
+                                        <button id="detailFrontTab"
+                                                sclass="chq-tab active">
+                                            Front
+                                        </button>
+                                        <button id="detailBackTab"
+                                                sclass="chq-tab">
+                                            Back
+                                        </button>
+                                    </div>
+                                    <div id="detailFrontPanel"
+                                         sclass="chq-img-panel">
+                                        <image id="detailFrontImg"
+                                               sclass="chq-img-actual"
+                                               style="width:100%;height:auto;max-height:200px;object-fit:contain;display:block"/>
+                                    </div>
+                                    <div id="detailBackPanel"
+                                         sclass="chq-img-panel"
+                                         visible="false">
+                                        <image id="detailBackImg"
+                                               sclass="chq-img-actual"
+                                               style="width:100%;height:auto;max-height:200px;object-fit:contain;display:block"/>
+                                    </div>
+                                </div>
+
+                                <!-- Info sections appended dynamically -->
+                                <div id="detailBody" visible="false"/>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <!-- end chequeSection -->
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div sclass="statusbar" style="justify-content:flex-end">
+        <n:div class="sitem" style="opacity:.5;font-size:10px">
+            ExpressClear CTS · IISPL
+        </n:div>
+    </div>
+
 </div>
+</zk>
