@@ -12,6 +12,10 @@
     border-radius: 8px 8px 0 0;
 }
 
+.cheque-table-header{
+	background:#1a2340;
+}
+
 .detail-title {
     font-size: 14px;
     font-weight: 700;
@@ -543,7 +547,7 @@
 .btn-repair-row,
 .btn-review,
 .btn-enter {
-    background: #1e40af;
+    background: #1a2340;
     color: #fff;
     border: none;
     border-radius: 6px;
