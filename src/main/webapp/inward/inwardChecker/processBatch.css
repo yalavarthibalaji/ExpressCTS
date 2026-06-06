@@ -1,0 +1,552 @@
+/*
+ * File: inward/inwardChecker/processBatch.css
+ * Page: Process Batch — split-panel cheque verification
+ * Import order: global.css → components.css → layout.css → dashboard.css → this file
+ *
+ * NOTE: ZK renders <button sclass="x"> as <td class="x"> containing <a class="z-button">.
+ *       To style: .classname .z-button  (descendant combinator, not direct)
+ */
+
+/* ═══════════════════════════════════════════════════════════
+   1. SHELL — full-height flex chain (same pattern site-wide)
+   ═══════════════════════════════════════════════════════════ */
+
+.dash-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+.dash-shell > .body-row         { flex: 1 !important; display: flex !important; min-height: 0 !important; overflow: hidden !important; }
+.body-row   > .z-div            { height: 100% !important; display: flex !important; }
+.body-row   > .main             { flex: 1 !important; display: flex !important; flex-direction: column !important; min-height: 0 !important; overflow: hidden !important; }
+
+/* Scrollable content area */
+.pv-page-scroll {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    padding: 20px 24px 100px !important;
+    background: var(--bg) !important;
+}
+
+.pv-page-scroll::-webkit-scrollbar       { width: 5px; }
+.pv-page-scroll::-webkit-scrollbar-thumb { background: var(--border-s); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════
+   2. BREADCRUMB
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-breadcrumb {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin-bottom: 14px !important;
+    font-size: 12px !important;
+    font-family: var(--font) !important;
+}
+
+.pv-breadcrumb-link.z-label {
+    color: var(--primary-light) !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+}
+.pv-breadcrumb-link.z-label:hover { text-decoration: underline !important; }
+
+.pv-breadcrumb-sep.z-label     { color: var(--tm) !important; margin: 0 2px !important; }
+.pv-breadcrumb-current.z-label { color: var(--t2) !important; font-weight: 500 !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   3. BATCH SUMMARY BAR
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-summary-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r8) !important;
+    margin-bottom: 14px !important;
+    overflow: hidden !important;
+}
+
+.pv-summary-item {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding: 14px 22px !important;
+    border-right: 1px solid var(--border) !important;
+    flex: 1 !important;
+    min-width: 110px !important;
+}
+.pv-summary-item:last-child { border-right: none !important; }
+
+.pv-summary-label.z-label {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: var(--tm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+    font-family: var(--font) !important;
+}
+
+.pv-summary-value.z-label {
+    display: block !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--t1) !important;
+    font-family: var(--font) !important;
+}
+
+.pv-mono.z-label   { font-family: var(--mono) !important; color: var(--primary) !important; font-size: 12px !important; }
+.pv-amount.z-label { font-family: var(--mono) !important; color: var(--success) !important; font-size: 14px !important; font-weight: 700 !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   4. PROGRESS STRIP
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-progress-strip { margin-bottom: 12px !important; }
+
+.pv-progress-text.z-label {
+    display: block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--t2) !important;
+    margin-bottom: 5px !important;
+    font-family: var(--font) !important;
+}
+
+.pv-progress-track {
+    width: 100% !important;
+    height: 5px !important;
+    background: var(--border) !important;
+    border-radius: 99px !important;
+    overflow: hidden !important;
+}
+
+.pv-progress-fill {
+    height: 5px !important;
+    background: var(--success) !important;
+    border-radius: 99px !important;
+    transition: width 0.35s ease !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. NAVIGATION BAR
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-nav-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 14px !important;
+    gap: 12px !important;
+}
+
+.pv-nav-left,
+.pv-nav-center,
+.pv-nav-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+/* Back button */
+.pv-btn-back.z-button {
+    background: var(--surface) !important;
+    color: var(--t2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r6) !important;
+    height: 32px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    transition: background 0.15s, border-color 0.15s !important;
+}
+.pv-btn-back.z-button:hover { background: var(--alt) !important; border-color: var(--border-s) !important; }
+
+/* Batch badge */
+.pv-batch-badge.z-label {
+    display: inline-flex !important;
+    align-items: center !important;
+    background: var(--info-bg) !important;
+    color: var(--info) !important;
+    border: 1px solid var(--info-b) !important;
+    border-radius: var(--r4) !important;
+    padding: 0 12px !important;
+    height: 28px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    font-family: var(--mono) !important;
+    letter-spacing: 0.04em !important;
+}
+
+/* Prev / Next */
+.pv-btn-nav.z-button {
+    background: var(--surface) !important;
+    color: var(--t2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r4) !important;
+    height: 30px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    transition: background 0.15s, color 0.15s !important;
+}
+.pv-btn-nav.z-button:hover                              { background: var(--alt) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
+.pv-btn-nav.z-button:disabled,
+.pv-btn-nav.z-button[disabled]                          { opacity: 0.35 !important; cursor: not-allowed !important; pointer-events: none !important; }
+
+.pv-record-label.z-label    { font-size: 13px !important; font-weight: 500 !important; color: var(--t1) !important; white-space: nowrap !important; font-family: var(--font) !important; }
+.pv-progress-counter.z-label { font-size: 15px !important; font-weight: 700 !important; color: var(--primary) !important; font-family: var(--mono) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   6. SPLIT PANEL
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-split-panel {
+    display: flex !important;
+    gap: 16px !important;
+    align-items: flex-start !important;
+    margin-bottom: 16px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   7. LEFT PANEL — Cheque Image
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-left-panel { flex: 1 1 0 !important; min-width: 0 !important; }
+
+.pv-panel-title.z-label,
+.pv-panel-title {
+    display: block !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--t2) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    margin-bottom: 8px !important;
+    font-family: var(--font) !important;
+}
+
+/* Cheque card — styled like a physical cheque */
+.pv-cheque-card {
+    background: var(--surface) !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--r8) !important;
+    padding: 22px 26px !important;
+    min-height: 260px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07) !important;
+    font-family: var(--font) !important;
+}
+
+.pv-cheque-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 14px !important;
+}
+
+.pv-cheque-bank.z-label {
+    display: block !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: var(--t1) !important;
+    font-family: var(--font) !important;
+}
+
+.pv-cheque-presenting.z-label {
+    display: block !important;
+    font-size: 11px !important;
+    color: var(--tm) !important;
+    margin-top: 2px !important;
+    font-family: var(--font) !important;
+}
+
+.pv-cheque-date.z-label {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--t1) !important;
+    border: 1px solid var(--border) !important;
+    padding: 4px 10px !important;
+    border-radius: var(--r4) !important;
+    background: var(--alt) !important;
+    white-space: nowrap !important;
+    font-family: var(--mono) !important;
+}
+
+.pv-cheque-divider { border-top: 1px solid var(--border) !important; margin: 12px 0 !important; }
+
+.pv-cheque-payee.z-label  { display: block !important; font-size: 13px !important; color: var(--t2) !important; margin-bottom: 3px !important; font-family: var(--font) !important; }
+.pv-cheque-words.z-label  { display: block !important; font-size: 13px !important; color: var(--t2) !important; font-style: italic !important; margin-bottom: 14px !important; font-family: var(--font) !important; }
+
+.pv-cheque-amount-row { margin-bottom: 14px !important; }
+
+.pv-cheque-amount-box.z-label {
+    display: inline-block !important;
+    border: 2px solid var(--t1) !important;
+    border-radius: var(--r4) !important;
+    padding: 6px 18px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    font-family: var(--mono) !important;
+    color: var(--primary) !important;
+    background: var(--alt) !important;
+    letter-spacing: 0.02em !important;
+}
+
+.pv-cheque-micr.z-label {
+    display: block !important;
+    font-family: var(--mono) !important;
+    font-size: 12px !important;
+    color: var(--tm) !important;
+    letter-spacing: 0.1em !important;
+    margin-top: 6px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   8. RIGHT PANEL — Technical Verification
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-right-panel {
+    width: 400px !important;
+    flex-shrink: 0 !important;
+    background: var(--surface) !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--r8) !important;
+    padding: 18px 20px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+.pv-panel-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* Status badges for panel header */
+.pv-badge-pending.z-label {
+    display: inline-flex !important;
+    align-items: center !important;
+    background: var(--warning-bg) !important;
+    color: var(--warning) !important;
+    border: 1px solid var(--warning-b) !important;
+    border-radius: var(--r4) !important;
+    padding: 0 10px !important;
+    height: 22px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    font-family: var(--font) !important;
+}
+
+.pv-badge-done.z-label {
+    display: inline-flex !important;
+    align-items: center !important;
+    background: var(--success-bg) !important;
+    color: var(--success) !important;
+    border: 1px solid var(--success-b) !important;
+    border-radius: var(--r4) !important;
+    padding: 0 10px !important;
+    height: 22px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    font-family: var(--font) !important;
+}
+
+/* ── Sections ── */
+.pv-section { margin-bottom: 14px !important; }
+
+.pv-section-label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: var(--tm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    margin-bottom: 7px !important;
+    font-family: var(--font) !important;
+}
+
+.pv-section-dot {
+    display: inline-block !important;
+    width: 6px !important;
+    height: 6px !important;
+    background: var(--primary-light) !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+}
+
+.pv-section-body {
+    background: var(--alt) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r6) !important;
+    padding: 8px 14px !important;
+}
+
+.pv-field-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 5px 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+.pv-field-row:last-child { border-bottom: none !important; }
+
+.pv-field-key.z-label { font-size: 12px !important; color: var(--t2) !important; font-weight: 400 !important; font-family: var(--font) !important; }
+.pv-field-val.z-label { font-size: 12px !important; font-weight: 600 !important; color: var(--t1) !important; text-align: right !important; font-family: var(--font) !important; }
+.pv-field-val.pv-mono.z-label { font-family: var(--mono) !important; font-size: 11px !important; }
+.pv-our-bank.z-label  { color: var(--primary) !important; font-weight: 700 !important; font-family: var(--mono) !important; font-size: 12px !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   9. ACTION BUTTONS
+   Shared base via CSS custom props — only color differs.
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-action-section { margin-top: 6px !important; }
+
+.pv-action-buttons {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    margin: 8px 0 10px !important;
+}
+
+/* Shared button base */
+.pv-btn-accept .z-button,
+.pv-btn-return .z-button,
+.pv-btn-sendback .z-button {
+    border-radius: var(--r6) !important;
+    height: 34px !important;
+    padding: 0 16px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    white-space: nowrap !important;
+    border-width: 1.5px !important;
+    border-style: solid !important;
+}
+
+/* Accept — green */
+.pv-btn-accept .z-button               { background: var(--success) !important;                    color: #fff !important; border-color: var(--success-b) !important; }
+.pv-btn-accept .z-button:hover         { background: var(--success-bg) !important;                 color: var(--success) !important; }
+.pv-btn-accept-on .z-button            { background: var(--success) !important;                    color: #fff !important; border-color: var(--success) !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(26,122,74,0.2) !important; height: 34px !important; padding: 0 16px !important; border-radius: var(--r6) !important; }
+
+/* Return — red */
+.pv-btn-return .z-button               { background: rgba(192,57,43,0.07) !important;              color: var(--danger) !important; border-color: var(--danger-b) !important; }
+.pv-btn-return .z-button:hover         { background: var(--danger-bg) !important;                  border-color: var(--danger) !important; }
+.pv-btn-return-on .z-button            { background: var(--danger) !important;                     color: #fff !important; border-color: var(--danger) !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(192,57,43,0.2) !important; height: 34px !important; padding: 0 16px !important; border-radius: var(--r6) !important; }
+
+/* Send Back — amber */
+.pv-btn-sendback .z-button             { background: rgba(184,111,0,0.07) !important;              color: var(--warning) !important; border-color: var(--warning-b) !important; }
+.pv-btn-sendback .z-button:hover       { background: var(--warning-bg) !important;                 border-color: var(--warning) !important; }
+.pv-btn-sendback-on .z-button          { background: var(--warning) !important;                    color: #fff !important; border-color: var(--warning) !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(184,111,0,0.2) !important; height: 34px !important; padding: 0 16px !important; border-radius: var(--r6) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   10. RETURN REASON BOX
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-reason-box {
+    background: var(--danger-bg) !important;
+    border: 1px solid var(--danger-b) !important;
+    border-radius: var(--r6) !important;
+    padding: 10px 12px !important;
+    margin-top: 6px !important;
+}
+
+.pv-reason-label.z-label {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: var(--danger) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    margin-bottom: 7px !important;
+    font-family: var(--font) !important;
+}
+
+.pv-reason-combo .z-combobox {
+    width: 100% !important;
+    height: 32px !important;
+    border: 1px solid var(--danger-b) !important;
+    border-radius: var(--r4) !important;
+    background: var(--surface) !important;
+}
+
+.pv-reason-combo .z-combobox-input {
+    font-size: 12px !important;
+    color: var(--t1) !important;
+    font-family: var(--font) !important;
+    padding: 0 8px !important;
+    background: transparent !important;
+    border: none !important;
+    height: 30px !important;
+    width: 100% !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   11. STICKY FOOTER
+   ═══════════════════════════════════════════════════════════ */
+
+.pv-footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 24px !important;
+    background: var(--surface) !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06) !important;
+    flex-shrink: 0 !important;
+}
+
+.pv-footer-progress.z-label { font-size: 13px !important; font-weight: 600 !important; color: var(--t2) !important; font-family: var(--font) !important; }
+
+.pv-footer-buttons { display: flex !important; gap: 10px !important; align-items: center !important; }
+
+/* Cancel */
+.pv-footer-cancel .z-button {
+    background: var(--surface) !important;
+    color: var(--t2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r6) !important;
+    height: 36px !important;
+    padding: 0 20px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+.pv-footer-cancel .z-button:hover { background: var(--alt) !important; border-color: var(--border-s) !important; }
+
+/* Submit */
+.pv-footer-submit .z-button {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: var(--r6) !important;
+    height: 36px !important;
+    padding: 0 24px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
+}
+.pv-footer-submit .z-button:hover                                { background: var(--primary-light) !important; }
+.pv-footer-submit .z-button:disabled,
+.pv-footer-submit .z-button[disabled]                            { background: var(--border-s) !important; opacity: 0.65 !important; cursor: not-allowed !important; pointer-events: none !important; }

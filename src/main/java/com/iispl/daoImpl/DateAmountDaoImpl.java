@@ -116,7 +116,7 @@ public class DateAmountDaoImpl implements DateAmountDao {
                     cheque.getChequeDateOcr() != null ? cheque.getChequeDateOcr() : null);
             query.setParameter("rcvdAmount",
                     cheque.getAmountOcr() != null ? cheque.getAmountOcr() : BigDecimal.ZERO);
-            query.setParameter("chequeId", cheque.getChequeId());
+            query.setParameter("chequeId", cheque.getId());
 
             int rows = query.executeUpdate();
             tx.commit();
@@ -124,7 +124,7 @@ public class DateAmountDaoImpl implements DateAmountDao {
 
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "updateDateAndAmount failed, chequeId=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "updateDateAndAmount failed, chequeId=" + cheque.getId(), e);
             throw new RuntimeException("Hibernate error in updateDateAndAmount", e);
         } finally {
             if (session != null) session.close();
@@ -154,7 +154,7 @@ public class DateAmountDaoImpl implements DateAmountDao {
             Query<?> query = session.createQuery(hql);
             query.setParameter("payeeName",  cheque.getPayeeName());
             query.setParameter("accountNo",  cheque.getDraweeAccountNumber());   // ← correct field from entity
-            query.setParameter("chequeId",   cheque.getChequeId());
+            query.setParameter("chequeId",   cheque.getId());
 
             int rows = query.executeUpdate();
             tx.commit();
@@ -162,7 +162,7 @@ public class DateAmountDaoImpl implements DateAmountDao {
 
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "updatePayeeAndAccount failed, chequeId=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "updatePayeeAndAccount failed, chequeId=" + cheque.getId(), e);
             throw new RuntimeException("Hibernate error in updatePayeeAndAccount", e);
         } finally {
             if (session != null) session.close();

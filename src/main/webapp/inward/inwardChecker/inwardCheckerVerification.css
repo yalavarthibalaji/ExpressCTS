@@ -1,0 +1,364 @@
+/*
+ * File: inward/inwardChecker/inwardCheckerVerification.css
+ * Import order: global.css → components.css → layout.css → dashboard.css → this file
+ *
+ * COLUMN-COLLAPSE FIX (without breaking ZK tab hide/show):
+ *   The previous fix used display:block !important on .z-tabpanel, which
+ *   overrode ZK's display:none on inactive tabs — showing all 3 panels at once.
+ *
+ *   Correct approach:
+ *   - Do NOT override display on .z-tabpanels or .z-tabpanel
+ *   - Force width:100% only on the elements that need it
+ *   - Use table-layout:fixed + width:100% on the listbox inner table
+ *   - Use fixed px widths on listheaders (ZUL side) — not %
+ *
+ * FIXES
+ * ─────
+ * FIX A — Full page height (ZK flex chain)
+ * FIX B — Calendar popup clipped
+ * FIX C — Column width collapse inside tabpanel (width-only, no display override)
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX A — Shell height + ZK include wrapper fix
+   ═══════════════════════════════════════════════════════════════ */
+
+.dash-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+.dash-shell > .z-div            { flex-shrink: 0; }
+.dash-shell > .body-row         { flex: 1; min-height: 0; }
+.body-row   > .z-div            { height: 100%; display: flex; }
+.body-row   > .main             { flex: 1; display: flex; flex-direction: column;
+                                   overflow: hidden; min-height: 0; }
+.main       > .page             { flex: 1; overflow-y: auto; min-height: 0; }
+.main       > .z-div:last-child { flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Page wrapper
+   ═══════════════════════════════════════════════════════════════ */
+.rpt-page {
+    padding: 12px 16px 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Info note
+   ═══════════════════════════════════════════════════════════════ */
+.rpt-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #e8f4fd;
+    border: 1px solid #b8d9f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #1a5276;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+.rpt-note-icon {
+    font-size: 14px;
+    color: #1a6fa0;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX C — Tabbox: width-only fix, NO display override.
+   ZK controls display:none/block on .z-tabpanel for tab switching.
+   We must NEVER override display on .z-tabpanels or .z-tabpanel.
+   Only force width so columns don't collapse.
+   ═══════════════════════════════════════════════════════════════ */
+
+.ci-tabbox {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Tab bar */
+.ci-tabbox .z-tabs {
+    background: #fff !important;
+    border: 1px solid #dde3ec !important;
+    border-bottom: none !important;
+    border-radius: 6px 6px 0 0 !important;
+    padding: 0 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Tabpanels container — width only, NO display override */
+.ci-tabbox .z-tabpanels {
+    width: 100% !important;
+    border: 1px solid #dde3ec !important;
+    border-top: none !important;
+    border-radius: 0 0 6px 6px !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+}
+
+/* Active tabpanel — width only, NO display override */
+.ci-tabbox .z-tabpanel {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* ZK may wrap tabpanel content in a z-div */
+.ci-tabbox .z-tabpanel > .z-div {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Individual tab buttons */
+.ci-tabbox .z-tab {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+    padding: 10px 18px !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    margin-bottom: -1px !important;
+    border-radius: 0 !important;
+    font-family: var(--font) !important;
+    transition: color 0.15s !important;
+}
+
+.ci-tabbox .z-tab:hover {
+    color: #1e3a5f !important;
+    background: transparent !important;
+}
+
+.ci-tabbox .z-tab-selected,
+.ci-tabbox .z-tab-selected .z-tab-text {
+    color: #1e3a5f !important;
+    border-bottom: 2px solid #1e3a5f !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+}
+
+/* Tabpanel content padding */
+.ci-tabpanel {
+    padding: 16px !important;
+    background: transparent !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Filter bar — identical to inward-reports.css (rpt-fbar)
+   ═══════════════════════════════════════════════════════════════ */
+.rpt-fbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    background: #fff;
+    border: 1px solid #dde3ec;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Search textbox */
+.rpt-fbar .rpt-fi-search,
+.rpt-fbar .rpt-fi-search.z-textbox {
+    height: 34px !important;
+    line-height: 34px !important;
+    width: 170px !important;
+    font-size: 13px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 5px !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+    vertical-align: middle;
+}
+
+/* Datebox outer */
+.rpt-fbar .rpt-fi-date,
+.rpt-fbar .rpt-fi-date.z-datebox {
+    height: 34px !important;
+    width: 148px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 5px !important;
+    background: #fff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    vertical-align: middle;
+    overflow: visible !important;
+}
+
+/* Datebox inner input */
+.rpt-fbar .rpt-fi-date .z-datebox-input {
+    height: 32px !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 6px !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+    background: transparent !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+/* Datebox calendar button */
+.rpt-fbar .rpt-fi-date .z-datebox-btn {
+    height: 32px !important;
+    width: 30px !important;
+    border: none !important;
+    border-left: 1px solid #e5e7eb !important;
+    background: #f9fafb !important;
+    border-radius: 0 5px 5px 0 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+/* Buttons in filter bar */
+.rpt-fbar .z-button {
+    height: 34px !important;
+    line-height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    border-radius: 5px !important;
+    box-sizing: border-box !important;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* ── FIX B: ZK 10 datebox calendar popup ────────────────────── */
+.z-datebox-popup {
+    height: auto !important;
+    min-height: 260px !important;
+    overflow: visible !important;
+    z-index: 99999 !important;
+}
+.z-datebox-popup .z-calendar {
+    height: auto !important;
+    min-height: 260px !important;
+    display: block !important;
+}
+.z-datebox-popup .z-calendar-body {
+    display: table !important;
+    visibility: visible !important;
+}
+.z-datebox-popup table {
+    display: table !important;
+    visibility: visible !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Listbox — matches inward-reports.css
+   table-layout:fixed ensures px column widths are honoured
+   ═══════════════════════════════════════════════════════════════ */
+.rpt-listbox {
+    border: 1px solid #dde3ec !important;
+    border-radius: 6px !important;
+    background: #fff;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Force inner ZK table to full width with fixed layout */
+.rpt-listbox .z-listbox-body,
+.rpt-listbox .z-listbox-body > table,
+.rpt-listbox > table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+.rpt-listbox .z-listhead {
+    background: #1e3a5f !important;
+    width: 100% !important;
+}
+
+.rpt-listbox .z-listheader {
+    background: #1e3a5f !important;
+    border-right: 1px solid #2d5492 !important;
+}
+
+.rpt-listbox .z-listheader-content {
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.rpt-listbox .z-listcell-content {
+    font-size: 13px;
+    color: #2d3748;
+    padding: 8px 12px;
+}
+
+.rpt-listbox .z-listitem:hover {
+    background: #f0f4fb !important;
+}
+
+.rpt-listbox .z-paging {
+    border-top: 1px solid #dde3ec;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Process button
+   ═══════════════════════════════════════════════════════════════ */
+.ci-btn-process.z-button {
+    background: #1a5276 !important;
+    color: #fff !important;
+    border: 1px solid #154360 !important;
+    border-radius: 5px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 5px 11px !important;
+    height: 30px !important;
+    line-height: 20px !important;
+    cursor: pointer !important;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+.ci-btn-process.z-button:hover {
+    background: #154360 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bold mono Batch ID cell
+   ═══════════════════════════════════════════════════════════════ */
+.ci-bold-cell {
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    font-family: var(--mono) !important;
+    font-size: 12px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Status badges
+   ═══════════════════════════════════════════════════════════════ */
+.badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    white-space: nowrap;
+}
+.badge.b-pend { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; }
+.badge.b-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.badge.b-pass { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.badge.b-fail { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.badge.b-grey { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
