@@ -106,7 +106,7 @@ public class RejectRepairDaoImpl implements RejectRepairDao {
             tx.commit();
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "updateCheque failed, id=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "updateCheque failed, id=" + cheque.getId(), e);
             throw new RuntimeException("DB error in updateCheque", e);
         }
     }

@@ -158,12 +158,12 @@ public class ChequeRepairDaoImpl implements ChequeRepairDao {
             ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
 
             // WHERE id
-            ps.setLong(5, cheque.getChequeId());
+            ps.setLong(5, cheque.getId());
 
             return ps.executeUpdate() == 1;
 
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "updateDateAmount failed, id=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "updateDateAmount failed, id=" + cheque.getId(), e);
             throw new RuntimeException("DB error in updateDateAmount", e);
         } finally {
             close(null, ps, conn);
@@ -192,12 +192,12 @@ public class ChequeRepairDaoImpl implements ChequeRepairDao {
             ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
 
             // WHERE id
-            ps.setLong(5, cheque.getChequeId());
+            ps.setLong(5, cheque.getId());
 
             return ps.executeUpdate() == 1;
 
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "updatePayeeAccount failed, id=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "updatePayeeAccount failed, id=" + cheque.getId(), e);
             throw new RuntimeException("DB error in updatePayeeAccount", e);
         } finally {
             close(null, ps, conn);
@@ -231,7 +231,7 @@ public class ChequeRepairDaoImpl implements ChequeRepairDao {
     private InwardCheque mapRow(ResultSet rs) throws SQLException {
         InwardCheque c = new InwardCheque();
 
-        c.setChequeId(rs.getLong("id"));
+        c.setId(rs.getLong("id"));
         c.setSeqNo(rs.getInt("seq_no"));
         c.setChequeNo(rs.getString("cheque_no"));
         c.setPresentingBankName(rs.getString("presenting_bank_name"));

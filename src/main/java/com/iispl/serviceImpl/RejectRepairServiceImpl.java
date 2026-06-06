@@ -73,7 +73,7 @@ public class RejectRepairServiceImpl implements RejectRepairService {
             cheque.setMicrError(false);
             rejectRepairDao.updateCheque(cheque);
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "saveRepair failed, id=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "saveRepair failed, id=" + cheque.getId(), e);
             throw new RuntimeException("Save repair failed", e);
         }
     }
