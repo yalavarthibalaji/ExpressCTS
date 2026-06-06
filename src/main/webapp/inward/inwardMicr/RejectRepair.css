@@ -472,6 +472,118 @@
     overflow: hidden;
 }
 
+/* ══════════════════════════════════════════════
+   INLINE ACCORDION DETAIL ROW
+   ══════════════════════════════════════════════ */
+
+/* The injected detail listitem spans all columns */
+.cheque-detail-row {
+    background: #f0f6ff !important;
+    border-left: 4px solid #1e40af !important;
+    border-bottom: 2px solid #c7d9f5 !important;
+}
+
+/* Single cell that spans full width */
+.cheque-detail-row .z-listcell {
+    padding: 0 !important;
+}
+
+/* Inner wrapper inside the expanded cell */
+.detail-inline-wrap {
+    padding: 18px 24px 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px 28px;
+    background: #f0f6ff;
+    animation: expandDown 0.18s ease-out;
+}
+
+@keyframes expandDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Section block inside inline detail */
+.detail-inline-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-inline-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #1e40af;
+    border-bottom: 1px solid #c7d9f5;
+    padding-bottom: 5px;
+    margin-bottom: 2px;
+}
+
+/* Each field label + value pair */
+.detail-inline-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-field-label {
+    font-size: 10px;
+    color: #9ca3af;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-field-value {
+    font-size: 13px;
+    color: #1a2340;
+    font-weight: 500;
+}
+
+.detail-field-value.mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+}
+
+.detail-field-value.highlight-amount {
+    color: #16a34a;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.detail-field-value.mismatch {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Close strip at bottom of detail row */
+.detail-inline-close {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid #c7d9f5;
+    margin-top: 4px;
+}
+
+/* Expanded row indicator on the parent listitem */
+.row-expanded {
+    background: #e8f0fe !important;
+    border-left: 4px solid #1e40af !important;
+}
+
+/* Chevron toggle in the Sno cell */
+.row-chevron {
+    display: inline-block;
+    font-size: 11px;
+    margin-right: 4px;
+    transition: transform 0.18s;
+    color: #1e40af;
+}
+.row-chevron.open { transform: rotate(90deg); }
+
 /* ── Listbox / Table ── */
 .rr-listbox .z-listhead-cell {
     background: #f9fafb !important;
@@ -637,34 +749,73 @@
 }
 .btn-cancel:hover { background: #f9fafb; }
 
-/* ── Filter Select ── */
-.filter-select {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    padding: 5px 10px;
-    font-size: 13px;
-    min-width: 155px;
-    background: #fff;
-    color: #374151;
+/* ── Toolbar Right Layout ── */
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
-.filter-select:focus { border-color: #1e40af; outline: none; }
 
-/* ── Search box ── */
-.search-box {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    padding: 6px 10px 6px 32px;
-    font-size: 13px;
-    color: #374151;
-    width: 220px;
-    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 9px center;
-    background-size: 14px;
-    transition: border-color 0.15s;
+/* ── Filter Combobox ── 
+   ZK combobox renders: [input][button]
+   We style the outer wrapper to look like one clean box.
+*/
+.filter-select {
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    overflow: hidden;
 }
-.search-box:focus {
-    border-color: #1e40af;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+
+/* Remove double-border on inner input */
+.filter-select input.z-combobox-input {
+    border: none !important;
+    outline: none !important;
+    padding: 5px 8px !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+    background: #fff !important;
+    width: calc(100% - 28px) !important;
+}
+
+/* Style the built-in ZK dropdown button — don't add another */
+.filter-select .z-combobox-button {
+    border: none !important;
+    border-left: 1px solid #d1d5db !important;
+    background: #f9fafb !important;
+    padding: 0 6px !important;
+    cursor: pointer;
+}
+
+.filter-select .z-combobox-button:hover {
+    background: #e5e7eb !important;
+}
+
+/* Remove any pseudo-element arrow you may have added elsewhere */
+.filter-select::after {
+    display: none !important;
+}
+
+/* ── Search Box ── */
+.search-box {
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+    background: #fff !important;
+}
+
+.search-box input.z-textbox {
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    font-size: 13px !important;
+    width: 100% !important;
+}
+
+.search-box:focus-within {
+    border-color: #1e40af !important;
+    box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.15) !important;
 }
 
 /* ── Empty State ── */

@@ -120,71 +120,69 @@
                                    value="0 PENDING" />
 
                             <!-- Right-side: filter + search -->
-                            <div sclass="toolbar-right">
-                                <combobox id="cmbFilter"
-                                          sclass="filter-select"
-                                          readonly="true"
-                                          width="160px"
-                                          placeholder="Filter by status">
-                                    <comboitem label="All"           value=""              />
-                                    <comboitem label="Needs Repair"  value="NEEDS_REPAIR"  />
-                                    <comboitem label="Referred Back" value="REFERRED_BACK" />
-                                    <comboitem label="Repaired"      value="REPAIRED"      />
-                                </combobox>
+<div sclass="toolbar-right">
 
-                                <textbox id="txtSearch"
-                                         sclass="search-box"
-                                         placeholder="Search cheque no. or bank..."
-                                         width="240px" />
-                            </div>
+    <combobox id="cmbFilter"
+              sclass="filter-select"
+              readonly="true"
+              width="180px"
+              placeholder="Filter by status">
+        <comboitem label="All"           value=""              />
+        <comboitem label="Needs Repair"  value="NEEDS_REPAIR"  />
+        <comboitem label="Referred Back" value="REFERRED_BACK" />
+        <comboitem label="Repaired"      value="REPAIRED"      />
+    </combobox>
+
+    <textbox id="txtSearch"
+             sclass="search-box"
+             placeholder="&#128269; Search cheque no. or bank..."
+             width="240px" />
+
+</div>
                         </div>
 
-                        <!-- ══ Cheque Table ══════════════════════════════
-                             FIX: removed vflex="1" — it collapses to 0px
-                             inside a plain <div>. Use height instead.
-                        ════════════════════════════════════════════════ -->
-                        <listbox id="chequeListbox"
-                                 sclass="rr-listbox"
-                                 emptyMessage="No cheques found."
-                                 height="420px">
-                            <listhead>
-                                <listheader label="Sno"
-                                            width="50px"
-                                            align="center" sclass="cheque-table-header"/>
-                                <listheader label="CHEQUE NO."
-                                            width="130px" sclass="cheque-table-header"/>
-                                <listheader label="PRESENTING BANK"
-                                            hflex="1" sclass="cheque-table-header"/>
-                                <listheader label="MICR CODE"
-                                            width="150px" sclass="cheque-table-header"/>
-                                <listheader label="AMOUNT"
-                                            width="140px"
-                                            align="right" sclass="cheque-table-header"/>
-                                <listheader label="REPAIR STATUS"
-                                            width="150px"
-                                            align="center" sclass="cheque-table-header"/>
-                                <listheader label="ACTION"
-                                            width="110px"
-                                            align="center" sclass="cheque-table-header"/>
-                            </listhead>
-                            <!-- Rows rendered by RejectRepairComposer -->
-                        </listbox>
+<!-- ══ Cheque Table ══════════════════════════════ -->
+<listbox id="chequeListbox"
+         sclass="rr-listbox"
+         emptyMessage="No cheques found."
+         height="420px">
+    <listhead>
+        <listheader label="Sno"
+                    width="50px"
+                    align="center"
+                    sclass="cheque-table-header"/>
+        <listheader label="CHEQUE NO."
+                    width="130px"
+                    sclass="cheque-table-header"/>
+        <listheader label="PRESENTING BANK"
+                    hflex="1"
+                    sclass="cheque-table-header"/>
+        <listheader label="MICR CODE"
+                    width="150px"
+                    sclass="cheque-table-header"/>
+        <listheader label="AMOUNT"
+                    width="140px"
+                    align="right"
+                    sclass="cheque-table-header"/>
+        <listheader label="REPAIR STATUS"
+                    width="150px"
+                    align="center"
+                    sclass="cheque-table-header"/>
+        <listheader label="ACTION"
+                    width="110px"
+                    align="center"
+                    sclass="cheque-table-header"/>
+    </listhead>
+    <!-- Rows rendered by composer -->
+</listbox>
 
-                        <!-- Pagination -->
-                        <div sclass="pagination-bar">
-                            <button sclass="btn-page"
-                                    id="btnPrevPage"
-                                    label="← Prev" />
-                            <label sclass="page-info"
-                                   id="lblPageInfo"
-                                   value="Page 1 of 1 | 0 records" />
-                            <button sclass="btn-page"
-                                    id="btnNextPage"
-                                    label="Next →" />
-                        </div>
-
-                    </div><!-- /content-panel -->
-
+<!-- Pagination -->
+<div sclass="pagination-bar">
+    <button sclass="btn-page" id="btnPrevPage" label="← Prev" />
+    <label  sclass="page-info" id="lblPageInfo" value="Page 1 of 1 | 0 records" />
+    <button sclass="btn-page" id="btnNextPage" label="Next →" />
+</div>
+</div>
                     <!-- ══ Cheque Detail Panel ══════════════════════════ -->
                     <div id="chequeDetailPanel"
                          sclass="cheque-detail-panel"
