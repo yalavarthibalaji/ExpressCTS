@@ -234,23 +234,23 @@ public class MicrRepairServiceImpl implements MicrRepairService {
         return pending == 0;
     }
 
-    // ════════════════════════════════════════════════════
-    //  Mark Batch Entry Done
-    // ════════════════════════════════════════════════════
-
     /**
-     * Updates batch status from NEEDS_REPAIR → ENTRY_DONE.
+     * Updates batch status from NEEDS_REPAIR → ENTRY_PENDING.
      * Called after all MICR repairs are completed/rejected.
      * The batch can now move to the Account & Amount Entry step.
+     *
+     * STATUS FIX: was "ENTRY_DONE" — renamed to "ENTRY_PENDING"
+     * because ENTRY_DONE sounds like entries are already done,
+     * but it actually means "ready for data entry (pending)".
      */
     @Override
     public boolean markBatchEntryDone(Long batchDbId) {
         if (batchDbId == null) return false;
 
-        boolean ok = batchDao.updateStatus(batchDbId, "ENTRY_DONE");
+        boolean ok = batchDao.updateStatus(batchDbId, "ENTRY_PENDING");
         if (ok) {
             System.out.println("MicrRepairService → Batch id=" + batchDbId
-                    + " status updated to ENTRY_DONE. "
+                    + " status updated to ENTRY_PENDING. "
                     + "Ready for Account & Amount Entry.");
         } else {
             System.err.println("MicrRepairService → markBatchEntryDone failed "
@@ -258,7 +258,6 @@ public class MicrRepairServiceImpl implements MicrRepairService {
         }
         return ok;
     }
-
     // ════════════════════════════════════════════════════
     //  Private Helpers
     // ════════════════════════════════════════════════════

@@ -10,6 +10,7 @@ import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
@@ -32,14 +33,19 @@ import com.iispl.util.SessionUtil;
 
 /**
  * File    : com/iispl/composer/outward/MicrRepairComposer.java
+ * Purpose : MICR Repair screen for Maker Outward.
  *
- * Bugs fixed in this version:
- *   1. Inline onClick Java code removed → proper @Listen handlers
- *   2. Actual cheque images loaded via ImageServlet
- *   3. Cheque Number is now editable (Textbox, not Label)
- *   4. Tab active state properly toggled on Front/Back switch
- *   5. All 4 views managed via showView() helper
- *   6. cameFromSidebar flag for correct Back navigation
+ * Save Button Enable/Disable Logic:
+ *   - When a cheque loads, saveNextBtn is DISABLED if any field is yellow.
+ *   - As user types in any MICR textbox, the button state is re-evaluated.
+ *   - saveNextBtn is ENABLED only when:
+ *       (1) All 6 fields have the correct exact length.
+ *       (2) Every yellow field has a value DIFFERENT from its original wrong value.
+ *   - Blue fields (already correct) are ignored in the mismatch check.
+ *
+ * onChanging fires on every keystroke — uses InputEvent.getValue()
+ *   for the field being typed, and .getValue() for all other fields.
+ * onChange fires on focus-out — all fields use .getValue().
  */
 public class MicrRepairComposer extends SelectorComposer<Component> {
 
@@ -57,9 +63,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     @Wire private Div listView;
     @Wire private Div repairView;
 
-    // ── Empty State View ──
-    // Button handled via @Listen below
-
     // ── Batch Select View ──
     @Wire private Rows batchSelectRows;
 
@@ -75,24 +78,27 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     @Wire private Label  repairIssueBadge;
     @Wire private Label  recLabel;
 
-    // ── Left Panel — Actual Images ──
+    // ── Left Panel ──
     @Wire private Div    chqFront;
     @Wire private Div    chqBack;
     @Wire private Button tabFrontBtn;
     @Wire private Button tabBackBtn;
-    @Wire private Image  frontImage;        // ZK Image component for front scan
-    @Wire private Image  backImage;         // ZK Image component for back scan
+    @Wire private Image  frontImage;
+    @Wire private Image  backImage;
     @Wire private Label  termChqNo;
     @Wire private Label  termMicrCode;
 
-    // ── Right Panel — MICR Entry Fields (all Textbox) ──
-    @Wire private Textbox chqNoBox;         // FIX: editable textbox (was Label)
+    // ── Right Panel — MICR Entry Fields ──
+    @Wire private Textbox chqNoBox;
     @Wire private Textbox cityCodeBox;
     @Wire private Textbox bankCodeBox;
     @Wire private Textbox branchCodeBox;
     @Wire private Textbox baseNumberBox;
     @Wire private Textbox transCodeBox;
     @Wire private Textbox repairRemarksBox;
+
+    // ── Save & Next Button (wired to control enabled/disabled state) ──
+    @Wire private Button saveNextBtn;
 
     // ── Reject Panel ──
     @Wire private Div     rejectPanel;
@@ -134,7 +140,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         batchId = Executions.getCurrent().getParameter("batchId");
 
         if (batchId != null && !batchId.trim().isEmpty()) {
-            // Came from batch upload → skip batch selection
             cameFromSidebar = false;
             currentBatch    = micrService.getBatch(batchId.trim());
 
@@ -142,14 +147,14 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                 Clients.showNotification(
                     "Batch not found: " + batchId,
                     "error", null, "top_center", 3000);
-                Executions.sendRedirect("/outward/batchUpload/batchUpload.zul");
+                Executions.sendRedirect(
+                    "/outward/batchUpload/batchUpload.zul");
                 return;
             }
             showView("list");
             loadAndShowList();
 
         } else {
-            // Came from sidebar → show batch selection
             cameFromSidebar = true;
             loadBatchSelectView();
         }
@@ -177,8 +182,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
 
     // ════════════════════════════════════════════════════
     //  Empty State
-    //  FIX: was inline onClick Java code in ZUL (caused parse error)
-    //       now properly handled by @Listen
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #goToBatchUploadBtn")
@@ -187,7 +190,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  Batch Select View (sidebar access)
+    //  Batch Select View
     // ════════════════════════════════════════════════════
 
     private void loadBatchSelectView() {
@@ -209,7 +212,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
 
     private Row buildBatchSelectRow(int idx, final OutwardBatch b) {
         Row row = new Row();
-
         row.appendChild(new Label(String.valueOf(idx)));
 
         Label batchIdLbl = new Label(safe(b.getBatchId()));
@@ -217,8 +219,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         row.appendChild(batchIdLbl);
 
         row.appendChild(new Label(String.valueOf(b.getChequeCount())));
-        row.appendChild(new Label(
-            b.getActualAmount() != null
+        row.appendChild(new Label(b.getActualAmount() != null
             ? "₹" + moneyFmt.format(b.getActualAmount()) : "—"));
         row.appendChild(new Label(String.valueOf(b.getChequeCount())));
         row.appendChild(new Label("0"));
@@ -236,7 +237,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                 }
             });
         row.appendChild(selectBtn);
-
         return row;
     }
 
@@ -262,13 +262,11 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         for (OutwardCheque cheque : repairList) {
             micrRows.appendChild(buildListRow(idx++, cheque));
         }
-
         checkProceedButton();
     }
 
     private Row buildListRow(int idx, final OutwardCheque cheque) {
         Row row = new Row();
-
         row.appendChild(new Label(String.valueOf(idx)));
 
         Label chqNoLbl = new Label(safe(cheque.getChequeNo()));
@@ -281,8 +279,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         micrLbl.setSclass("mono");
         row.appendChild(micrLbl);
 
-        row.appendChild(new Label(
-            cheque.getAmount() != null
+        row.appendChild(new Label(cheque.getAmount() != null
             ? "₹" + moneyFmt.format(cheque.getAmount()) : "—"));
 
         Label issueBadge = new Label("MICR Error");
@@ -298,7 +295,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                 }
             });
         row.appendChild(repairBtn);
-
         return row;
     }
 
@@ -336,22 +332,18 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         repairIssueBadge.setValue("MICR ERROR");
         recLabel.setValue((currentIndex + 1) + " of " + repairList.size());
 
-        // ── FIX: Load actual cheque images via ImageServlet ──
         loadChequeImages(cheque);
 
-        // Terminal MICR band display
         String micr = safe(cheque.getMicrCode());
         termChqNo.setValue(safe(cheque.getChequeNo()));
         termMicrCode.setValue(micr.length() > 6 ? micr.substring(6) : micr);
 
-        // Reset tabs — show front first
         chqFront.setVisible(true);
         chqBack.setVisible(false);
         tabFrontBtn.setSclass("chq-tab active");
         tabBackBtn.setSclass("chq-tab");
 
-        // ── Right Panel ──
-        // FIX: chqNoBox is now Textbox (editable), not Label
+        // Fill form fields from stored cheque data
         chqNoBox.setValue(safe(cheque.getChequeNo()));
         cityCodeBox.setValue(safe(cheque.getCityCode()));
         bankCodeBox.setValue(safe(cheque.getBankCode()));
@@ -360,47 +352,35 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         transCodeBox.setValue(safe(cheque.getTransactionCode()));
         repairRemarksBox.setValue("");
 
-        // Highlight mismatched fields yellow
+        // Colour the fields yellow/blue
         highlightMismatchFields(cheque);
 
         rejectPanel.setVisible(false);
+
+        // ── KEY FIX: evaluate button state with the just-loaded values ──
+        // Since yellow fields contain the original WRONG values,
+        // canSave() will return false → button starts DISABLED.
+        applySaveButtonState(
+            safe(cheque.getChequeNo()),
+            safe(cheque.getCityCode()),
+            safe(cheque.getBankCode()),
+            safe(cheque.getBranchCode()),
+            safe(cheque.getBaseNumber()),
+            safe(cheque.getTransactionCode()));
     }
 
-    /**
-     * Sets the actual cheque image URLs on the ZK Image components.
-     * Images are served via ImageServlet from the filesystem.
-     *
-     * Image path example:
-     *   /opt/cts/images/outward/B-2026-0603-001/images/cheque002_front.png
-     *
-     * Served via:
-     *   /imageServlet?path=/opt/cts/images/outward/B-2026-0603-001/images/...
-     */
     private void loadChequeImages(OutwardCheque cheque) {
-        String frontPath = cheque.getFrontImagePath();
-        String backPath  = cheque.getBackImagePath();
-
-        if (frontPath != null && !frontPath.trim().isEmpty()) {
-            try {
-                String encodedPath = URLEncoder.encode(
-                    frontPath.trim(), "UTF-8");
-                frontImage.setSrc("/imageServlet?path=" + encodedPath);
-            } catch (UnsupportedEncodingException e) {
-                frontImage.setSrc("/imageServlet?path=" + frontPath.trim());
-            }
-        } else {
+        String fp = cheque.getFrontImagePath();
+        String bp = cheque.getBackImagePath();
+        try {
+            frontImage.setSrc(fp != null && !fp.trim().isEmpty()
+                ? "/imageServlet?path="
+                  + URLEncoder.encode(fp.trim(), "UTF-8") : "");
+            backImage.setSrc(bp != null && !bp.trim().isEmpty()
+                ? "/imageServlet?path="
+                  + URLEncoder.encode(bp.trim(), "UTF-8") : "");
+        } catch (UnsupportedEncodingException e) {
             frontImage.setSrc("");
-        }
-
-        if (backPath != null && !backPath.trim().isEmpty()) {
-            try {
-                String encodedPath = URLEncoder.encode(
-                    backPath.trim(), "UTF-8");
-                backImage.setSrc("/imageServlet?path=" + encodedPath);
-            } catch (UnsupportedEncodingException e) {
-                backImage.setSrc("/imageServlet?path=" + backPath.trim());
-            }
-        } else {
             backImage.setSrc("");
         }
     }
@@ -421,53 +401,35 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
             return;
         }
 
-        String expCity   = micr.substring(6,  9);
-        String expBank   = micr.substring(9,  12);
-        String expBranch = micr.substring(12, 15);
-        String expBase   = micr.substring(15, 21);
-        String expTc     = micr.substring(21, 23);
-
-        highlightField(cityCodeBox,   cheque.getCityCode(),        expCity);
-        highlightField(bankCodeBox,   cheque.getBankCode(),        expBank);
-        highlightField(branchCodeBox, cheque.getBranchCode(),      expBranch);
-        highlightField(baseNumberBox, cheque.getBaseNumber(),      expBase);
-        highlightField(transCodeBox,  cheque.getTransactionCode(), expTc);
+        highlightField(cityCodeBox,   cheque.getCityCode(),        micr.substring(6,  9));
+        highlightField(bankCodeBox,   cheque.getBankCode(),        micr.substring(9,  12));
+        highlightField(branchCodeBox, cheque.getBranchCode(),      micr.substring(12, 15));
+        highlightField(baseNumberBox, cheque.getBaseNumber(),      micr.substring(15, 21));
+        highlightField(transCodeBox,  cheque.getTransactionCode(), micr.substring(21, 23));
     }
 
     private void highlightField(Textbox box, String stored, String expected) {
-        if (!safe(stored).equals(safe(expected))) {
-            setYellow(box);
-        } else {
-            setBlue(box);
-        }
+        if (!safe(stored).equals(safe(expected))) setYellow(box);
+        else                                       setBlue(box);
     }
 
-    private void setYellow(Textbox box) {
-        box.setSclass("fi mono field-changed");
-    }
-
-    private void setBlue(Textbox box) {
-        box.setSclass("fi mono field-ocr");
-    }
+    private void setYellow(Textbox box) { box.setSclass("fi mono field-changed"); }
+    private void setBlue(Textbox box)   { box.setSclass("fi mono field-ocr");     }
 
     // ════════════════════════════════════════════════════
-    //  Tab Switching — FIX: both buttons toggled together
+    //  Tab Switching
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #tabFrontBtn")
     public void onShowFront() {
-        chqFront.setVisible(true);
-        chqBack.setVisible(false);
-        tabFrontBtn.setSclass("chq-tab active");
-        tabBackBtn.setSclass("chq-tab");
+        chqFront.setVisible(true);  chqBack.setVisible(false);
+        tabFrontBtn.setSclass("chq-tab active"); tabBackBtn.setSclass("chq-tab");
     }
 
     @Listen("onClick = #tabBackBtn")
     public void onShowBack() {
-        chqFront.setVisible(false);
-        chqBack.setVisible(true);
-        tabFrontBtn.setSclass("chq-tab");
-        tabBackBtn.setSclass("chq-tab active");
+        chqFront.setVisible(false); chqBack.setVisible(true);
+        tabFrontBtn.setSclass("chq-tab"); tabBackBtn.setSclass("chq-tab active");
     }
 
     // ════════════════════════════════════════════════════
@@ -477,8 +439,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     @Listen("onClick = #prevBtn")
     public void onPrev() {
         if (repairList == null || repairList.isEmpty()) return;
-        currentIndex = (currentIndex - 1 + repairList.size())
-                        % repairList.size();
+        currentIndex = (currentIndex - 1 + repairList.size()) % repairList.size();
         loadRepairView(repairList.get(currentIndex));
     }
 
@@ -490,15 +451,194 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
+    //  Real-time Field Listeners — one per field
+    //
+    //  onChanging fires on EVERY keystroke.
+    //  InputEvent.getValue() = the value INCLUDING the latest
+    //  typed character (the textbox.getValue() itself is one
+    //  keystroke behind during onChanging).
+    //  So: pass e.getValue() for the active field,
+    //       .getValue() for all others.
+    //
+    //  onChange fires when focus leaves the field.
+    //  All .getValue() are up-to-date at that point.
+    // ════════════════════════════════════════════════════
+
+    // ── chqNoBox ──
+    @Listen("onChanging = #chqNoBox")
+    public void onChqNoChanging(InputEvent e) {
+        applySaveButtonState(
+            e.getValue(),
+            cityCodeBox.getValue(), bankCodeBox.getValue(),
+            branchCodeBox.getValue(), baseNumberBox.getValue(),
+            transCodeBox.getValue());
+    }
+
+    // ── cityCodeBox ──
+    @Listen("onChanging = #cityCodeBox")
+    public void onCityChanging(InputEvent e) {
+        applySaveButtonState(
+            chqNoBox.getValue(),
+            e.getValue(), bankCodeBox.getValue(),
+            branchCodeBox.getValue(), baseNumberBox.getValue(),
+            transCodeBox.getValue());
+    }
+
+    // ── bankCodeBox ──
+    @Listen("onChanging = #bankCodeBox")
+    public void onBankChanging(InputEvent e) {
+        applySaveButtonState(
+            chqNoBox.getValue(),
+            cityCodeBox.getValue(), e.getValue(),
+            branchCodeBox.getValue(), baseNumberBox.getValue(),
+            transCodeBox.getValue());
+    }
+
+    // ── branchCodeBox ──
+    @Listen("onChanging = #branchCodeBox")
+    public void onBranchChanging(InputEvent e) {
+        applySaveButtonState(
+            chqNoBox.getValue(),
+            cityCodeBox.getValue(), bankCodeBox.getValue(),
+            e.getValue(), baseNumberBox.getValue(),
+            transCodeBox.getValue());
+    }
+
+    // ── baseNumberBox ──
+    @Listen("onChanging = #baseNumberBox")
+    public void onBaseChanging(InputEvent e) {
+        applySaveButtonState(
+            chqNoBox.getValue(),
+            cityCodeBox.getValue(), bankCodeBox.getValue(),
+            branchCodeBox.getValue(), e.getValue(),
+            transCodeBox.getValue());
+    }
+
+    // ── transCodeBox ──
+    @Listen("onChanging = #transCodeBox")
+    public void onTcChanging(InputEvent e) {
+        applySaveButtonState(
+            chqNoBox.getValue(),
+            cityCodeBox.getValue(), bankCodeBox.getValue(),
+            branchCodeBox.getValue(), baseNumberBox.getValue(),
+            e.getValue());
+    }
+
+    // onChange — fires on focus-out: all .getValue() are current ──
+    @Listen("onChange = #chqNoBox; onChange = #cityCodeBox; "
+          + "onChange = #bankCodeBox; onChange = #branchCodeBox; "
+          + "onChange = #baseNumberBox; onChange = #transCodeBox")
+    public void onAnyFieldChange() {
+        applySaveButtonState(
+            chqNoBox.getValue(), cityCodeBox.getValue(),
+            bankCodeBox.getValue(), branchCodeBox.getValue(),
+            baseNumberBox.getValue(), transCodeBox.getValue());
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Save Button State Engine
+    //  Called on every keystroke and focus-out.
+    //  Enables saveNextBtn only when ALL conditions pass.
+    // ════════════════════════════════════════════════════
+
+    /**
+     * Evaluates whether the Save button should be enabled or disabled.
+     * Updates the button style accordingly.
+     *
+     * @param chqNo   current value in chqNoBox     (may be from InputEvent)
+     * @param city    current value in cityCodeBox
+     * @param bank    current value in bankCodeBox
+     * @param branch  current value in branchCodeBox
+     * @param base    current value in baseNumberBox
+     * @param tc      current value in transCodeBox
+     */
+    private void applySaveButtonState(String chqNo, String city, String bank,
+                                       String branch, String base, String tc) {
+        boolean canSave = canEnableSave(chqNo, city, bank, branch, base, tc);
+        saveNextBtn.setDisabled(!canSave);
+        saveNextBtn.setSclass(canSave
+            ? "btn bp btn-lg w100"
+            : "btn bp btn-lg w100 btn-disabled");
+    }
+
+    /**
+     * Returns true only when both conditions are satisfied:
+     *
+     * Condition 1 — Correct length:
+     *   chequeNo = 6, cityCode = 3, bankCode = 3,
+     *   branchCode = 3, baseNumber = 6, transCode = 2
+     *
+     * Condition 2 — Yellow fields corrected:
+     *   For every field that was yellow (stored value ≠ expected from micrCode),
+     *   the current typed value must differ from the original wrong stored value.
+     *   Blue fields (stored == expected) are not checked.
+     */
+    private boolean canEnableSave(String chqNo, String city, String bank,
+                                   String branch, String base, String tc) {
+
+        if (repairList == null || currentIndex >= repairList.size()) {
+            return false;
+        }
+
+        // ── Condition 1: All fields have correct exact length ──
+        if (len(chqNo)  != 6) return false;
+        if (len(city)   != 3) return false;
+        if (len(bank)   != 3) return false;
+        if (len(branch) != 3) return false;
+        if (len(base)   != 6) return false;
+        if (len(tc)     != 2) return false;
+
+        // ── Condition 2: Yellow fields must have been changed ──
+        OutwardCheque cheque = repairList.get(currentIndex);
+        String micrCode = cheque.getMicrCode();
+
+        if (micrCode == null || micrCode.trim().length() < 23) {
+            // micrCode not available — can't do mismatch check
+            // Allow save if all lengths are correct (Condition 1 already passed)
+            return true;
+        }
+
+        String expCity   = micrCode.substring(6,  9);
+        String expBank   = micrCode.substring(9,  12);
+        String expBranch = micrCode.substring(12, 15);
+        String expBase   = micrCode.substring(15, 21);
+        String expTc     = micrCode.substring(21, 23);
+
+        // isYellowAndUnchanged: field WAS yellow AND still has original wrong value
+        if (isYellowAndUnchanged(cheque.getCityCode(),        expCity,   city))   return false;
+        if (isYellowAndUnchanged(cheque.getBankCode(),        expBank,   bank))   return false;
+        if (isYellowAndUnchanged(cheque.getBranchCode(),      expBranch, branch)) return false;
+        if (isYellowAndUnchanged(cheque.getBaseNumber(),      expBase,   base))   return false;
+        if (isYellowAndUnchanged(cheque.getTransactionCode(), expTc,     tc))     return false;
+
+        // Both conditions passed
+        return true;
+    }
+
+    /**
+     * Returns true if a field is yellow (was wrong) AND still has its
+     * original wrong value (user has not edited it yet).
+     *
+     * @param storedWrong original wrong value stored in DB
+     * @param expected    correct value from micrCode decomposition
+     * @param currentVal  value currently showing in the textbox
+     */
+    private boolean isYellowAndUnchanged(String storedWrong,
+                                          String expected,
+                                          String currentVal) {
+        boolean wasYellow = !safe(storedWrong).equals(safe(expected));
+        boolean unchanged = safe(currentVal).equals(safe(storedWrong));
+        return wasYellow && unchanged;
+    }
+
+    // ════════════════════════════════════════════════════
     //  Save and Next
-    //  FIX: chequeNo now read from chqNoBox (editable textbox)
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #saveNextBtn")
     public void onSaveNext() {
-        OutwardCheque cheque = repairList.get(currentIndex);
+        OutwardCheque cheque  = repairList.get(currentIndex);
 
-        // FIX: use chqNoBox.getValue() — chequeNo is now editable
         String chequeNo = chqNoBox.getValue();
         String city     = cityCodeBox.getValue();
         String bank     = bankCodeBox.getValue();
@@ -507,11 +647,11 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         String tc       = transCodeBox.getValue();
         String remarks  = repairRemarksBox.getValue();
 
-        if (isBlank(chequeNo) || isBlank(city) || isBlank(bank)
-                || isBlank(branch) || isBlank(base) || isBlank(tc)) {
+        // Safety check (button should already be disabled if these fail)
+        if (!canEnableSave(chequeNo, city, bank, branch, base, tc)) {
             Clients.showNotification(
-                "All MICR fields are required.",
-                "warning", null, "top_center", 2500);
+                "Please correct all highlighted fields to the exact required length.",
+                "warning", null, "top_center", 3000);
             return;
         }
 
@@ -643,11 +783,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     //  Helpers
     // ════════════════════════════════════════════════════
 
-    private String safe(String s) {
-        return s != null ? s.trim() : "";
-    }
-
-    private boolean isBlank(String s) {
-        return s == null || s.trim().isEmpty();
-    }
+    private String  safe(String s)    { return s != null ? s.trim() : ""; }
+    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
+    private int     len(String s)     { return s != null ? s.trim().length() : 0; }
 }

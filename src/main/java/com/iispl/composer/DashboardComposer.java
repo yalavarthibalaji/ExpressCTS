@@ -19,43 +19,63 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * File    : com/iispl/composer/DashboardComposer.java
+ * Purpose : Maker Outward Dashboard — KPI counts and batch table.
+ *
+ * Correct Batch Status Flow:
+ *   NEEDS_REPAIR  → has MICR errors, waiting for MICR repair
+ *   ENTRY_PENDING → MICR repair done (or no errors), ready for data entry
+ *   SUBMITTED     → data entry done, in checker queue
+ *   REFER_BACK    → checker referred batch back to maker
+ *   REJECTED      → batch rejected
+ *
+ * KPI Fixes:
+ *   Bug 1 — MICR Pending used repairStatus (NEVER cleared after repair).
+ *            Fixed to use main batch status = NEEDS_REPAIR.
+ *   Bug 2 — Entry Pending checked ENTRY_PENDING (ghost status, never set).
+ *            Fixed to check ENTRY_PENDING + REFER_BACK.
+ */
 public class DashboardComposer extends SelectorComposer<Component> {
 
-    private static final DateTimeFormatter DATE_FMT    = DateTimeFormatter.ofPattern("dd MMM yyyy");
-    private static final DateTimeFormatter CELL_FMT    = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private static final DateTimeFormatter CELL_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    // ── KPI Labels ─────────────────────────────────────────────
+    // ── KPI Labels ──
     @Wire private Label kpiTotalBatches;
     @Wire private Label kpiMicrPending;
     @Wire private Label kpiEntryPending;
     @Wire private Label kpiSubmitted;
     @Wire private Label kpiTotalCheques;
 
-    // ── Header pills ───────────────────────────────────────────
+    // ── Header pills ──
     @Wire private Label lblTodayDate;
     @Wire private Label lblClearingSession;
 
-    // ── Topbar ─────────────────────────────────────────────────
+    // ── Topbar ──
     @Wire private Label userAvatar;
     @Wire private Label userName;
     @Wire private Label userRole;
 
-    // ── Recent batches table ───────────────────────────────────
+    // ── Recent batches table ──
     @Wire private Listbox recentBatchList;
     @Wire private Label   emptyBatchesMsg;
 
-    // ── Filters ────────────────────────────────────────────────
+    // ── Filters ──
     @Wire private Datebox  filterFromDate;
     @Wire private Datebox  filterToDate;
     @Wire private Combobox filterStatus;
     @Wire private Textbox  filterBatchId;
 
-    // ── State ──────────────────────────────────────────────────
+    // ── State ──
     private final BatchUploadService batchUploadService = new BatchUploadServiceImpl();
-    private Long currentMakerId;
-    private List<OutwardBatch> allBatches;
+    private Long                     currentMakerId;
+    private List<OutwardBatch>       allBatches;
 
-    // ══════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Page Init
+    // ════════════════════════════════════════════════════
+
     @Override
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
@@ -65,55 +85,72 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
         currentMakerId = dto.getUserId();
 
-        // Topbar
         if (userAvatar != null) userAvatar.setValue(dto.getInitials());
         if (userName   != null) userName.setValue(dto.getFullName());
         if (userRole   != null) userRole.setValue(formatRole(dto.getRoleCode()));
 
-        // Header pills
-        if (lblTodayDate       != null) lblTodayDate.setValue(LocalDate.now().format(DATE_FMT));
-        if (lblClearingSession != null) lblClearingSession.setValue(resolveSession());
+        if (lblTodayDate       != null)
+            lblTodayDate.setValue(LocalDate.now().format(DATE_FMT));
+        if (lblClearingSession != null)
+            lblClearingSession.setValue(resolveSession());
 
-        // Load data
         allBatches = batchUploadService.getMyBatches(currentMakerId);
         loadKpis(allBatches);
         renderTable(allBatches);
     }
 
-    // ══════════════════════════════════════════════════════════
-    // KPI — computed from full batch list
-    // ══════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  KPI — computed from full batch list
+    // ════════════════════════════════════════════════════
+
     private void loadKpis(List<OutwardBatch> batches) {
         try {
             long totalBatches = batches.size();
-            long micrPending  = 0, entryPending = 0, submitted = 0, totalCheques = 0;
+            long micrPending  = 0;
+            long entryPending = 0;
+            long referBack    = 0;
+            long submitted    = 0;
+            long totalCheques = 0;
 
             for (OutwardBatch b : batches) {
-                String status = b.getStatus()       != null ? b.getStatus()       : "";
-                String repair = b.getRepairStatus() != null ? b.getRepairStatus() : "";
+                String status = b.getStatus() != null ? b.getStatus() : "";
 
-                if ("NEEDS_REPAIR".equals(repair))                                  micrPending++;
-                if ("ENTRY_PENDING".equals(status) || "ENTRY_DONE".equals(status)) entryPending++;
-                if ("SUBMITTED".equals(status))                                      submitted++;
-                if (b.getChequeCount() > 0) totalCheques += b.getChequeCount();
+                // MICR Pending — batch has MICR errors waiting for repair
+                // FIX: uses batch status (not repairStatus which never gets cleared)
+                if ("NEEDS_REPAIR".equals(status))  micrPending++;
+
+                // Entry Pending — MICR done, ready for data entry
+                // FIX: was checking ENTRY_DONE (ghost status, never set).
+                //      Now correctly checks ENTRY_PENDING.
+                if ("ENTRY_PENDING".equals(status)) entryPending++;
+
+                // Refer Back — checker sent batch back to maker
+                if ("REFER_BACK".equals(status))    referBack++;
+
+                if ("SUBMITTED".equals(status))     submitted++;
+
+                if (b.getChequeCount() > 0)         totalCheques += b.getChequeCount();
             }
 
             setValue(kpiTotalBatches, totalBatches);
             setValue(kpiMicrPending,  micrPending);
-            setValue(kpiEntryPending, entryPending);
+            // Entry Pending KPI = ENTRY_PENDING + REFER_BACK
+            // Both need maker attention at the data entry step
+            setValue(kpiEntryPending, entryPending + referBack);
             setValue(kpiSubmitted,    submitted);
             setValue(kpiTotalCheques, totalCheques);
 
         } catch (Exception e) {
-            System.err.println("DashboardComposer → KPI load failed: " + e.getMessage());
+            System.err.println(
+                "DashboardComposer → KPI load failed: " + e.getMessage());
         }
     }
 
-    // ══════════════════════════════════════════════════════════
-    // Render table from a (possibly filtered) list
-    // ══════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Render Batch Table
+    // ════════════════════════════════════════════════════
+
     private void renderTable(List<OutwardBatch> batches) {
-        // Remove old rows (keep listhead)
         List<Component> toRemove = recentBatchList.getChildren().stream()
                 .filter(c -> c instanceof Listitem)
                 .collect(Collectors.toList());
@@ -125,7 +162,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
             return;
         }
 
-        // Last 10, most recent first
         int start = Math.max(0, batches.size() - 10);
         List<OutwardBatch> recent = batches.subList(start, batches.size());
 
@@ -137,14 +173,11 @@ public class DashboardComposer extends SelectorComposer<Component> {
             item.appendChild(new Listcell(String.valueOf(b.getChequeCount())));
             item.appendChild(new Listcell(
                     b.getActualAmount() != null
-                    ? "Rs. " + b.getActualAmount().toPlainString()
-                    : "-"));
+                    ? "Rs. " + b.getActualAmount().toPlainString() : "-"));
             item.appendChild(new Listcell(
                     b.getCreatedAt() != null
-                    ? b.getCreatedAt().format(CELL_FMT)
-                    : "-"));
+                    ? b.getCreatedAt().format(CELL_FMT) : "-"));
 
-            // Status badge
             Listcell statusCell  = new Listcell();
             Label    statusLabel = new Label(formatStatusLabel(b.getStatus()));
             statusLabel.setSclass(resolveStatusSclass(b.getStatus()));
@@ -158,19 +191,20 @@ public class DashboardComposer extends SelectorComposer<Component> {
         emptyBatchesMsg.setVisible(false);
     }
 
-    // ══════════════════════════════════════════════════════════
-    // Filter: Apply
-    // ══════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Filters
+    // ════════════════════════════════════════════════════
+
     @Listen("onClick = #btnApplyFilter")
     public void applyFilter() {
         if (allBatches == null) return;
 
-        java.util.Date fromRaw   = filterFromDate != null ? filterFromDate.getValue()  : null;
-        java.util.Date toRaw     = filterToDate   != null ? filterToDate.getValue()    : null;
-        String statusVal         = "";
-        String batchIdVal        = filterBatchId  != null ? filterBatchId.getValue().trim().toLowerCase() : "";
+        java.util.Date fromRaw = filterFromDate != null ? filterFromDate.getValue() : null;
+        java.util.Date toRaw   = filterToDate   != null ? filterToDate.getValue()   : null;
+        String statusVal       = "";
+        String batchIdVal      = filterBatchId  != null
+            ? filterBatchId.getValue().trim().toLowerCase() : "";
 
-        // Resolve status from combobox
         if (filterStatus != null && filterStatus.getSelectedItem() != null) {
             statusVal = (String) filterStatus.getSelectedItem().getValue();
             if ("ALL".equals(statusVal)) statusVal = "";
@@ -181,12 +215,11 @@ public class DashboardComposer extends SelectorComposer<Component> {
         LocalDate toDate   = toRaw   != null ? toRaw.toInstant()
                 .atZone(java.time.ZoneId.systemDefault()).toLocalDate() : null;
 
-        final String finalStatus  = statusVal;
-        final String finalBatchId = batchIdVal;
+        final String fStatus  = statusVal;
+        final String fBatchId = batchIdVal;
 
         List<OutwardBatch> filtered = allBatches.stream()
                 .filter(b -> {
-                    // Date filter
                     if (fromDate != null || toDate != null) {
                         LocalDateTime created = b.getCreatedAt();
                         if (created == null) return false;
@@ -194,15 +227,14 @@ public class DashboardComposer extends SelectorComposer<Component> {
                         if (fromDate != null && d.isBefore(fromDate)) return false;
                         if (toDate   != null && d.isAfter(toDate))    return false;
                     }
-                    // Status filter
-                    if (!finalStatus.isEmpty()) {
+                    if (!fStatus.isEmpty()) {
                         String s = b.getStatus() != null ? b.getStatus() : "";
-                        if (!s.equalsIgnoreCase(finalStatus)) return false;
+                        if (!s.equalsIgnoreCase(fStatus)) return false;
                     }
-                    // Batch ID search
-                    if (!finalBatchId.isEmpty()) {
-                        String id = b.getBatchId() != null ? b.getBatchId().toLowerCase() : "";
-                        if (!id.contains(finalBatchId)) return false;
+                    if (!fBatchId.isEmpty()) {
+                        String id = b.getBatchId() != null
+                            ? b.getBatchId().toLowerCase() : "";
+                        if (!id.contains(fBatchId)) return false;
                     }
                     return true;
                 })
@@ -211,9 +243,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
         renderTable(filtered);
     }
 
-    // ══════════════════════════════════════════════════════════
-    // Filter: Clear
-    // ══════════════════════════════════════════════════════════
     @Listen("onClick = #btnClearFilter")
     public void clearFilter() {
         if (filterFromDate != null) filterFromDate.setValue(null);
@@ -223,15 +252,13 @@ public class DashboardComposer extends SelectorComposer<Component> {
         renderTable(allBatches);
     }
 
-    // Live search on Batch ID textbox (instant=true triggers onChange)
     @Listen("onChange = #filterBatchId")
-    public void onBatchIdChange() {
-        applyFilter();
-    }
+    public void onBatchIdChange() { applyFilter(); }
 
-    // ══════════════════════════════════════════════════════════
-    // Navigation
-    // ══════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Navigation
+    // ════════════════════════════════════════════════════
+
     @Listen("onClick = #gotoBatchUpload")
     public void gotoBatchUpload() {
         Executions.sendRedirect("/outward/batchUpload/batchUpload.zul");
@@ -244,7 +271,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
     @Listen("onClick = #gotoAcctAmount")
     public void gotoAcctAmount() {
-        Executions.sendRedirect("/outward/dataEntry/dataEntry.zul");
+        Executions.sendRedirect("/outward/acctAmount/acctAmount.zul");
     }
 
     @Listen("onClick = #gotoViewBatches")
@@ -270,9 +297,10 @@ public class DashboardComposer extends SelectorComposer<Component> {
         Executions.sendRedirect("/admin/adminDashboard.zul");
     }
 
-    // ══════════════════════════════════════════════════════════
-    // Helpers
-    // ══════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Helpers
+    // ════════════════════════════════════════════════════
+
     private void setValue(Label label, long value) {
         if (label != null) label.setValue(String.valueOf(value));
     }
@@ -280,29 +308,36 @@ public class DashboardComposer extends SelectorComposer<Component> {
     private String nvl(String s) { return s != null ? s : "-"; }
 
     private String resolveSession() {
-        return LocalTime.now().isBefore(LocalTime.NOON) ? "Morning Clearing" : "Afternoon Clearing";
+        return LocalTime.now().isBefore(LocalTime.NOON)
+            ? "Morning Clearing" : "Afternoon Clearing";
     }
 
+    /**
+     * Human-readable label for each batch status.
+     * NOTE: "ENTRY_DONE" removed — not a real status in the flow.
+     */
     private String formatStatusLabel(String status) {
         if (status == null) return "-";
         switch (status.toUpperCase()) {
-            case "UPLOADED":      return "Uploaded";
-            case "NEEDS_REPAIR":  return "Needs Repair";
-            case "ENTRY_PENDING": return "Entry Pending";
-            case "ENTRY_DONE":    return "Entry Done";
+            case "NEEDS_REPAIR":  return "Needs MICR Repair";
+            case "ENTRY_PENDING": return "Pending Data Entry";
             case "SUBMITTED":     return "Submitted";
+            case "REFER_BACK":    return "Referred Back";
             case "REJECTED":      return "Rejected";
             default:              return status;
         }
     }
 
+    /**
+     * CSS class for status badge in dashboard table.
+     */
     private String resolveStatusSclass(String status) {
         if (status == null) return "status-badge";
         switch (status.toUpperCase()) {
             case "NEEDS_REPAIR":  return "status-badge status-pending";
             case "ENTRY_PENDING": return "status-badge status-received";
-            case "ENTRY_DONE":    return "status-badge status-parsed";
             case "SUBMITTED":     return "status-badge status-approved";
+            case "REFER_BACK":    return "status-badge status-refer";
             case "REJECTED":      return "status-badge status-rejected";
             default:              return "status-badge";
         }

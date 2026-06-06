@@ -666,26 +666,28 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     private String getStatusLabel(String status) {
         if (status == null) return "Unknown";
         switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR": return "Needs Repair";
-            case "ENTRY_DONE":   return "Entry Done";
-            case "SUBMITTED":    return "Submitted";
-            case "PASSED":       return "Passed";
-            case "REJECTED":     return "Rejected";
-            case "PENDING":      return "Pending";
-            default:             return status;
+            case "NEEDS_REPAIR":  return "Needs MICR Repair";
+            case "ENTRY_PENDING": return "Pending Data Entry";
+            case "SUBMITTED":     return "Submitted";
+            case "REFER_BACK":    return "Referred Back";
+            case "PASSED":        return "Passed";
+            case "REJECTED":      return "Rejected";
+            case "PENDING":       return "Pending";
+            default:              return status;
         }
     }
 
     private String getStatusBadgeClass(String status) {
         if (status == null) return "badge b-grey";
         switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR": return "badge b-pend";
-            case "ENTRY_DONE":   return "badge b-info";
-            case "SUBMITTED":    return "badge b-info";
-            case "PASSED":       return "badge b-pass";
-            case "REJECTED":     return "badge b-fail";
-            case "PENDING":      return "badge b-pend";
-            default:             return "badge b-grey";
+            case "NEEDS_REPAIR":  return "badge b-pend";
+            case "ENTRY_PENDING": return "badge b-info";
+            case "SUBMITTED":     return "badge b-pass";
+            case "REFER_BACK":    return "badge b-warn";
+            case "PASSED":        return "badge b-pass";
+            case "REJECTED":      return "badge b-fail";
+            case "PENDING":       return "badge b-pend";
+            default:              return "badge b-grey";
         }
     }
 

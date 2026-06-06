@@ -12,7 +12,14 @@ import java.util.List;
 
 /**
  * File    : com/iispl/daoImpl/OutwardBatchDaoImpl.java
- * Purpose : Implementation of OutwardBatchDao using native SQL + Hibernate.
+ * Purpose : OutwardBatchDao implementation using native SQL + Hibernate.
+ *
+ * Batch Status Values:
+ *   NEEDS_REPAIR   → has MICR errors, waiting for MICR repair
+ *   ENTRY_PENDING  → MICR repair done (or no errors), ready for data entry
+ *   SUBMITTED      → data entry done, sent to checker queue
+ *   REFER_BACK     → checker referred batch back to maker
+ *   REJECTED       → batch rejected
  */
 public class OutwardBatchDaoImpl implements OutwardBatchDao {
 
@@ -28,13 +35,11 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             tx = session.beginTransaction();
             session.persist(batch);
             tx.commit();
-            System.out.println("OutwardBatchDao → Saved batch: "
-                    + batch.getBatchId());
+            System.out.println("OutwardBatchDao → Saved batch: " + batch.getBatchId());
             return batch;
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            System.err.println("OutwardBatchDao → save failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → save failed: " + e.getMessage());
             return null;
         } finally {
             session.close();
@@ -49,15 +54,13 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public OutwardBatch findByBatchId(String batchId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT * FROM outward_batch "
-                       + "WHERE batch_id = :batchId";
+            String sql = "SELECT * FROM outward_batch WHERE batch_id = :batchId";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
             q.setParameter("batchId", batchId);
             return q.uniqueResult();
         } catch (Exception e) {
-            System.err.println("OutwardBatchDao → findByBatchId failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → findByBatchId failed: " + e.getMessage());
             return null;
         } finally {
             session.close();
@@ -65,7 +68,7 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     }
 
     // ════════════════════════════════════════════════════
-    //  Find by maker (all batches for one user)
+    //  Find all batches for one maker
     // ════════════════════════════════════════════════════
 
     @Override
@@ -80,8 +83,7 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             q.setParameter("makerId", makerId);
             return q.list();
         } catch (Exception e) {
-            System.err.println("OutwardBatchDao → findByCreatedBy failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → findByCreatedBy failed: " + e.getMessage());
             return new ArrayList<>();
         } finally {
             session.close();
@@ -89,7 +91,7 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     }
 
     // ════════════════════════════════════════════════════
-    //  Update status
+    //  Update batch status
     // ════════════════════════════════════════════════════
 
     @Override
@@ -111,8 +113,7 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             return rows > 0;
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            System.err.println("OutwardBatchDao → updateStatus failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → updateStatus failed: " + e.getMessage());
             return false;
         } finally {
             session.close();
@@ -127,15 +128,13 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public boolean existsByBatchId(String batchId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT COUNT(*) FROM outward_batch "
-                       + "WHERE batch_id = :batchId";
+            String sql = "SELECT COUNT(*) FROM outward_batch WHERE batch_id = :batchId";
             NativeQuery<?> q = session.createNativeQuery(sql);
             q.setParameter("batchId", batchId);
             Number count = (Number) q.uniqueResult();
             return count != null && count.intValue() > 0;
         } catch (Exception e) {
-            System.err.println("OutwardBatchDao → existsByBatchId failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → existsByBatchId failed: " + e.getMessage());
             return false;
         } finally {
             session.close();
@@ -172,15 +171,13 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public int countBatchesToday(String datePrefix) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT COUNT(*) FROM outward_batch "
-                       + "WHERE batch_id LIKE :prefix";
+            String sql = "SELECT COUNT(*) FROM outward_batch WHERE batch_id LIKE :prefix";
             NativeQuery<?> q = session.createNativeQuery(sql);
             q.setParameter("prefix", datePrefix + "-%");
             Number count = (Number) q.uniqueResult();
             return count != null ? count.intValue() : 0;
         } catch (Exception e) {
-            System.err.println("OutwardBatchDao → countBatchesToday failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → countBatchesToday failed: " + e.getMessage());
             return 0;
         } finally {
             session.close();
@@ -188,7 +185,8 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     }
 
     // ════════════════════════════════════════════════════
-    //  Find batches needing MICR repair (sidebar access)
+    //  Find batches needing MICR repair
+    //  Returns NEEDS_REPAIR batches for the maker.
     // ════════════════════════════════════════════════════
 
     @Override
@@ -213,7 +211,14 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     }
 
     // ════════════════════════════════════════════════════
-    //  Find batches ready for account entry (sidebar access)
+    //  Find batches ready for account & amount data entry.
+    //
+    //  STATUS FIX:
+    //    OLD: status = 'ENTRY_DONE'  (confusing — sounds like entries are done)
+    //    NEW: status = 'ENTRY_PENDING' OR status = 'REFER_BACK'
+    //
+    //  ENTRY_PENDING = MICR repair done (or no errors), pending data entry
+    //  REFER_BACK    = checker referred back, maker must re-enter data
     // ════════════════════════════════════════════════════
 
     @Override
@@ -222,7 +227,7 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
         try {
             String sql = "SELECT * FROM outward_batch "
                        + "WHERE created_by = :makerId "
-                       + "AND status = 'ENTRY_DONE' "
+                       + "AND (status = 'ENTRY_PENDING' OR status = 'REFER_BACK') "
                        + "ORDER BY created_at DESC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
@@ -245,14 +250,12 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public List<OutwardBatch> findAll() {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT * FROM outward_batch "
-                       + "ORDER BY created_at DESC";
+            String sql = "SELECT * FROM outward_batch ORDER BY created_at DESC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
             return q.list();
         } catch (Exception e) {
-            System.err.println("OutwardBatchDao → findAll failed: "
-                    + e.getMessage());
+            System.err.println("OutwardBatchDao → findAll failed: " + e.getMessage());
             return new ArrayList<>();
         } finally {
             session.close();

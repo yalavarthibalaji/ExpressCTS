@@ -173,18 +173,18 @@
                                          style="width:200px"
                                          placeholder="🔍 Search batch ID..."
                                          instant="true"/>
-                                <listbox id="statusFilterBox"
-                                         sclass="fs"
-                                         style="width:160px"
-                                         mold="select">
-                                    <listitem label="All Status"      value=""/>
-                                    <listitem label="Needs Repair"    value="NEEDS_REPAIR"/>
-                                    <listitem label="Entry Done"      value="ENTRY_DONE"/>
-                                    <listitem label="Submitted"       value="SUBMITTED"/>
-                                    <listitem label="Passed"          value="PASSED"/>
-                                    <listitem label="Rejected"        value="REJECTED"/>
-                                    <listitem label="Referred Back"   value="REFERRED_BACK"/>
-                                </listbox>
+                               <listbox id="statusFilterBox"
+         sclass="fs"
+         style="width:175px"
+         mold="select">
+    <listitem label="All Status"          value=""/>
+    <listitem label="Needs MICR Repair"   value="NEEDS_REPAIR"/>
+    <listitem label="Pending Data Entry"  value="ENTRY_PENDING"/>
+    <listitem label="Referred Back"       value="REFER_BACK"/>
+    <listitem label="Submitted"           value="SUBMITTED"/>
+    <listitem label="Passed"              value="PASSED"/>
+    <listitem label="Rejected"            value="REJECTED"/>
+</listbox>
                             </div>
                         </div>
 

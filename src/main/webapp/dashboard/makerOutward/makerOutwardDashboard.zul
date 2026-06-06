@@ -196,19 +196,17 @@
 
                             <n:div class="od-filter-group">
                                 <n:label class="od-filter-label">Status</n:label>
-                                <combobox id="filterStatus"
-                                          sclass="od-filter-combo"
-                                          readonly="true"
-                                          width="160px"
-                                          placeholder="All statuses">
-                                    <comboitem label="All" value="ALL"/>
-                                    <comboitem label="Uploaded"      value="UPLOADED"/>
-                                    <comboitem label="Needs Repair"  value="NEEDS_REPAIR"/>
-                                    <comboitem label="Entry Pending" value="ENTRY_PENDING"/>
-                                    <comboitem label="Entry Done"    value="ENTRY_DONE"/>
-                                    <comboitem label="Submitted"     value="SUBMITTED"/>
-                                    <comboitem label="Rejected"      value="REJECTED"/>
-                                </combobox>
+                               <combobox id="filterStatus"
+          sclass="od-filter-combo"
+          readonly="true"
+          width="160px"
+          placeholder="All statuses">
+    <comboitem label="All"                value="ALL"/>
+    <comboitem label="Needs MICR Repair"  value="NEEDS_REPAIR"/>
+    <comboitem label="Pending Data Entry" value="ENTRY_DONE"/>
+    <comboitem label="Submitted"          value="SUBMITTED"/>
+    <comboitem label="Rejected"           value="REJECTED"/>
+</combobox>
                             </n:div>
 
                             <button sclass="od-filter-apply-btn" label="Apply" id="btnApplyFilter"/>

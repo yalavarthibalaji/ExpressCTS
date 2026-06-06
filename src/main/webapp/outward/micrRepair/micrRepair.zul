@@ -312,7 +312,8 @@
                                         <textbox id="chqNoBox"
                                                  sclass="fi mono"
                                                  maxlength="6"
-                                                 placeholder="6 digits"/>
+                                                 placeholder="6 digits"
+                                                  instant="true"/>
                                     </div>
                                 </div>
 
@@ -326,7 +327,8 @@
                                         <textbox id="cityCodeBox"
                                                  sclass="fi mono"
                                                  maxlength="3"
-                                                 placeholder="3 digits"/>
+                                                 placeholder="3 digits"
+                                                  instant="true"/>
                                     </div>
                                     <div sclass="fg">
                                         <n:label class="fg-lbl">
@@ -336,7 +338,8 @@
                                         <textbox id="bankCodeBox"
                                                  sclass="fi mono"
                                                  maxlength="3"
-                                                 placeholder="3 digits"/>
+                                                 placeholder="3 digits"
+                                                  instant="true"/>
                                     </div>
                                 </div>
 
@@ -350,7 +353,8 @@
                                         <textbox id="branchCodeBox"
                                                  sclass="fi mono"
                                                  maxlength="3"
-                                                 placeholder="3 digits"/>
+                                                 placeholder="3 digits"
+                                                  instant="true"/>
                                     </div>
                                     <div sclass="fg">
                                         <n:label class="fg-lbl">
@@ -360,7 +364,8 @@
                                         <textbox id="baseNumberBox"
                                                  sclass="fi mono"
                                                  maxlength="6"
-                                                 placeholder="6 digits"/>
+                                                 placeholder="6 digits"
+                                                  instant="true"/>
                                     </div>
                                 </div>
 
@@ -374,7 +379,8 @@
                                         <textbox id="transCodeBox"
                                                  sclass="fi mono"
                                                  maxlength="2"
-                                                 placeholder="2 digits"/>
+                                                 placeholder="2 digits"
+                                                  instant="true"/>
                                     </div>
                                 </div>
 

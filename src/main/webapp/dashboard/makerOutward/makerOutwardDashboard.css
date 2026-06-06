@@ -575,3 +575,53 @@
     .od-header-right  { display: none; }
     .od-filter-left   { flex-direction: column; align-items: flex-start; }
 }
+/* ════════════════════════════════════════════
+   STATUS BADGES — Recent Batches Table
+   Used by DashboardComposer.resolveStatusSclass()
+   ════════════════════════════════════════════ */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border: 1px solid;
+}
+
+/* NEEDS_REPAIR */
+.status-badge.status-pending  {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: var(--warning-b);
+}
+
+/* ENTRY_PENDING */
+.status-badge.status-received {
+    background: var(--info-bg);
+    color: var(--info);
+    border-color: var(--info-b);
+}
+
+/* SUBMITTED */
+.status-badge.status-approved {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success-b);
+}
+
+/* REJECTED */
+.status-badge.status-rejected {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger-b);
+}
+
+/* REFER_BACK ← NEW */
+.status-badge.status-refer {
+    background: #FFF3E0;
+    color: #E65100;
+    border-color: #FFCC80;
+}

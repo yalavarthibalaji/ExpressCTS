@@ -107,6 +107,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); colo
 .b-fail { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger-b); }
 .b-info { background: var(--info-bg);    color: var(--info);    border-color: var(--info-b); }
 .b-grey { background: #ECEFF1; color: #546E7A; border-color: #B0BEC5; }
+.b-warn { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
 
 /* ── Table ───────────────────────────────────────────── */
 .tbl-wrap { overflow-x: auto; background: #fff; }
