@@ -144,8 +144,8 @@ public class InwardCheque {
 
     // ── Getters and Setters ──
 
-    public Long getChequeId() { return Chequeid; }
-    public void setChequeId(Long id) { this.Chequeid = id; }
+    public Long getId() { return Chequeid; }
+    public void setId(Long id) { this.Chequeid = id; }
 
     public InwardBatch getBatch() { return batch; }
     public void setBatch(InwardBatch batch) { this.batch = batch; }

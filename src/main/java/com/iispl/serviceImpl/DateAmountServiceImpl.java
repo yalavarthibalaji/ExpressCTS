@@ -74,7 +74,7 @@ public class DateAmountServiceImpl implements DateAmountService {
 
     @Override
     public boolean saveRepairDateAndAmount(InwardCheque cheque) {
-        if (cheque == null || cheque.getChequeId() == null) {
+        if (cheque == null || cheque.getId() == null) {
             LOG.warning("saveRepairDateAndAmount: null cheque or chequeId");
             return false;
         }
@@ -82,14 +82,14 @@ public class DateAmountServiceImpl implements DateAmountService {
             int rows = dao.updateDateAndAmount(cheque);
             return rows == 1;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error saving date/amount for chequeId: " + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "Error saving date/amount for chequeId: " + cheque.getId(), e);
             return false;
         }
     }
 
     @Override
     public boolean savePayeeAndAccount(InwardCheque cheque) {
-        if (cheque == null || cheque.getChequeId() == null) {
+        if (cheque == null || cheque.getId() == null) {
             LOG.warning("savePayeeAndAccount: null cheque or chequeId");
             return false;
         }
@@ -97,7 +97,7 @@ public class DateAmountServiceImpl implements DateAmountService {
             int rows = dao.updatePayeeAndAccount(cheque);
             return rows == 1;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error saving payee/account for chequeId: " + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "Error saving payee/account for chequeId: " + cheque.getId(), e);
             return false;
         }
     }

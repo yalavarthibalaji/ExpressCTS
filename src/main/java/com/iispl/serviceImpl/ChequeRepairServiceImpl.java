@@ -68,7 +68,7 @@ public class ChequeRepairServiceImpl implements ChequeRepairService {
 
     @Override
     public boolean saveDateAmountRepair(InwardCheque cheque) {
-        if (cheque == null || cheque.getChequeId() == null) {
+        if (cheque == null || cheque.getId() == null) {
             LOG.warning("saveDateAmountRepair called with null cheque or id");
             return false;
         }
@@ -79,14 +79,14 @@ public class ChequeRepairServiceImpl implements ChequeRepairService {
             }
             return chequeRepairDao.updateDateAmount(cheque);
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error saving date/amount repair for id=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "Error saving date/amount repair for id=" + cheque.getId(), e);
             return false;
         }
     }
 
     @Override
     public boolean savePayeeAccountRepair(InwardCheque cheque) {
-        if (cheque == null || cheque.getChequeId() == null) {
+        if (cheque == null || cheque.getId() == null) {
             LOG.warning("savePayeeAccountRepair called with null cheque or id");
             return false;
         }
@@ -96,7 +96,7 @@ public class ChequeRepairServiceImpl implements ChequeRepairService {
             }
             return chequeRepairDao.updatePayeeAccount(cheque);
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error saving payee/account for id=" + cheque.getChequeId(), e);
+            LOG.log(Level.SEVERE, "Error saving payee/account for id=" + cheque.getId(), e);
             return false;
         }
     }
