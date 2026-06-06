@@ -31,6 +31,10 @@ public class HibernateUtil {
             cfg.setProperty("hibernate.connection.url", "jdbc:postgresql://localhost:5432/expressCTS");
             cfg.setProperty("hibernate.connection.username", "postgres");
             cfg.setProperty("hibernate.connection.password", "password");
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 
             // Hibernate settings
             cfg.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");

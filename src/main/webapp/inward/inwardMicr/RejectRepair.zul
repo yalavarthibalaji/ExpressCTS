@@ -36,63 +36,54 @@
                            value="OCR Reject &amp; Repair" />
                 </div>
 
-                <!-- ══ Wizard Bar ══════════════════════════════════════
-                     Each step circle is a clickable button.
-                     Active / completed = blue.  Pending = grey.
-                     Connectors: filled (blue) when left step is done.
-                     ════════════════════════════════════════════════════ -->
+                <!-- ══ Wizard Bar ══════════════════════════════════════ -->
                 <div sclass="wizard-bar">
 
-                    <!-- Step 1 — Active (blue, wrench icon) -->
+                    <!-- Step 1 — Active -->
                     <div sclass="wizard-step">
                         <button id="btnStep1"
-                        		label="1"
-                                sclass="step-circle-btn active" 
-                                tooltiptext="Step 1 — Reject &amp; Repair">     
-                        </button>
+                                label="1"
+                                sclass="step-circle-btn active"
+                                tooltiptext="Step 1 — Reject &amp; Repair" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num active" value = "Step"/>
+                            <label sclass="step-num active" value="Step" />
                             <label sclass="step-desc active" value="Reject &amp; Repair" />
                         </div>
                     </div>
 
-                    <!-- Connector 1 → 2  (grey — step 1 not yet complete) -->
+                    <!-- Connector 1 → 2 -->
                     <div sclass="step-connector" id="conn1" />
 
-                    <!-- Step 2 — Pending (grey, calendar icon) -->
+                    <!-- Step 2 — Pending -->
                     <div sclass="wizard-step">
                         <button id="btnStep2"
-                        		label="2"
+                                label="2"
                                 sclass="step-circle-btn disabled-step"
-                                tooltiptext="Step 2 — Date &amp; Amount">
-                        </button>
+                                tooltiptext="Step 2 — Date &amp; Amount" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num" id="lblStep2Num" value = "Step"/>
+                            <label sclass="step-num" id="lblStep2Num" value="Step" />
                             <label sclass="step-desc" id="lblStep2Desc" value="Date &amp; Amount" />
                         </div>
                     </div>
 
-                    <!-- Connector 2 → 3  (grey) -->
+                    <!-- Connector 2 → 3 -->
                     <div sclass="step-connector" id="conn2" />
 
-                    <!-- Step 3 — Pending (grey, person icon) -->
+                    <!-- Step 3 — Pending -->
                     <div sclass="wizard-step">
                         <button id="btnStep3"
-                        		label="3"
+                                label="3"
                                 sclass="step-circle-btn disabled-step"
-                                tooltiptext="Step 3 — Payee &amp; Account">
-                        </button>
+                                tooltiptext="Step 3 — Payee &amp; Account" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num" id="lblStep3Num" value = "Step"/>
+                            <label sclass="step-num" id="lblStep3Num" value="Step" />
                             <label sclass="step-desc" id="lblStep3Desc" value="Payee &amp; Account" />
                         </div>
                     </div>
 
                 </div><!-- /wizard-bar -->
 
-                <!-- ══ Empty State ══════════════════════════════════════
-                     Shown when no inward batches exist
-                     ══════════════════════════════════════════════════════ -->
+                <!-- ══ Empty State ══════════════════════════════════════ -->
                 <div sclass="content-panel" id="emptyStatePanel" visible="true">
                     <div sclass="empty-state">
                         <div sclass="empty-icon">&#x1F4CB;</div>
@@ -106,14 +97,13 @@
                     </div>
                 </div>
 
-                <!-- ══ Batch List View ══════════════════════════════════
-                     Shown when batches exist — Step 1 list
-                     ══════════════════════════════════════════════════════ -->
+                <!-- ══ Batch List View ══════════════════════════════════ -->
                 <div id="batchListPanel" visible="false">
 
                     <!-- Toolbar -->
                     <div sclass="content-panel">
                         <div sclass="list-toolbar">
+
                             <!-- Back button -->
                             <button sclass="btn-back"
                                     id="btnBackToBatches"
@@ -149,30 +139,33 @@
                             </div>
                         </div>
 
-                        <!-- Cheque table -->
+                        <!-- ══ Cheque Table ══════════════════════════════
+                             FIX: removed vflex="1" — it collapses to 0px
+                             inside a plain <div>. Use height instead.
+                        ════════════════════════════════════════════════ -->
                         <listbox id="chequeListbox"
                                  sclass="rr-listbox"
                                  emptyMessage="No cheques found."
-                                 vflex="1">
+                                 height="420px">
                             <listhead>
-                                <listheader label="#"
+                                <listheader label="Sno"
                                             width="50px"
-                                            align="center" />
+                                            align="center" sclass="cheque-table-header"/>
                                 <listheader label="CHEQUE NO."
-                                            width="130px" />
+                                            width="130px" sclass="cheque-table-header"/>
                                 <listheader label="PRESENTING BANK"
-                                            hflex="1" />
+                                            hflex="1" sclass="cheque-table-header"/>
                                 <listheader label="MICR CODE"
-                                            width="150px" />
+                                            width="150px" sclass="cheque-table-header"/>
                                 <listheader label="AMOUNT"
                                             width="140px"
-                                            align="right" />
+                                            align="right" sclass="cheque-table-header"/>
                                 <listheader label="REPAIR STATUS"
                                             width="150px"
-                                            align="center" />
+                                            align="center" sclass="cheque-table-header"/>
                                 <listheader label="ACTION"
                                             width="110px"
-                                            align="center" />
+                                            align="center" sclass="cheque-table-header"/>
                             </listhead>
                             <!-- Rows rendered by RejectRepairComposer -->
                         </listbox>
@@ -189,192 +182,122 @@
                                     id="btnNextPage"
                                     label="Next →" />
                         </div>
+
+                    </div><!-- /content-panel -->
+
+                    <!-- ══ Cheque Detail Panel ══════════════════════════ -->
+                    <div id="chequeDetailPanel"
+                         sclass="cheque-detail-panel"
+                         visible="false">
+
+                        <!-- Panel header -->
+                        <div sclass="detail-header">
+                            <label id="lblDetailChequeNo"
+                                   sclass="detail-title"
+                                   value="CHQ: —" />
+                            <button id="btnCloseDetail"
+                                    sclass="btn-close-detail"
+                                    label="✕ Close" />
+                        </div>
+
+                        <!-- MICR Information -->
+                        <div sclass="detail-section">
+                            <label sclass="section-heading" value="MICR Information" />
+                            <div sclass="detail-grid">
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="MICR Code (Raw)" />
+                                    <label id="lblMicrCodeRaw" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="MICR Code (Corrected)" />
+                                    <label id="lblMicrCodeProcessed" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Bank Code" />
+                                    <label id="lblBankCode" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Branch Code" />
+                                    <label id="lblBranchCode" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Transaction Code" />
+                                    <label id="lblTransactionCode" sclass="field-value" value="—" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Amount & Date -->
+                        <div sclass="detail-section">
+                            <label sclass="section-heading" value="Amount &amp; Date" />
+                            <div sclass="detail-grid">
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Amount (Figures)" />
+                                    <label id="lblAmountFigures"
+                                           sclass="field-value highlight-amount"
+                                           value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Amount (Words)" />
+                                    <label id="lblAmountWords" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Cheque Date" />
+                                    <label id="lblChequeDate" sclass="field-value" value="—" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bank & Account -->
+                        <div sclass="detail-section">
+                            <label sclass="section-heading" value="Bank &amp; Account" />
+                            <div sclass="detail-grid">
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Presenting Bank" />
+                                    <label id="lblPresentingBank" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Instrument Type" />
+                                    <label id="lblInstrumentType" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Drawee Account No." />
+                                    <label id="lblAccountNo" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Drawee Bank" />
+                                    <label id="lblDraweeBank" sclass="field-value" value="—" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payee & Status -->
+                        <div sclass="detail-section">
+                            <label sclass="section-heading" value="Payee &amp; Status" />
+                            <div sclass="detail-grid">
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Payee Name" />
+                                    <label id="lblPayeeName" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Batch ID" />
+                                    <label id="lblDetailBatchId" sclass="field-value" value="—" />
+                                </div>
+                                <div sclass="detail-field">
+                                    <label sclass="field-label" value="Repair Status" />
+                                    <label id="lblDetailRepairStatus" sclass="field-value" value="—" />
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /chequeDetailPanel -->
+
+                    <!-- Bottom Action -->
+                    <div sclass="action-bar">
+                        <button sclass="btn-next-step"
+                                id="btnNextStep2"
+                                label="Next → Date &amp; Amount Repair" />
                     </div>
-
-                    <!-- ══════════════════════════════════════════════════════════
-     CHEQUE DETAIL PANEL
-     Appears below table when a row is clicked.
-     ══════════════════════════════════════════════════════════ -->
-<div id="chequeDetailPanel"
-     sclass="cheque-detail-panel"
-     visible="false">
-
-    <!-- Panel header -->
-    <div sclass="detail-header">
-        <label id="lblDetailChequeNo"
-               sclass="detail-title"
-               value="CHQ: —" />
-
-        <button id="btnCloseDetail"
-                sclass="btn-close-detail"
-                label="✕ Close" />
-    </div>
-
-    <!-- MICR Information -->
-    <div sclass="detail-section">
-        <label sclass="section-heading" value="MICR Information" />
-
-        <div sclass="detail-grid">
-
-            <div sclass="detail-field">
-                <label sclass="field-label" value="MICR Code (Raw)" />
-                <label id="lblMicrCodeRaw"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label" value="MICR Code (Corrected)" />
-                <label id="lblMicrCodeProcessed"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label" value="Bank Code" />
-                <label id="lblBankCode"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label" value="Branch Code" />
-                <label id="lblBranchCode"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label" value="Transaction Code" />
-                <label id="lblTransactionCode"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Amount & Date -->
-    <div sclass="detail-section">
-        <label sclass="section-heading"
-               value="Amount &amp; Date" />
-
-        <div sclass="detail-grid">
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Amount (Figures)" />
-                <label id="lblAmountFigures"
-                       sclass="field-value highlight-amount"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Amount (Words)" />
-                <label id="lblAmountWords"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Cheque Date" />
-                <label id="lblChequeDate"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Bank & Account -->
-    <div sclass="detail-section">
-        <label sclass="section-heading"
-               value="Bank &amp; Account" />
-
-        <div sclass="detail-grid">
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Presenting Bank" />
-                <label id="lblPresentingBank"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Instrument Type" />
-                <label id="lblInstrumentType"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Drawee Account No." />
-                <label id="lblAccountNo"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Drawee Bank" />
-                <label id="lblDraweeBank"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Payee & Status -->
-    <div sclass="detail-section">
-        <label sclass="section-heading"
-               value="Payee &amp; Status" />
-
-        <div sclass="detail-grid">
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Payee Name" />
-                <label id="lblPayeeName"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Batch ID" />
-                <label id="lblDetailBatchId"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-            <div sclass="detail-field">
-                <label sclass="field-label"
-                       value="Repair Status" />
-                <label id="lblDetailRepairStatus"
-                       sclass="field-value"
-                       value="—" />
-            </div>
-
-        </div>
-    </div>
-
-</div>
-
-<!-- Bottom Action -->
-<div sclass="action-bar">
-
-    <button sclass="btn-next-step"
-            id="btnNextStep2"
-            label="Next → Date &amp; Amount Repair" />
-
-</div>                    
-
 
                 </div><!-- /batchListPanel -->
 
