@@ -213,12 +213,13 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
             int returnedCount = countActions(batch, "RETURNED");
             String clearedBy  = getLastCheckerName(batch);
 
-            // updatedAt can be null — fall back to createdAt
+            // updatedAt can be null — fall back to createdAt.
+            // Show date only (dd/MM/yyyy) — no time needed.
             String clearedAt = "—";
             if (batch.getUpdatedAt() != null) {
-                clearedAt = batch.getUpdatedAt().toString();
+                clearedAt = formatDateOnly(batch.getUpdatedAt().toLocalDate().toString());
             } else if (batch.getCreatedAt() != null) {
-                clearedAt = batch.getCreatedAt().toString();
+                clearedAt = formatDateOnly(batch.getCreatedAt().toLocalDate().toString());
             }
 
             // Cell 1 — Batch ID
@@ -301,8 +302,9 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
                     ? lastAction.getReasonText() : "—";
             String returnedBy   = (lastAction != null && lastAction.getChecker() != null)
                     ? lastAction.getChecker().getUserLoginId() : "—";
+            // Show date only (dd/MM/yyyy) — no time needed
             String returnTime   = (lastAction != null && lastAction.getActionedAt() != null)
-                    ? lastAction.getActionedAt().toString() : "—";
+                    ? formatDateOnly(lastAction.getActionedAt().toLocalDate().toString()) : "—";
             String bankName     = (cheque.getPresentingBankName() != null)
                     ? cheque.getPresentingBankName() : "—";
             String amount       = (cheque.getAmount() != null)
@@ -434,5 +436,18 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
         List<InwardCheckerAction> actions = cheque.getCheckerActions();
         if (actions == null || actions.isEmpty()) return null;
         return actions.get(actions.size() - 1);
+    }
+
+    /**
+     * Converts ISO date string "yyyy-MM-dd" → display format "dd/MM/yyyy".
+     * Ensures only the date part is shown — no time component ever appears.
+     */
+    private String formatDateOnly(String isoDate) {
+        if (isoDate == null || isoDate.length() < 10) return isoDate != null ? isoDate : "—";
+        try {
+            String[] parts = isoDate.split("-");
+            if (parts.length == 3) return parts[2] + "/" + parts[1] + "/" + parts[0];
+        } catch (Exception ignored) {}
+        return isoDate;
     }
 }

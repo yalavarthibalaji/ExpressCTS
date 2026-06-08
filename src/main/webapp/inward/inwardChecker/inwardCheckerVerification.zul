@@ -102,12 +102,14 @@
                                     <datebox id="dtFromCleared"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
+                                             timeZone="Asia/Kolkata"
                                              cols="12"
                                              placeholder="From Date"
                                              onChange="onSearchCleared()" />
                                     <datebox id="dtToCleared"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
+                                             timeZone="Asia/Kolkata"
                                              cols="12"
                                              placeholder="To Date"
                                              onChange="onSearchCleared()" />
@@ -143,12 +145,14 @@
                                     <datebox id="dtFromFailed"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
+                                             timeZone="Asia/Kolkata"
                                              cols="12"
                                              placeholder="From Date"
                                              onChange="onSearchFailed()" />
                                     <datebox id="dtToFailed"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
+                                             timeZone="Asia/Kolkata"
                                              cols="12"
                                              placeholder="To Date"
                                              onChange="onSearchFailed()" />
@@ -172,7 +176,7 @@
                                         <listheader label="PRESENTING BANK" hflex="1"    />
                                         <listheader label="RETURN REASON"   width="150px" />
                                         <listheader label="RETURNED BY"     width="120px" />
-                                        <listheader label="TIME"            width="130px" />
+                                        <listheader label="DATE"            width="130px" />
                                     </listhead>
                                 </listbox>
 
