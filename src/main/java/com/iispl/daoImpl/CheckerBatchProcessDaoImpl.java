@@ -14,110 +14,86 @@ import com.iispl.util.HibernateUtil;
 
 public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
 
-	@Override
-	public InwardBatch findBatchWithCheques(String batchId) {
+    @Override
+    public InwardBatch findBatchWithCheques(String batchId) {
+        Session session = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            Query<InwardBatch> q = session.createQuery(
+                "SELECT DISTINCT b FROM InwardBatch b " +
+                "LEFT JOIN FETCH b.cheques " +
+                "WHERE b.batchId = :batchId",
+                InwardBatch.class
+            );
+            q.setParameter("batchId", batchId);
+            return q.uniqueResult();
+        } catch (Exception e) {
+            System.err.println("findBatchWithCheques error: " + e.getMessage());
+            return null;
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
 
-		Session session = null;
-		InwardBatch result = null;
+    @Override
+    public void saveCheckerActions(List<InwardCheckerAction> actions) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
 
-		try {
-			session = HibernateUtil.getSessionFactory().openSession();
-			String hql = "SELECT DISTINCT b FROM InwardBatch b " + "LEFT JOIN FETCH b.cheques "
-					+ "WHERE b.batchId = :batchId";
+            for (InwardCheckerAction action : actions) {
+                session.persist(action);
 
-			Query<InwardBatch> query = session.createQuery(hql, InwardBatch.class);
-			query.setParameter("batchId", batchId);
+                InwardCheque cheque = action.getInwardCheque();
+                if (cheque != null) {
+                    cheque.setStatus(mapActionToStatus(action.getAction()));
+                    session.merge(cheque);
+                }
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            System.err.println("saveCheckerActions error: " + e.getMessage());
+            throw new RuntimeException("Failed to save checker actions.", e);
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
 
-			result = query.uniqueResult();
-		} catch (Exception e) {
-			System.err.println("Error fetching batch for processing: " + e.getMessage());
-			e.printStackTrace();
-		} finally {
-			if (session != null && session.isOpen()) {
-				session.close();
-			}
-		}
-		return result;
-	}
+    @Override
+    public void updateBatchStatus(InwardBatch batch) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
 
-	@Override
-	public void saveCheckerActions(List<InwardCheckerAction> actions) {
+            // FIX: Use "Verified" (InwardStatus enum value) not "CLEARED"
+            // After checker submits → Verified
+            // This makes batch appear in Reports page as "Pending (debit eligible)"
+            batch.setStatus("Verified");
+            session.merge(batch);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            System.err.println("updateBatchStatus error: " + e.getMessage());
+            throw new RuntimeException("Failed to update batch status.", e);
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
 
-		Session session = null;
-		Transaction tx = null;
-
-		try {
-			session = HibernateUtil.getSessionFactory().openSession();
-			tx = session.beginTransaction();
-
-			for (InwardCheckerAction action : actions) {
-				session.persist(action);
-
-				InwardCheque cheque = action.getInwardCheque();
-				if (cheque != null) {
-					cheque.setStatus(mapActionToStatus(action.getAction()));
-					session.merge(cheque);
-				}
-			}
-			tx.commit();
-		} catch (Exception e) {
-			if (tx != null && tx.isActive()) {
-				tx.rollback();
-			}
-			System.err.println("Error saving checker actions: " + e.getMessage());
-			e.printStackTrace();
-			throw new RuntimeException("Failed to save checker actions. Transaction rolled back.", e);
-		} finally {
-			if (session != null && session.isOpen()) {
-				session.close();
-			}
-		}
-	}
-
-	@Override
-	public void updateBatchStatus(InwardBatch batch) {
-
-		Session session = null;
-		Transaction tx = null;
-
-		try {
-			session = HibernateUtil.getSessionFactory().openSession();
-			tx = session.beginTransaction();
-
-			batch.setStatus("CLEARED");
-			session.merge(batch);
-			tx.commit();
-		} catch (Exception e) {
-			if (tx != null && tx.isActive()) {
-				tx.rollback();
-			}
-			System.err.println("Error updating batch status: " + e.getMessage());
-			e.printStackTrace();
-			throw new RuntimeException("Failed to update branch status. Transaction rolled back.", e);
-		} finally {
-			if (session != null && session.isOpen()) {
-				session.close();
-			}
-		}
-	}
-
-	private String mapActionToStatus(String action) {
-		if (action == null)
-			return "RECEIVED";
-
-		switch (action.toUpperCase()) {
-		case "ACCEPTED":
-			return "ACCEPTED";
-
-		case "RETURNED":
-			return "RETURNED";
-
-		case "SEND_BACK":
-			return "SEND_BACK";
-
-		default:
-			return "RECEIVED";
-		}
-	}
-
+    // Maps checker action → inward_cheque.status
+    // These match InwardCheque.status column values
+    private String mapActionToStatus(String action) {
+        if (action == null) return "RECEIVED";
+        switch (action.toUpperCase()) {
+            case "ACCEPTED":  return "ACCEPTED";
+            case "RETURNED":  return "RETURNED";
+            case "SEND_BACK": return "SEND_BACK";
+            default:          return "RECEIVED";
+        }
+    }
 }

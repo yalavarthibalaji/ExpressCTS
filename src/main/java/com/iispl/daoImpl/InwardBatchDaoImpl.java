@@ -47,19 +47,16 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
     public List<InwardBatch> findPendingCheckerBatches() {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            NativeQuery<InwardBatch> q = session.createNativeQuery(
-                "SELECT * FROM inward_batch " +
-                "WHERE status = 'MakerVerified' " +
-                "ORDER BY created_at ASC",
+            // FIX: MakerVerified is the correct status when maker sends to checker
+            return session.createNativeQuery(
+                "SELECT * FROM inward_batch WHERE status = 'MakerVerified' ORDER BY created_at ASC",
                 InwardBatch.class
-            );
-            return q.list();
+            ).list();
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();
         } finally {
             session.close();
-
         }
     }
 
@@ -113,9 +110,9 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
     public int countClearedBatches() {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
+            // FIX: Verified = checker submitted, CBS_Processed = debit generated
             Number result = (Number) session.createNativeQuery(
-                "SELECT COUNT(*) FROM inward_batch " +
-                "WHERE status IN ('CBS_Processed', 'Verified', 'Rejected')"
+                "SELECT COUNT(*) FROM inward_batch WHERE status IN ('Verified','CBS_Processed')"
             ).uniqueResult();
             return result != null ? result.intValue() : 0;
         } catch (Exception e) {
