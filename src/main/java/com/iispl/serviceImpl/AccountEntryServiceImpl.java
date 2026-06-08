@@ -71,6 +71,11 @@ public class AccountEntryServiceImpl implements AccountEntryService {
             payeeName     != null ? payeeName.trim()     : "");
 
         if (ok) {
+            // Clear referral if this cheque was sent by Checker (REFER_BACK).
+            // Safe to call unconditionally — DAO is a no-op when
+            // referred_to_module is already NULL (normal flow).
+            chequeDao.clearReferral(chequeId, "ENTRY_DONE");
+
             System.out.println("AccountEntryService → Entry saved. "
                     + "chequeId=" + chequeId);
         }
@@ -83,11 +88,18 @@ public class AccountEntryServiceImpl implements AccountEntryService {
                                   String remarks,
                                   Long   makerId) {
         if (chequeId == null || makerId == null) return false;
-        return chequeDao.rejectWithReason(
+        boolean ok = chequeDao.rejectWithReason(
             chequeId,
             reasonCode != null ? reasonCode.trim() : "",
             remarks    != null ? remarks.trim()    : "",
             makerId);
+
+        if (ok) {
+            // Clear referral if this rejection happened on a CHECKER_REFERRED
+            // cheque (REFER_BACK batch flow). No-op otherwise.
+            chequeDao.clearReferral(chequeId, "REJECTED");
+        }
+        return ok;
     }
 
     @Override

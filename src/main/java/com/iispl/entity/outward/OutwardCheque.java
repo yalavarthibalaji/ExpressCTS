@@ -99,6 +99,15 @@ public class OutwardCheque {
     @Column(name = "rejected_reason_code", length = 5)
     private String rejectedReasonCode;
     
+    /**
+     * Which Maker module should fix this cheque after Checker sent it back.
+     * Values: 'MICR_REPAIR', 'DATA_ENTRY', or null (not currently referred).
+     * Set by Checker when sending the cheque to Maker.
+     * Cleared by Maker after fixing the issue.
+     */
+    @Column(name = "referred_to_module", length = 20)
+    private String referredToModule;
+    
     @Column(name = "is_micr_error", nullable = false)
     private boolean isMicrError = false;
 
@@ -229,4 +238,7 @@ public class OutwardCheque {
 
     public List<OutwardCheckerAction> getCheckerActions() { return checkerActions; }
     public void setCheckerActions(List<OutwardCheckerAction> checkerActions) { this.checkerActions = checkerActions; }
+    
+    public String getReferredToModule() { return referredToModule; }
+    public void setReferredToModule(String referredToModule) { this.referredToModule = referredToModule; }
 }

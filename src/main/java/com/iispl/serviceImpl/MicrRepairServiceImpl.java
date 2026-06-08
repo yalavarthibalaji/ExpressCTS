@@ -170,6 +170,14 @@ public class MicrRepairServiceImpl implements MicrRepairService {
         saveAuditLog(chequeId, cityCode, bankCode, branchCode,
                      baseNumber, transCode, correctedMicr, remarks, makerId);
 
+        // ── Step 6: Clear referral if this cheque was sent by Checker ──
+        // Safe to call unconditionally — DAO method only updates when
+        // referred_to_module IS NOT NULL.
+        // For REFER_BACK flow:  status moves CHECKER_REFERRED → ENTRY_DONE
+        //                       and referred_to_module is cleared.
+        // For normal flow    :  no-op (referred_to_module was already NULL).
+        chequeDao.clearReferral(chequeId, "ENTRY_DONE");
+
         System.out.println("MicrRepairService → Repair saved. "
                 + "chequeId=" + chequeId
                 + " | correctedMicr=" + correctedMicr);
@@ -209,6 +217,11 @@ public class MicrRepairServiceImpl implements MicrRepairService {
                 makerId);
 
         if (ok) {
+            // Clear referral pointer in case this rejection happened on a
+            // CHECKER_REFERRED cheque (REFER_BACK batch flow). DAO is a
+            // no-op when referred_to_module is already NULL.
+            chequeDao.clearReferral(chequeId, "REJECTED");
+
             System.out.println("MicrRepairService → Cheque id=" + chequeId
                     + " rejected. Reason=" + reasonCode);
         }

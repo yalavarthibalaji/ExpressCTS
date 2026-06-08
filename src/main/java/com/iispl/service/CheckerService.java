@@ -130,6 +130,17 @@ public interface CheckerService {
      * @param batchDbId  DB primary key of the outward_batch row
      * @return ordered list of OutwardCheque, never null (empty list if none)
      */
+    
+    /**
+     * Inspects all cheque statuses in the batch and sets the final batch status:
+     *   - Any cheque CHECKER_REFERRED → batch = REFER_BACK
+     *   - Otherwise                   → batch = CHECKER_APPROVED
+     *
+     * Called by the composer immediately after the last cheque is actioned.
+     *
+     * @return the final status that was applied, or null on error
+     */
+    String finalizeBatchIfDone(Long batchDbId, Long checkerId);
     List<OutwardCheque> getChequesForBatch(Long batchDbId);
 
     // ════════════════════════════════════════════════════════════════════════
@@ -238,4 +249,33 @@ public interface CheckerService {
      * @return true if count of ENTRY_DONE cheques in the batch is zero
      */
     boolean isAllActioned(Long batchDbId);
+    
+    
+    /**
+     * Sends a cheque back to the Maker for correction in a specific module.
+     * Renamed in UI as "Send to Maker" — the underlying status code stays
+     * 'CHECKER_REFERRED' so existing reports and counts continue to work.
+     *
+     * Side effects:
+     *   - Cheque.status            → CHECKER_REFERRED
+     *   - Cheque.referredToModule  → 'MICR_REPAIR' OR 'DATA_ENTRY'
+     *   - Audit row in outward_checker_actions with action='REFER'
+     *
+     * Batch status change is handled separately in finalizeBatchIfDone()
+     * which is called when the last cheque in the batch is actioned.
+     *
+     * @param chequeId       cheque primary key
+     * @param reasonCode     NPCI refer-reason code (01..20)
+     * @param referToModule  'MICR_REPAIR' OR 'DATA_ENTRY' (REQUIRED)
+     * @param remarks        optional free text for the Maker
+     * @param checkerId      currently logged-in checker user id
+     * @param batchDbId      outward_batch primary key
+     * @return true on success
+     */
+    boolean referCheque(Long chequeId,
+                        String reasonCode,
+                        String referToModule,
+                        String remarks,
+                        Long checkerId,
+                        Long batchDbId);
 }

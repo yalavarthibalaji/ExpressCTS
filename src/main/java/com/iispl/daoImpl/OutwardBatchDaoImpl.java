@@ -194,14 +194,32 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public List<OutwardBatch> findNeedsRepairByMaker(Long makerId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT * FROM outward_batch "
-                       + "WHERE created_by = :makerId "
-                       + "AND status = 'NEEDS_REPAIR' "
-                       + "ORDER BY created_at DESC";
+            // Returns batches the maker should see in the MICR Repair module:
+            //   (a) NEEDS_REPAIR batches (first-time MICR errors)
+            //   (b) REFER_BACK batches with at least one cheque referred to MICR_REPAIR
+            String sql = "SELECT DISTINCT b.* FROM outward_batch b "
+                       + "LEFT JOIN outward_cheque c ON c.batch_id = b.id "
+                       + "WHERE b.created_by = :makerId "
+                       + "  AND ( "
+                       + "        b.status = 'NEEDS_REPAIR' "
+                       + "     OR (b.status = 'REFER_BACK' "
+                       + "         AND c.status = 'CHECKER_REFERRED' "
+                       + "         AND c.referred_to_module = 'MICR_REPAIR') "
+                       + "      ) "
+                       + "ORDER BY b.created_at DESC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
             q.setParameter("makerId", makerId);
-            return q.list();
+
+            List<OutwardBatch> results = q.list();
+            // Initialize lazy User proxies before session closes (LazyInit fix)
+            for (OutwardBatch b : results) {
+                if (b.getCreatedBy()   != null) Hibernate.initialize(b.getCreatedBy());
+                if (b.getSubmittedBy() != null) Hibernate.initialize(b.getSubmittedBy());
+                if (b.getVerifiedBy()  != null) Hibernate.initialize(b.getVerifiedBy());
+            }
+            System.out.println("OutwardBatchDao → findNeedsRepairByMaker: " + results.size());
+            return results;
         } catch (Exception e) {
             System.err.println("OutwardBatchDao → findNeedsRepairByMaker failed: "
                     + e.getMessage());
@@ -210,7 +228,6 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
-
     // ════════════════════════════════════════════════════
     //  Find batches ready for account & amount data entry.
     //
@@ -226,14 +243,32 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public List<OutwardBatch> findEntryReadyByMaker(Long makerId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT * FROM outward_batch "
-                       + "WHERE created_by = :makerId "
-                       + "AND (status = 'ENTRY_PENDING' OR status = 'REFER_BACK') "
-                       + "ORDER BY created_at DESC";
+            // Returns batches the maker should see in the Account Entry module:
+            //   (a) ENTRY_PENDING batches (MICR done, ready for data entry)
+            //   (b) REFER_BACK batches with at least one cheque referred to DATA_ENTRY
+            //       (REFER_BACK batches with ONLY MICR referrals are NOT shown here)
+            String sql = "SELECT DISTINCT b.* FROM outward_batch b "
+                       + "LEFT JOIN outward_cheque c ON c.batch_id = b.id "
+                       + "WHERE b.created_by = :makerId "
+                       + "  AND ( "
+                       + "        b.status = 'ENTRY_PENDING' "
+                       + "     OR (b.status = 'REFER_BACK' "
+                       + "         AND c.status = 'CHECKER_REFERRED' "
+                       + "         AND c.referred_to_module = 'DATA_ENTRY') "
+                       + "      ) "
+                       + "ORDER BY b.created_at DESC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
             q.setParameter("makerId", makerId);
-            return q.list();
+
+            List<OutwardBatch> results = q.list();
+            for (OutwardBatch b : results) {
+                if (b.getCreatedBy()   != null) Hibernate.initialize(b.getCreatedBy());
+                if (b.getSubmittedBy() != null) Hibernate.initialize(b.getSubmittedBy());
+                if (b.getVerifiedBy()  != null) Hibernate.initialize(b.getVerifiedBy());
+            }
+            System.out.println("OutwardBatchDao → findEntryReadyByMaker: " + results.size());
+            return results;
         } catch (Exception e) {
             System.err.println("OutwardBatchDao → findEntryReadyByMaker failed: "
                     + e.getMessage());

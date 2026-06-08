@@ -679,11 +679,24 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         pendingList.remove(currentIndex);
 
         if (entryService.isAllEntriesDone(currentBatch.getId())) {
-            entryService.submitBatch(currentBatch.getId());
-            Clients.showNotification(
-                "All entries done! Batch " + batchId
-                + " submitted to Checker queue.",
-                "info", null, "top_center", 4000);
+            // Auto-submit only for the NORMAL flow (ENTRY_PENDING batches).
+            // For REFER_BACK batches, the maker manually re-submits from
+            // View Batches so they explicitly confirm the fix.
+            if (!"REFER_BACK".equals(currentBatch.getStatus())) {
+                entryService.submitBatch(currentBatch.getId());
+                Clients.showNotification(
+                    "All entries done! Batch " + batchId
+                    + " submitted to Checker queue.",
+                    "info", null, "top_center", 4000);
+            } else {
+                Clients.showNotification(
+                    "All referred data-entry cheques fixed. Go to View Batches "
+                  + "to re-submit this batch to the Checker.",
+                    "info", null, "top_center", 4000);
+                System.out.println("AccountEntryComposer → REFER_BACK batch "
+                    + currentBatch.getBatchId()
+                    + " — all data-entry referrals fixed, awaiting maker re-submit.");
+            }
             showBatchSubmittedState();
             return;
         }
@@ -755,7 +768,15 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         pendingList.remove(currentIndex);
 
         if (entryService.isAllEntriesDone(currentBatch.getId())) {
-            entryService.submitBatch(currentBatch.getId());
+            // Auto-submit only for the NORMAL flow.
+            // For REFER_BACK batches, the maker manually re-submits later.
+            if (!"REFER_BACK".equals(currentBatch.getStatus())) {
+                entryService.submitBatch(currentBatch.getId());
+            } else {
+                System.out.println("AccountEntryComposer → REFER_BACK batch "
+                    + currentBatch.getBatchId()
+                    + " — all entries resolved, awaiting maker re-submit.");
+            }
             showBatchSubmittedState();
             return;
         }

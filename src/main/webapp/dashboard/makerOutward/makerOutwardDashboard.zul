@@ -262,4 +262,77 @@
     </div>
 
 </div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODULE PICKER POPUP
+     Shown when maker clicks a REFER_BACK batch with cheques
+     pending fix in BOTH MICR Repair and Data Entry modules.
+═══════════════════════════════════════════════════════ -->
+<div id="modulePickerModal" sclass="modal-ov">
+    <div sclass="modal" style="width:560px">
+
+        <div sclass="modal-hdr">
+            <div sclass="modal-title">📋 Choose Module to Fix First</div>
+            <button id="modulePickerCloseBtn" sclass="modal-x">✕</button>
+        </div>
+
+        <div sclass="modal-body">
+
+            <div sclass="note info mb12">
+                <n:span>ℹ</n:span>
+                <n:span>
+                    Batch
+                    <n:b><label id="pickerBatchId" value=""/></n:b>
+                    has cheques to fix in <n:b>both modules</n:b>.
+                    Pick which one you want to work on now —
+                    you can come back to the other one afterwards.
+                </n:span>
+            </div>
+
+            <div sclass="picker-grid">
+
+                <!-- MICR Repair card -->
+                <div sclass="picker-card">
+                    <div sclass="picker-icon picker-icon-micr">M</div>
+                    <div sclass="picker-card-body">
+                        <div sclass="picker-title">MICR Repair</div>
+                        <div sclass="picker-desc">
+                            Fix MICR code mismatches identified by the checker.
+                        </div>
+                        <div sclass="picker-count">
+                            <label id="pickerMicrCount" value="0"/> cheque(s) to fix
+                        </div>
+                    </div>
+                    <button id="pickerGoMicrBtn"
+                            sclass="btn bp btn-block"
+                            label="Fix MICR Issues →"/>
+                </div>
+
+                <!-- Data Entry card -->
+                <div sclass="picker-card">
+                    <div sclass="picker-icon picker-icon-data">D</div>
+                    <div sclass="picker-card-body">
+                        <div sclass="picker-title">Data Entry</div>
+                        <div sclass="picker-desc">
+                            Re-enter the account number, amount, or other
+                            data fields flagged by the checker.
+                        </div>
+                        <div sclass="picker-count">
+                            <label id="pickerDataCount" value="0"/> cheque(s) to fix
+                        </div>
+                    </div>
+                    <button id="pickerGoDataBtn"
+                            sclass="btn bp btn-block"
+                            label="Fix Data Entry Issues →"/>
+                </div>
+
+            </div>
+        </div>
+
+        <div sclass="modal-foot">
+            <button id="pickerCancelBtn" sclass="btn bo" label="Cancel"/>
+        </div>
+
+    </div>
+</div>
 </zk>

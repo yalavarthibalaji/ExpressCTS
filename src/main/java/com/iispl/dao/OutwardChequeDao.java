@@ -113,4 +113,49 @@ public interface OutwardChequeDao {
      * Used in: CheckerServiceImpl.isAllChequesActioned()
      */
     int countPendingCheckerActions(Long batchDbId);
+    
+    
+    /**
+     * Marks cheque CHECKER_REFERRED AND saves the maker module that should fix it.
+     * Called by Checker → Send to Maker action.
+     *
+     * @param chequeId       cheque primary key
+     * @param referToModule  'MICR_REPAIR' or 'DATA_ENTRY'
+     * @return true if 1 row updated
+     */
+    boolean markReferredWithModule(Long chequeId, String referToModule);
+
+    /**
+     * Clears the referral on a cheque after the Maker has fixed it.
+     * Sets status back to the given recovery status and clears referred_to_module.
+     *
+     * @param chequeId        cheque primary key
+     * @param recoveryStatus  the status to set after the fix (e.g. 'ENTRY_DONE')
+     * @return true if 1 row updated
+     */
+    boolean clearReferral(Long chequeId, String recoveryStatus);
+
+    /**
+     * Count of cheques in a batch currently referred to a specific module.
+     *
+     * @param batchDbId  outward_batch primary key
+     * @param module     'MICR_REPAIR' or 'DATA_ENTRY'
+     * @return number of cheques with status='CHECKER_REFERRED' AND referred_to_module=module
+     */
+    int countReferredByModule(Long batchDbId, String module);
+
+    /**
+     * Returns the list of cheques in a batch currently referred to the given module.
+     * Used by MICR Repair / Account Entry to show ONLY the cheques the maker
+     * needs to fix from a REFER_BACK batch.
+     */
+    java.util.List<com.iispl.entity.outward.OutwardCheque>
+            findReferredByModule(Long batchDbId, String module);
+    
+    /**
+     * Returns the count of cheques in a batch whose referral has NOT
+     * been cleared (referred_to_module IS NOT NULL).
+     * Used to gate the "Re-submit to Checker" button.
+     */
+    int countActiveReferrals(Long batchDbId);
 }

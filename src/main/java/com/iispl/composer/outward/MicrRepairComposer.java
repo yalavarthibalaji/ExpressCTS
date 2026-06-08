@@ -676,10 +676,23 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         repairList.remove(currentIndex);
 
         if (micrService.isAllRepaired(currentBatch.getId())) {
-            micrService.markBatchEntryDone(currentBatch.getId());
-            Clients.showNotification(
-                "All MICR repairs complete. Batch ready for Account Entry.",
-                "info", null, "top_center", 3000);
+            // Auto-finalize only for the NORMAL flow (NEEDS_REPAIR batches).
+            // For REFER_BACK batches, the maker manually clicks
+            // "Re-submit to Checker" in View Batches.
+            if (!"REFER_BACK".equals(currentBatch.getStatus())) {
+                micrService.markBatchEntryDone(currentBatch.getId());
+                Clients.showNotification(
+                    "All MICR repairs complete. Batch ready for Account Entry.",
+                    "info", null, "top_center", 3000);
+            } else {
+                Clients.showNotification(
+                    "All referred MICR cheques fixed. Go to View Batches "
+                  + "to re-submit this batch to the Checker.",
+                    "info", null, "top_center", 4000);
+                System.out.println("MicrRepairComposer → REFER_BACK batch "
+                    + currentBatch.getBatchId()
+                    + " — all MICR referrals fixed, awaiting maker re-submit.");
+            }
             goBackToList();
             return;
         }
@@ -745,10 +758,22 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         repairList.remove(currentIndex);
 
         if (micrService.isAllRepaired(currentBatch.getId())) {
-            micrService.markBatchEntryDone(currentBatch.getId());
-            Clients.showNotification(
-                "All repairs complete. Batch ready for Account Entry.",
-                "info", null, "top_center", 3000);
+            // Auto-finalize only for the NORMAL flow (NEEDS_REPAIR batches).
+            // For REFER_BACK batches, the maker manually re-submits later.
+            if (!"REFER_BACK".equals(currentBatch.getStatus())) {
+                micrService.markBatchEntryDone(currentBatch.getId());
+                Clients.showNotification(
+                    "All repairs complete. Batch ready for Account Entry.",
+                    "info", null, "top_center", 3000);
+            } else {
+                Clients.showNotification(
+                    "All referred MICR cheques resolved. Go to View Batches "
+                  + "to re-submit this batch to the Checker.",
+                    "info", null, "top_center", 4000);
+                System.out.println("MicrRepairComposer → REFER_BACK batch "
+                    + currentBatch.getBatchId()
+                    + " — all MICR referrals resolved, awaiting maker re-submit.");
+            }
         }
 
         goBackToList();

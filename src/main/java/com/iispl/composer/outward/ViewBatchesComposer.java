@@ -14,6 +14,7 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
+import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Image;
@@ -28,6 +29,8 @@ import com.iispl.dao.OutwardChequeDao;
 import com.iispl.daoImpl.OutwardBatchDaoImpl;
 import com.iispl.daoImpl.OutwardChequeDaoImpl;
 import com.iispl.dto.LoginDTO;
+import com.iispl.service.MakerOutwardService;
+import com.iispl.serviceImpl.MakerOutwardServiceImpl;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.util.SessionUtil;
@@ -81,6 +84,15 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     @Wire private Label  detailStatusBadge;
     @Wire private Div    detailEmpty;
     @Wire private Div    detailBody;
+
+    // ── Re-submit Panel (visible only for REFER_BACK batches) ──
+    @Wire private Div    resubmitPanel;
+    @Wire private Div    resubmitNoteBox;
+    @Wire private Label  resubmitNote;
+    @Wire private Button resubmitBtn;
+
+    // ── Maker Outward Service for re-submit logic ──
+    private final MakerOutwardService makerOutwardService = new MakerOutwardServiceImpl();
 
     // ── State ──
     private List<OutwardBatch>  allBatches;
@@ -274,6 +286,9 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         batchCheques  = chequeDao.findByBatchId(batch.getId());
 
         curBatchBadge.setValue(safe(batch.getBatchId()));
+
+        // Update the re-submit panel visibility + enabled state
+        updateResubmitPanel(batch);
 
         // Reset cheque filters
         chqSearchBox.setValue("");
@@ -663,62 +678,34 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     //  Status Label / Badge Helpers
     // ════════════════════════════════════════════════════
 
- // ════════════════════════════════════════════════════
-//  Status Label / Badge Helpers
-//  Covers ALL statuses across the outward workflow:
-//     Maker side  : NEEDS_REPAIR → ENTRY_PENDING → SUBMITTED
-//     Checker side: CHECKER_IN_PROGRESS → CHECKER_HOLD → CHECKER_APPROVED
-//     Cheque-level: CHECKER_PASSED / CHECKER_REJECTED / CHECKER_REFERRED
-//     Final       : EXPORTED / REFER_BACK / REJECTED
-// ════════════════════════════════════════════════════
-
-private String getStatusLabel(String status) {
-    if (status == null) return "Unknown";
-    switch (status.toUpperCase()) {
-        // ── Batch-level statuses ──
-        case "NEEDS_REPAIR":         return "Needs MICR Repair";
-        case "ENTRY_PENDING":        return "Pending Data Entry";
-        case "SUBMITTED":            return "Submitted to Checker";
-        case "REFER_BACK":           return "Referred Back to Maker";
-        case "CHECKER_IN_PROGRESS":  return "Checker In Progress";
-        case "CHECKER_HOLD":         return "On Hold (Refer Pending)";
-        case "CHECKER_APPROVED":     return "Approved by Checker";
-        case "EXPORTED":             return "DEM Exported";
-        // ── Cheque-level statuses ──
-        case "PENDING":              return "Pending";
-        case "ENTRY_DONE":           return "Entry Done";
-        case "CHECKER_PASSED":       return "Passed";
-        case "CHECKER_REJECTED":     return "Rejected by Checker";
-        case "CHECKER_REFERRED":     return "Referred";
-        case "PASSED":               return "Passed";
-        case "REJECTED":             return "Rejected";
-        default:                     return status;
+    private String getStatusLabel(String status) {
+        if (status == null) return "Unknown";
+        switch (status.toUpperCase()) {
+            case "NEEDS_REPAIR":  return "Needs MICR Repair";
+            case "ENTRY_PENDING": return "Pending Data Entry";
+            case "SUBMITTED":     return "Submitted";
+            case "REFER_BACK":    return "Referred Back";
+            case "PASSED":        return "Passed";
+            case "REJECTED":      return "Rejected";
+            case "PENDING":       return "Pending";
+            default:              return status;
+        }
     }
-}
 
-private String getStatusBadgeClass(String status) {
-    if (status == null) return "badge b-grey";
-    switch (status.toUpperCase()) {
-        // ── Batch-level ──
-        case "NEEDS_REPAIR":         return "badge b-pend";
-        case "ENTRY_PENDING":        return "badge b-info";
-        case "SUBMITTED":            return "badge b-info";
-        case "REFER_BACK":           return "badge b-warn";
-        case "CHECKER_IN_PROGRESS":  return "badge b-info";
-        case "CHECKER_HOLD":         return "badge b-warn";
-        case "CHECKER_APPROVED":     return "badge b-pass";
-        case "EXPORTED":             return "badge b-cbs";
-        // ── Cheque-level ──
-        case "PENDING":              return "badge b-pend";
-        case "ENTRY_DONE":           return "badge b-info";
-        case "CHECKER_PASSED":       return "badge b-pass";
-        case "CHECKER_REJECTED":     return "badge b-fail";
-        case "CHECKER_REFERRED":     return "badge b-warn";
-        case "PASSED":               return "badge b-pass";
-        case "REJECTED":             return "badge b-fail";
-        default:                     return "badge b-grey";
+    private String getStatusBadgeClass(String status) {
+        if (status == null) return "badge b-grey";
+        switch (status.toUpperCase()) {
+            case "NEEDS_REPAIR":  return "badge b-pend";
+            case "ENTRY_PENDING": return "badge b-info";
+            case "SUBMITTED":     return "badge b-pass";
+            case "REFER_BACK":    return "badge b-warn";
+            case "PASSED":        return "badge b-pass";
+            case "REJECTED":      return "badge b-fail";
+            case "PENDING":       return "badge b-pend";
+            default:              return "badge b-grey";
+        }
     }
-}
+
     // ════════════════════════════════════════════════════
     //  General Helpers
     // ════════════════════════════════════════════════════
@@ -732,4 +719,89 @@ private String getStatusBadgeClass(String status) {
         Object val = lb.getSelectedItem().getValue();
         return val != null ? val.toString() : "";
     }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Re-submit to Checker (for REFER_BACK batches)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Refreshes the re-submit panel for the currently selected batch.
+     *
+     * Visibility / state logic:
+     *   - batch is NOT REFER_BACK         → hide the entire panel
+     *   - REFER_BACK with referrals left  → show panel, DISABLED button, warn note
+     *   - REFER_BACK with 0 referrals     → show panel, ENABLED button, success note
+     */
+    private void updateResubmitPanel(OutwardBatch batch) {
+        if (batch == null || !"REFER_BACK".equals(batch.getStatus())) {
+            resubmitPanel.setVisible(false);
+            return;
+        }
+
+        int remaining = makerOutwardService.countActiveReferrals(batch.getId());
+
+        resubmitPanel.setVisible(true);
+        if (remaining > 0) {
+            resubmitNoteBox.setSclass("note warn flex1");
+            resubmitNote.setValue("⚠ " + remaining
+                + " cheque(s) still need to be fixed in MICR Repair "
+                + "or Account Entry before this batch can be re-submitted.");
+            resubmitBtn.setDisabled(true);
+        } else {
+            resubmitNoteBox.setSclass("note suc flex1");
+            resubmitNote.setValue("✓ All referred cheques have been fixed. "
+                + "This batch is ready to be re-submitted to the Checker.");
+            resubmitBtn.setDisabled(false);
+        }
+    }
+
+    @Listen("onClick = #resubmitBtn")
+    public void onResubmitBatch() {
+        if (selectedBatch == null) {
+            Clients.showNotification("No batch selected.",
+                    "warning", null, "top_center", 2000);
+            return;
+        }
+
+        // Defensive re-check just before action
+        int remaining = makerOutwardService.countActiveReferrals(selectedBatch.getId());
+        if (remaining > 0) {
+            Clients.showNotification(
+                    remaining + " cheque(s) still need to be fixed.",
+                    "warning", null, "top_center", 2500);
+            return;
+        }
+
+        resubmitBtn.setLabel("Re-submitting...");
+        resubmitBtn.setDisabled(true);
+
+        boolean ok = makerOutwardService.resubmitBatch(
+                selectedBatch.getId(), currentUserId);
+
+        if (!ok) {
+            resubmitBtn.setLabel("↩ Re-submit to Checker");
+            resubmitBtn.setDisabled(false);
+            Clients.showNotification(
+                    "Re-submit failed. Please refresh and try again.",
+                    "error", null, "top_center", 3000);
+            return;
+        }
+
+        Clients.showNotification(
+                "✓ Batch " + selectedBatch.getBatchId()
+              + " re-submitted to Checker.",
+                "info", null, "top_center", 3000);
+
+        // Reload all batches so the updated status reflects everywhere
+        if ("ADMIN".equals(currentRole)) {
+            allBatches = batchDao.findAll();
+        } else {
+            allBatches = batchDao.findByCreatedBy(currentUserId);
+        }
+        // Reset back to the batch list
+        selectedBatch = null;
+        showSection("batch");
+        renderBatchTable();
+    }
+
 }

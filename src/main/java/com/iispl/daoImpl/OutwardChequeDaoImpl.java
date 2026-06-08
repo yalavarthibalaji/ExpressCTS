@@ -27,11 +27,19 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
 	public List<OutwardCheque> findMicrErrorCheques(Long batchDbId) {
 	    Session session = HibernateUtil.getSessionFactory().openSession();
 	    try {
+	        // Returns cheques the maker needs to fix in the MICR Repair module.
+	        // Covers BOTH cases:
+	        //   (a) First-time MICR error from XML parse (NEEDS_REPAIR batch flow)
+	        //   (b) Checker re-referred for MICR fix (REFER_BACK batch flow)
 	        String sql = "SELECT * FROM outward_cheque "
 	                   + "WHERE batch_id = :batchId "
-	                   + "AND is_micr_error = TRUE "
-	                   + "AND repair_status != 'REPAIRED' "
-	                   + "AND status != 'REJECTED' "
+	                   + "  AND ( "
+	                   + "        (is_micr_error = TRUE "
+	                   + "             AND repair_status != 'REPAIRED' "
+	                   + "             AND status != 'REJECTED') "
+	                   + "     OR (status             = 'CHECKER_REFERRED' "
+	                   + "         AND referred_to_module = 'MICR_REPAIR') "
+	                   + "      ) "
 	                   + "ORDER BY seq_no ASC";
 	        NativeQuery<OutwardCheque> q =
 	                session.createNativeQuery(sql, OutwardCheque.class);
@@ -302,9 +310,17 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
     public List<OutwardCheque> findPendingEntries(Long batchDbId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
+            // Returns cheques the maker needs to fill in the Account Entry module.
+            // Covers BOTH cases:
+            //   (a) Fresh PENDING cheques after MICR repair (normal flow)
+            //   (b) Checker re-referred for data entry fix (REFER_BACK batch flow)
             String sql = "SELECT * FROM outward_cheque "
                        + "WHERE batch_id = :batchId "
-                       + "AND status = 'PENDING' "
+                       + "  AND ( "
+                       + "         status = 'PENDING' "
+                       + "      OR (status             = 'CHECKER_REFERRED' "
+                       + "          AND referred_to_module = 'DATA_ENTRY') "
+                       + "      ) "
                        + "ORDER BY seq_no ASC";
             NativeQuery<OutwardCheque> q =
                     session.createNativeQuery(sql, OutwardCheque.class);
@@ -492,5 +508,148 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
         }
     }
     
+    
+ // ════════════════════════════════════════════════════════════════
+//  Referral with Module (Checker → Maker round-trip)
+// ════════════════════════════════════════════════════════════════
+
+@Override
+public boolean markReferredWithModule(Long chequeId, String referToModule) {
+    if (chequeId == null || referToModule == null || referToModule.trim().isEmpty()) {
+        System.err.println("OutwardChequeDao → markReferredWithModule: invalid input");
+        return false;
+    }
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    Transaction tx  = null;
+    try {
+        tx = session.beginTransaction();
+        String sql = "UPDATE outward_cheque "
+                   + "SET status             = 'CHECKER_REFERRED', "
+                   + "    referred_to_module = :module, "
+                   + "    updated_at         = NOW() "
+                   + "WHERE id = :id";
+        NativeQuery<?> q = session.createNativeQuery(sql);
+        q.setParameter("module", referToModule.trim());
+        q.setParameter("id",     chequeId);
+        int rows = q.executeUpdate();
+        tx.commit();
+        System.out.println("OutwardChequeDao → markReferredWithModule: chequeId="
+                + chequeId + " → module=" + referToModule + " (rows=" + rows + ")");
+        return rows > 0;
+    } catch (Exception e) {
+        if (tx != null) tx.rollback();
+        System.err.println("OutwardChequeDao → markReferredWithModule failed: "
+                + e.getMessage());
+        return false;
+    } finally {
+        session.close();
+    }
+}
+
+@Override
+public boolean clearReferral(Long chequeId, String recoveryStatus) {
+    if (chequeId == null || recoveryStatus == null || recoveryStatus.trim().isEmpty()) {
+        System.err.println("OutwardChequeDao → clearReferral: invalid input");
+        return false;
+    }
+    Session     session = HibernateUtil.getSessionFactory().openSession();
+    Transaction tx      = null;
+    try {
+        tx = session.beginTransaction();
+        // GUARD: only update if this cheque actually has a referral pending.
+        // Makes it safe to call unconditionally from the save flow.
+        String sql = "UPDATE outward_cheque "
+                   + "SET status             = :newStatus, "
+                   + "    referred_to_module = NULL, "
+                   + "    updated_at         = NOW() "
+                   + "WHERE id = :id "
+                   + "  AND referred_to_module IS NOT NULL";
+        NativeQuery<?> q = session.createNativeQuery(sql);
+        q.setParameter("newStatus", recoveryStatus.trim());
+        q.setParameter("id",        chequeId);
+        int rows = q.executeUpdate();
+        tx.commit();
+        if (rows > 0) {
+            System.out.println("OutwardChequeDao → clearReferral: chequeId=" + chequeId
+                    + " → status=" + recoveryStatus + " (referral cleared)");
+        }
+        return rows >= 0;   // 0 rows is fine — means cheque wasn't referred
+    } catch (Exception e) {
+        if (tx != null) tx.rollback();
+        System.err.println("OutwardChequeDao → clearReferral failed: " + e.getMessage());
+        return false;
+    } finally {
+        session.close();
+    }
+}
+
+@Override
+public int countReferredByModule(Long batchDbId, String module) {
+    if (batchDbId == null || module == null) return 0;
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    try {
+        String sql = "SELECT COUNT(*) FROM outward_cheque "
+                   + "WHERE batch_id           = :batchId "
+                   + "  AND status             = 'CHECKER_REFERRED' "
+                   + "  AND referred_to_module = :module";
+        NativeQuery<?> q = session.createNativeQuery(sql);
+        q.setParameter("batchId", batchDbId);
+        q.setParameter("module",  module);
+        Number n = (Number) q.uniqueResult();
+        return n != null ? n.intValue() : 0;
+    } catch (Exception e) {
+        System.err.println("OutwardChequeDao → countReferredByModule failed: "
+                + e.getMessage());
+        return 0;
+    } finally {
+        session.close();
+    }
+}
+
+@Override
+public java.util.List<OutwardCheque> findReferredByModule(Long batchDbId, String module) {
+    if (batchDbId == null || module == null) return new java.util.ArrayList<>();
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    try {
+        String sql = "SELECT * FROM outward_cheque "
+                   + "WHERE batch_id           = :batchId "
+                   + "  AND status             = 'CHECKER_REFERRED' "
+                   + "  AND referred_to_module = :module "
+                   + "ORDER BY seq_no ASC";
+        NativeQuery<OutwardCheque> q =
+                session.createNativeQuery(sql, OutwardCheque.class);
+        q.setParameter("batchId", batchDbId);
+        q.setParameter("module",  module);
+        return q.list();
+    } catch (Exception e) {
+        System.err.println("OutwardChequeDao → findReferredByModule failed: "
+                + e.getMessage());
+        return new java.util.ArrayList<>();
+    } finally {
+        session.close();
+    }
+}
+
+@Override
+public int countActiveReferrals(Long batchDbId) {
+    if (batchDbId == null) return 0;
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    try {
+        String sql = "SELECT COUNT(*) FROM outward_cheque "
+                   + "WHERE batch_id = :batchId "
+                   + "  AND referred_to_module IS NOT NULL";
+        NativeQuery<?> q = session.createNativeQuery(sql);
+        q.setParameter("batchId", batchDbId);
+        Number n = (Number) q.uniqueResult();
+        return n != null ? n.intValue() : 0;
+    } catch (Exception e) {
+        System.err.println("OutwardChequeDao → countActiveReferrals failed: "
+                + e.getMessage());
+        return 0;
+    } finally {
+        session.close();
+    }
+}
+  
     
 }

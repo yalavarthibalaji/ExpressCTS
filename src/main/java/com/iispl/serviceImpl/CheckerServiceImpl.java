@@ -430,65 +430,49 @@ public class CheckerServiceImpl implements CheckerService {
     }
 
     /**
-     * Saves one audit record to the outward_checker_actions table.
-     *
-     * Opens its own Hibernate session so an audit failure does NOT
-     * roll back the already-committed cheque status update.
+     * Inserts a row into outward_checker_actions.
+     * The 4-param version (existing) defaults reasonText to null.
+     * The 7-param version (new) lets caller supply a richer reason_text.
      */
-    private void saveCheckerActionLog(Long   chequeId,
-                                      Long   batchDbId,
-                                      Long   checkerId,
-                                      String action,
-                                      String reasonCode,
-                                      String remarks) {
-        Session     session = null;
+    private void saveCheckerActionLog(Long chequeId, Long batchDbId, Long checkerId,
+                                       String action, String reasonCode, String remarks,
+                                       String reasonText) {
+
+        Session     session = HibernateUtil.getSessionFactory().openSession();
         Transaction tx      = null;
         try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            tx      = session.beginTransaction();
-
-            OutwardCheckerAction log = new OutwardCheckerAction();
-
-            // Use proxy references by ID — avoids LazyInitializationException
-            OutwardCheque chequeRef = new OutwardCheque();
-            chequeRef.setId(chequeId);
-            log.setOutwardCheque(chequeRef);
-
-            OutwardBatch batchRef = new OutwardBatch();
-            batchRef.setId(batchDbId);
-            log.setOutwardBatch(batchRef);
-
-            User checkerRef = new User();
-            checkerRef.setId(checkerId);
-            log.setChecker(checkerRef);
-
-            log.setAction(action);
-            log.setReasonCode(reasonCode != null ? reasonCode.trim() : null);
-            log.setReasonText(buildReasonText(reasonCode));
-            log.setRemarks(remarks != null && !remarks.trim().isEmpty()
-                    ? remarks.trim() : null);
-
-            session.persist(log);
+            tx = session.beginTransaction();
+            String sql = "INSERT INTO outward_checker_actions "
+                       + " (outward_cheque_id, outward_batch_id, checker_id, "
+                       + "  action, reason_code, reason_text, remarks, actioned_at) "
+                       + "VALUES (:chequeId, :batchId, :checkerId, "
+                       + "        :action, :reasonCode, :reasonText, :remarks, NOW())";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("chequeId",   chequeId);
+            q.setParameter("batchId",    batchDbId);
+            q.setParameter("checkerId",  checkerId);
+            q.setParameter("action",     action);
+            q.setParameter("reasonCode", reasonCode);
+            q.setParameter("reasonText", reasonText);
+            q.setParameter("remarks",    remarks);
+            q.executeUpdate();
             tx.commit();
-
-            System.out.println("CheckerService → saveCheckerActionLog: action=" + action
-                    + " chequeId=" + chequeId
-                    + " batchDbId=" + batchDbId
-                    + " checkerId=" + checkerId);
-
+            System.out.println("CheckerService → audit logged: cheque=" + chequeId
+                    + " action=" + action + " reasonText=" + reasonText);
         } catch (Exception e) {
-            if (tx != null) {
-                try { tx.rollback(); } catch (Exception rb) { /* ignore */ }
-            }
-            System.err.println("CheckerService → saveCheckerActionLog FAILED (non-critical): "
-                    + e.getMessage());
+            if (tx != null) tx.rollback();
+            System.err.println("CheckerService → audit log failed: " + e.getMessage());
         } finally {
-            if (session != null) {
-                try { session.close(); } catch (Exception sc) { /* ignore */ }
-            }
+            session.close();
         }
     }
 
+    // Keep your existing 6-param overload pointing to the new 7-param version
+    private void saveCheckerActionLog(Long chequeId, Long batchDbId, Long checkerId,
+                                       String action, String reasonCode, String remarks) {
+        saveCheckerActionLog(chequeId, batchDbId, checkerId,
+                action, reasonCode, remarks, null);
+    }
     /**
      * Maps a 2-digit reason code to its human-readable description.
      * Returns null for PASSED actions where reasonCode is null.
@@ -525,5 +509,109 @@ public class CheckerServiceImpl implements CheckerService {
      */
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
+    }
+    
+    
+    @Override
+    public boolean referCheque(Long chequeId,
+                               String reasonCode,
+                               String referToModule,
+                               String remarks,
+                               Long checkerId,
+                               Long batchDbId) {
+
+        // ── Input validation ──
+        if (chequeId == null || checkerId == null || batchDbId == null) {
+            System.err.println("CheckerService → referCheque: null input");
+            return false;
+        }
+        if (isBlank(reasonCode)) {
+            System.err.println("CheckerService → referCheque: reasonCode is required");
+            return false;
+        }
+        if (isBlank(referToModule)) {
+            System.err.println("CheckerService → referCheque: referToModule is required");
+            return false;
+        }
+        // Only 2 valid module values
+        String mod = referToModule.trim();
+        if (!"MICR_REPAIR".equals(mod) && !"DATA_ENTRY".equals(mod)) {
+            System.err.println("CheckerService → referCheque: invalid module: " + mod);
+            return false;
+        }
+
+        // ── Step 1: update cheque with status + module ──
+        boolean ok = chequeDao.markReferredWithModule(chequeId, mod);
+        if (!ok) {
+            System.err.println("CheckerService → referCheque: cheque update failed for chequeId="
+                    + chequeId);
+            return false;
+        }
+
+        System.out.println("CheckerService → referCheque: chequeId=" + chequeId
+                + " → CHECKER_REFERRED, module=" + mod + ", reason=" + reasonCode);
+
+        // ── Step 2: audit log — encode module into reason_text ──
+        String reasonText = "REFER_TO=" + mod + " | code=" + reasonCode;
+        saveCheckerActionLog(chequeId, batchDbId, checkerId,
+                "REFER", reasonCode.trim(), remarks, reasonText);
+
+        // ── Step 3: hold the batch (working session, not done yet) ──
+        boolean batchUpdated = batchDao.updateStatus(batchDbId, "CHECKER_HOLD");
+        if (!batchUpdated) {
+            System.err.println("CheckerService → referCheque: batch hold failed for batchDbId="
+                    + batchDbId);
+            return false;
+        }
+
+        System.out.println("CheckerService → referCheque: batchDbId=" + batchDbId
+                + " → CHECKER_HOLD (temporary; finalizeBatchIfDone will set REFER_BACK)");
+        return true;
+    }
+
+    /**
+     * Called by the composer AFTER the last cheque in a batch is actioned.
+     * Decides the final batch status:
+     *   - Any referred cheque  → REFER_BACK   (goes back to Maker)
+     *   - All passed (no refs) → CHECKER_APPROVED  (ready for DEM Export)
+     *   - All rejected         → CHECKER_APPROVED  (with 0 cheques to export — still finalized)
+     *
+     * Returns the final batch status that was set.
+     */
+    @Override
+    public String finalizeBatchIfDone(Long batchDbId, Long checkerId) {
+        if (batchDbId == null) return null;
+
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            // Count referred cheques in this batch
+            String sql = "SELECT COUNT(*) FROM outward_cheque "
+                       + "WHERE batch_id = :id "
+                       + "  AND status = 'CHECKER_REFERRED'";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("id", batchDbId);
+            Number n = (Number) q.uniqueResult();
+            int referredCount = n != null ? n.intValue() : 0;
+
+            if (referredCount > 0) {
+                // Has referrals → send batch back to Maker
+                batchDao.updateStatus(batchDbId, "REFER_BACK");
+                System.out.println("CheckerService → finalizeBatchIfDone: batchId="
+                        + batchDbId + " has " + referredCount
+                        + " referred cheque(s) → REFER_BACK");
+                return "REFER_BACK";
+            } else {
+                // No referrals → approve and ready for export
+                approveBatch(batchDbId, checkerId);
+                System.out.println("CheckerService → finalizeBatchIfDone: batchId="
+                        + batchDbId + " → CHECKER_APPROVED");
+                return "CHECKER_APPROVED";
+            }
+        } catch (Exception e) {
+            System.err.println("CheckerService → finalizeBatchIfDone failed: " + e.getMessage());
+            return null;
+        } finally {
+            session.close();
+        }
     }
 }

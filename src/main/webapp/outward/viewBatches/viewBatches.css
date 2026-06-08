@@ -1,98 +1,359 @@
-/* ════════════════════════════════════════════════════
-   viewBatches.css
-   Page-specific styles ONLY.
-   Shared styles come from: global.css → components.css → layout.css
-   ════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   viewBatches.css — View Batches screen
+════════════════════════════════════════════════════════ */
 
-/* ════════════════════════════════════════════════════
-   DETAIL PANEL — RIGHT SIDE
-   Shown when a cheque is selected from the list
-   ════════════════════════════════════════════════════ */
-.detail-img-wrapper { margin-bottom: 12px; }
-
-.detail-section-lbl {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  color: var(--tm);
-  margin-bottom: 6px;
-  display: block;
+/* ── CSS Variables ───────────────────────────────────── */
+:root {
+    --primary:       #1A3C6E;
+    --primary-light: #2B5BA8;
+    --sidebar:       #0F2748;
+    --sidebar-hover: #1E4580;
+    --sidebar-active:#1A3C6E;
+    --sidebar-text:  #C8D6E8;
+    --accent:        #4FC3F7;
+    --bg:            #F4F6F9;
+    --surface:       #fff;
+    --alt:           #EEF2F7;
+    --border:        #D0D7E3;
+    --border-s:      #A8B4C8;
+    --success:       #1A7A4A; --success-bg:#EAF5EF; --success-b:#81C995;
+    --warning:       #B86F00; --warning-bg:#FFF4E0; --warning-b:#F5C842;
+    --danger:        #C0392B; --danger-bg:#FDECEA;  --danger-b:#EF9A9A;
+    --info:          #1565C0; --info-bg:#E8F0FE;    --info-b:#90B4F5;
+    --t1:            #1A2332;
+    --t2:            #4A5568;
+    --tm:            #7A8BA0;
+    --font:          'IBM Plex Sans', sans-serif;
+    --mono:          'IBM Plex Mono', monospace;
+    --r4: 4px; --r6: 6px; --r8: 8px;
 }
 
-.detail-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-  padding: 32px;
-}
-.detail-empty-txt {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--tm);
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--t1); font-size: 14px; line-height: 1.5; }
 
-/* ════════════════════════════════════════════════════
-   VS TITLE LABEL (display-block variant of .vs-title)
-   ════════════════════════════════════════════════════ */
-.vs-title-lbl {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--t2);
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  margin-bottom: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
+/* ── Shell Layout ────────────────────────────────────── */
+.shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-family: var(--font); }
 
-/* ════════════════════════════════════════════════════
-   COMPACT TABLE GRID (used for cheque list inside batch)
-   Smaller variant of .dt-grid
-   ════════════════════════════════════════════════════ */
+/* ── Topbar ──────────────────────────────────────────── */
+.topbar { height: 52px; background: var(--sidebar); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-box { width: 30px; height: 30px; background: var(--primary); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; }
+.logo-txt { font-size: 14px; font-weight: 500; color: #fff; }
+.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.uavatar { width: 28px; height: 28px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.uname { font-size: 12px; color: #fff; font-weight: 500; display: block; }
+.urole { font-size: 11px; color: var(--sidebar-text); display: block; }
+.logbtn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: var(--r4); color: var(--sidebar-text); padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: var(--font); }
+.logbtn:hover { background: rgba(255,255,255,.18); color: #fff; }
+
+/* ── Body Row ────────────────────────────────────────── */
+.body-row { display: flex; flex: 1; overflow: hidden; }
+.body-row > .z-include { flex-shrink: 0; width: 220px; display: flex; overflow: hidden; }
+.body-row > .z-include > .sidebar { width: 220px; flex: 1; height: 100%; min-height: 0; }
+
+/* ── Sidebar ─────────────────────────────────────────── */
+.sidebar { width: 220px; background: var(--sidebar); flex-shrink: 0; overflow-y: auto; overflow-x: hidden; }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); }
+.nav-sec { padding: 6px 0; }
+.nav-sec-title { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8FA8C8; padding: 8px 14px 3px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 14px; cursor: pointer; border-left: 3px solid transparent; transition: background .1s; }
+.nav-item:hover { background: var(--sidebar-hover); }
+.nav-item.active { background: var(--sidebar-active); border-left-color: var(--accent); }
+.nav-item.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.nav-icon { font-size: 15px; min-width: 18px; text-align: center; display: flex; align-items: center; justify-content: center; color: var(--sidebar-text); }
+.nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: #fff; }
+.nav-label { font-size: 12px; color: var(--sidebar-text); flex: 1; }
+.nav-item.active .nav-label, .nav-item:hover .nav-label { color: #fff; }
+
+/* ── Main ────────────────────────────────────────────── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.breadbar { height: 38px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 6px; font-size: 12px; flex-shrink: 0; }
+.breadbar .cur { color: var(--t1); font-weight: 500; }
+.breadbar .sep, .breadbar .par { color: var(--tm); }
+.page { flex: 1; overflow-y: auto; padding: 20px; }
+.page::-webkit-scrollbar { width: 5px; }
+.page::-webkit-scrollbar-thumb { background: var(--border-s); border-radius: 3px; }
+.statusbar { height: 26px; background: var(--primary); display: flex; align-items: center; padding: 0 16px; flex-shrink: 0; }
+.sitem { font-size: 11px; color: rgba(255,255,255,.75); }
+
+/* ── Page Header ─────────────────────────────────────── */
+.page-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.page-title { font-size: 18px; font-weight: 700; color: var(--t1); }
+.page-sub { font-size: 12px; color: var(--tm); margin-top: 2px; }
+
+/* ── Filter Bar ──────────────────────────────────────── */
+.fbar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.fg { display: flex; flex-direction: column; gap: 4px; }
+.fg-lbl { font-size: 11px; font-weight: 600; color: var(--t2); text-transform: uppercase; letter-spacing: .4px; }
+.flex1 { flex: 1; }
+.w100  { width: 100%; }
+
+/* ── Card ────────────────────────────────────────────── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r6); box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+.card-hdr { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn { height: 32px; padding: 0 14px; border-radius: var(--r4); font-size: 12px; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-family: var(--font); transition: all .1s; }
+.btn-sm { height: 26px; padding: 0 8px; font-size: 11px; }
+.bp { background: var(--primary); color: #fff; } .bp:hover { background: var(--primary-light); }
+.bo { background: transparent; color: var(--t2); border: 1px solid var(--border); } .bo:hover { background: var(--alt); }
+
+/* ── Badges ──────────────────────────────────────────── */
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 100px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; border: 1px solid; }
+.b-pend { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-b); }
+.b-pass { background: var(--success-bg); color: var(--success); border-color: var(--success-b); }
+.b-fail { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger-b); }
+.b-info { background: var(--info-bg);    color: var(--info);    border-color: var(--info-b); }
+.b-grey { background: #ECEFF1; color: #546E7A; border-color: #B0BEC5; }
+.b-warn { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
+
+/* ── Table ───────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; background: #fff; }
+
+.dt-grid .z-grid-header .z-grid-hd {
+    background: var(--alt) !important;
+    border-bottom: 2px solid var(--border-s) !important;
+    padding: 0 10px !important;
+    min-height: 34px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--t2) !important;
+    text-transform: uppercase !important;
+    letter-spacing: .4px !important;
+    white-space: nowrap !important;
+}
+.dt-grid .z-row td {
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0 10px !important;
+    height: 34px !important;
+    vertical-align: middle !important;
+    font-size: 13px !important;
+    color: var(--t1) !important;
+}
+.dt-grid .z-row:nth-child(even) td { background: #F7F9FC !important; }
+.dt-grid .z-row:hover td           { background: #eef3fa !important; }
+.dt-grid .z-row:last-child td      { border-bottom: none !important; }
+
+/* Smaller grid for cheque list */
 .dt-grid-sm .z-grid-header .z-grid-hd {
-  background: var(--alt) !important;
-  border-bottom: 2px solid var(--border-s) !important;
-  padding: 0 8px !important;
-  min-height: 30px !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  color: var(--t2) !important;
-  text-transform: uppercase !important;
-  letter-spacing: .4px !important;
+    background: var(--alt) !important;
+    border-bottom: 2px solid var(--border-s) !important;
+    padding: 0 8px !important;
+    min-height: 30px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: var(--t2) !important;
+    text-transform: uppercase !important;
+    letter-spacing: .4px !important;
 }
 .dt-grid-sm .z-row td {
-  border-bottom: 1px solid var(--border) !important;
-  padding: 0 8px !important;
-  height: 30px !important;
-  vertical-align: middle !important;
-  font-size: 12px !important;
-  color: var(--t1) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0 8px !important;
+    height: 30px !important;
+    vertical-align: middle !important;
+    font-size: 12px !important;
+    color: var(--t1) !important;
+    cursor: pointer !important;
 }
-.dt-grid-sm .z-row:nth-child(even) td { background: #F7F9FC !important; }
-.dt-grid-sm .z-row:hover td           { background: #eef3fa !important; }
-.dt-grid-sm .z-row:last-child td      { border-bottom: none !important; }
+.dt-grid-sm .z-row:hover td { background: #eef3fa !important; }
+.dt-grid-sm .z-row:last-child td { border-bottom: none !important; }
 
-/* ════════════════════════════════════════════════════
-   NOTE VARIANTS (inline status notes inside cards)
-   ════════════════════════════════════════════════════ */
+/* ── Split Layout ────────────────────────────────────── */
+.split {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    gap: 14px;
+    height: calc(100vh - 250px);
+    min-height: 400px;
+}
+
+.split-l, .split-r {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r6);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.split-hdr {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--alt);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.split-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+.split-body.p0 {
+    padding: 0;
+    overflow-y: auto;
+}
+.split-body::-webkit-scrollbar { width: 4px; }
+.split-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── Form Inputs ─────────────────────────────────────── */
+.fi {
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r4);
+    font-size: 13px;
+    color: var(--t1);
+    background: #fff;
+    font-family: var(--font);
+}
+.fi:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 2px rgba(43,91,168,.1); }
+.fs { height: 32px; padding: 0 26px 0 10px; border: 1px solid var(--border); border-radius: var(--r4); font-size: 12px; background: #fff; font-family: var(--font); cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237A8BA0'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+.z-textbox.fi { height: 32px !important; padding: 0 10px !important; border: 1px solid var(--border) !important; border-radius: var(--r4) !important; font-size: 13px !important; }
+.z-listbox.fs { height: 32px !important; }
+
+/* ── Cheque Image Panel ──────────────────────────────── */
+.chq-img-panel {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: var(--r4);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+.chq-img-actual,
+.z-image.chq-img-actual,
+img.z-image.chq-img-actual,
+.chq-img-panel .z-image,
+.chq-img-panel img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 200px !important;
+    object-fit: contain !important;
+    display: block !important;
+    background: #fff;
+}
+
+/* ── Image Section ───────────────────────────────────── */
+.detail-img-wrapper { margin-bottom: 12px; }
+.detail-section-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--tm);
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* ── Tab Buttons ─────────────────────────────────────── */
+.chq-tabs { display: flex; gap: 6px; margin-bottom: 6px; }
+.chq-tab { padding: 3px 12px; border: 1px solid var(--border); border-radius: var(--r4); background: #fff; font-size: 11px; font-weight: 500; cursor: pointer; color: var(--t2); font-family: var(--font); transition: all .1s; }
+.chq-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.chq-tab:hover:not(.active) { background: var(--alt); }
+
+/* ── Value Sections (vs/vr/vl/vv) ───────────────────── */
+.vs { margin-bottom: 14px; }
+
+/* vs-title — built in Java as Label, styled via sclass */
+.vs-title-lbl {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--t2);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    width: 100%;
+}
+
+.vr { display: flex; justify-content: space-between; align-items: flex-start; padding: 4px 0; gap: 8px; }
+.vl { font-size: 12px; color: var(--tm); flex-shrink: 0; min-width: 100px; }
+.vv { font-size: 12px; font-weight: 500; color: var(--t1); text-align: right; }
+.vvn { font-size: 12px; color: var(--t1); text-align: right; }
+.mono { font-family: var(--mono); }
+.fw6  { font-weight: 600; }
+.txt-primary { color: var(--primary); }
+.txt-success { color: var(--success); }
+.txt-warn    { color: var(--warning); }
+.txt-muted   { color: var(--tm); }
+
+/* ── Notes ───────────────────────────────────────────── */
 .note-warn {
-  background: var(--warning-bg);
-  border: 1px solid var(--warning-b);
-  border-radius: var(--r4);
-  padding: 7px 10px;
-  margin-bottom: 6px;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-b);
+    border-radius: var(--r4);
+    padding: 7px 10px;
+    margin-bottom: 6px;
 }
 .note-warn-txt { font-size: 12px; color: var(--warning); font-weight: 500; }
-
 .note-suc {
-  background: var(--success-bg);
-  border: 1px solid var(--success-b);
-  border-radius: var(--r4);
-  padding: 7px 10px;
+    background: var(--success-bg);
+    border: 1px solid var(--success-b);
+    border-radius: var(--r4);
+    padding: 7px 10px;
 }
 .note-suc-txt { font-size: 12px; color: var(--success); font-weight: 500; }
+
+/* ── Detail Empty State ──────────────────────────────── */
+.detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 10px;
+    color: var(--tm);
+    text-align: center;
+    min-height: 200px;
+}
+.detail-empty-txt { font-size: 13px; font-weight: 500; color: var(--tm); }
+
+/* ── Utilities ───────────────────────────────────────── */
+.flex { display: flex; }
+.gap8 { gap: 8px; }
+.items-c { align-items: center; }
+.mb12 { margin-bottom: 12px; }
+.mb16 { margin-bottom: 16px; }
+/* ════════════════════════════════════════════════════
+   RE-SUBMIT PANEL (REFER_BACK batches only)
+   Shows a status note + Re-submit-to-Checker button
+   above the cheque filter bar.
+   ════════════════════════════════════════════════════ */
+.resubmit-panel {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r6);
+}
+
+/* When the panel sits on its own row, the note grows to fill width */
+.resubmit-panel .note {
+    margin: 0;
+}
+
+/* Tighter button sizing inside the panel */
+.resubmit-panel .z-button {
+    flex-shrink: 0;
+}
+
+/* Stack on small screens */
+@media (max-width: 700px) {
+    .resubmit-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

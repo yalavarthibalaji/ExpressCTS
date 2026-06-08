@@ -3,7 +3,6 @@
 package com.iispl.composer.outward;
 
 import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +17,7 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
+import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Image;
@@ -660,46 +660,96 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
     @Listen("onClick = #cqConfirmReferBtn")
     public void onConfirmRefer() {
         if (chequeList.isEmpty()) return;
-        String reasonCode = getSelectedValue(cqReferReason);
-        if (reasonCode.isEmpty()) { cqReferReason.setSclass("fs cq-field-error"); return; }
-        cqReferReason.setSclass("fs");
-        String module = getSelectedValue(cqReferModule);
-        if (module.isEmpty()) { cqReferModule.setSclass("fs cq-field-error"); return; }
-        cqReferModule.setSclass("fs");
-        String remarks = cqReferRemarks.getValue() != null
-                ? cqReferRemarks.getValue().trim() : "";
+
+        String reasonCode    = getSelectedValue(cqReferReason);
+        String referToModule = getSelectedValue(cqReferModule);
+        String remarks       = cqReferRemarks.getValue();
+
+        // ── Validation ──
+        if (reasonCode == null || reasonCode.isEmpty()) {
+            Clients.showNotification("Please select a refer reason.",
+                    "warning", null, "top_center", 2000);
+            return;
+        }
+        if (referToModule == null || referToModule.isEmpty()) {
+            Clients.showNotification("Please select which module the Maker should fix this in.",
+                    "warning", null, "top_center", 2500);
+            return;
+        }
+
         OutwardCheque cheque = chequeList.get(chequeIndex);
+
+        // ── Call service with the module ──
         boolean success = checkerService.referCheque(
-                cheque.getId(), reasonCode, remarks, checkerId, currentBatchDbId);
-        if (!success) return;
+                cheque.getId(),
+                reasonCode,
+                referToModule,
+                remarks,
+                checkerId,
+                currentBatchDbId);
+
+        if (!success) {
+            Clients.showNotification("Failed to send cheque to Maker. Please try again.",
+                    "error", null, "top_center", 3000);
+            return;
+        }
+
+        // ── Update local state ──
         cheque.setStatus("CHECKER_REFERRED");
+        cheque.setReferredToModule(referToModule);
         cqReferModal.setSclass("modal-ov");
         updateStatusBadge("CHECKER_REFERRED");
         disableActionButtons();
         updateProgress();
+
+        // ── Move to next unactioned, or finalize batch ──
         int nextIdx = findNextUnactionedIndex(chequeIndex);
-        if (nextIdx >= 0) { chequeIndex = nextIdx; showFrontTab(); renderChequeView(); }
+        if (nextIdx >= 0) {
+            chequeIndex = nextIdx;
+            showFrontTab();
+            renderChequeView();
+        }
         checkBatchCompletion();
     }
-
-    // ════════════════════════════════════════════════════════════════
-    //  Batch Completion Check
-    // ════════════════════════════════════════════════════════════════
-
+    
+    
+    /**
+     * Called after every Pass / Reject / Send-to-Maker action.
+     * If the batch is fully actioned, calls the service to finalize the
+     * batch status (REFER_BACK if any referrals, else CHECKER_APPROVED)
+     * and shows the appropriate modal.
+     */
     private void checkBatchCompletion() {
-        if (chequeList == null || chequeList.isEmpty()) return;
-        boolean allActioned = true;
-        boolean anyReferred = false;
-        int passCount = 0, rejectCount = 0;
+        // Are all cheques actioned?
         for (OutwardCheque c : chequeList) {
-            if (!isActioned(c.getStatus())) { allActioned = false; break; }
-            if ("CHECKER_REFERRED".equals(c.getStatus())) anyReferred = true;
+            if (!isActioned(c.getStatus())) {
+                return; // not done yet
+            }
+        }
+
+        // All actioned — let the service decide the final batch status
+        String finalStatus = checkerService.finalizeBatchIfDone(
+                currentBatchDbId, checkerId);
+
+        // Count outcomes for the popup
+        int passCount = 0, rejectCount = 0, referCount = 0;
+        for (OutwardCheque c : chequeList) {
             if ("CHECKER_PASSED".equals(c.getStatus()))   passCount++;
             if ("CHECKER_REJECTED".equals(c.getStatus())) rejectCount++;
+            if ("CHECKER_REFERRED".equals(c.getStatus())) referCount++;
         }
-        if (!allActioned) return;
-        if (anyReferred) showHoldModal();
-        else             showReadyModal(passCount, rejectCount);
+
+        System.out.println("CheckerQueueComposer → batch finalized: " + finalStatus
+                + " pass=" + passCount + " reject=" + rejectCount + " refer=" + referCount);
+
+        // ── Decide which modal to show ──
+        if ("REFER_BACK".equals(finalStatus)) {
+            // Batch went back to Maker — show "On Hold" modal
+            showHoldModal();
+        } else {
+            // Batch approved → show "Ready to Export" modal
+            showReadyModal(passCount, rejectCount);
+        }
     }
 
     // ════════════════════════════════════════════════════════════════

@@ -373,8 +373,9 @@
                                             <button id="cqBtnReject"
                                                     sclass="btn bd">✗ Reject</button>
                                             <button id="cqBtnRefer"
-                                                    sclass="btn bw">↩ Refer</button>
+                                                    sclass="btn bw">↩ Send to Maker</button>
                                         </div>
+                                        
                                     </div>
 
                                     <!-- Pass inline confirmation panel -->
@@ -502,17 +503,17 @@
     <div id="cqReferModal" sclass="modal-ov">
         <div sclass="modal" style="width:460px">
             <div sclass="modal-hdr">
-                <div sclass="modal-title">↩ Refer Cheque to Maker</div>
+                <div sclass="modal-title">↩ Send Cheque to Maker</div>
                 <button id="cqReferModalCloseBtn" sclass="modal-x">✕</button>
             </div>
             <div sclass="modal-body">
                 <div sclass="note warn mb12">
                     <n:span>⚠</n:span>
-                    <n:span>
-                        The cheque will be sent back to the Maker for correction.
-                        The batch will be placed on <n:b>Hold</n:b> until the
-                        Maker corrects and re-submits.
-                    </n:span>
+                  <n:span>
+    Pick the module where the Maker should fix this cheque. The cheque
+    will be sent back to the Maker, and the batch will stay in
+    <n:b>Refer Back</n:b> status until the Maker re-submits it.
+</n:span>
                 </div>
                 <div sclass="fg mb12">
                     <n:label class="fg-lbl">
@@ -584,7 +585,7 @@
             </div>
             <div sclass="modal-foot">
                 <button id="cqCancelReferBtn"  sclass="btn bo">Cancel</button>
-                <button id="cqConfirmReferBtn" sclass="btn bw">↩ Confirm Refer</button>
+                <button id="cqConfirmReferBtn" sclass="btn bw">↩ Confirm Send</button>
             </div>
         </div>
     </div>
