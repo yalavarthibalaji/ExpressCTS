@@ -31,10 +31,10 @@
                     <div sclass="wizard-step">
                         <button id="btnStep1" label="1"
                                 sclass="step-circle-btn active"
-                                tooltiptext="Step 1 — Reject &amp; Repair" />
+                                tooltiptext="Step 1 — Micr Repair" />
                         <div sclass="step-label-wrap">
                             <label sclass="step-num active"  value="Step 1" />
-                            <label sclass="step-desc active" value="Reject &amp; Repair" />
+                            <label sclass="step-desc active" value="Micr Repair" />
                         </div>
                     </div>
 
@@ -117,7 +117,7 @@
                                  height="380px">
                             <listhead>
                                 <listheader label="Sno"
-                                            width="50px"
+                                            width="70px"
                                             align="center"
                                             sclass="cheque-table-header" />
                                 <listheader label="CHEQUE NO."
@@ -127,18 +127,18 @@
                                             hflex="1"
                                             sclass="cheque-table-header" />
                                 <listheader label="MICR CODE (RAW)"
-                                            width="160px"
+                                            width="190px"
                                             sclass="cheque-table-header" />
                                 <listheader label="AMOUNT"
                                             width="140px"
                                             align="right"
                                             sclass="cheque-table-header" />
                                 <listheader label="REPAIR STATUS"
-                                            width="150px"
+                                            width="170px"
                                             align="center"
                                             sclass="cheque-table-header" />
                                 <listheader label="ACTION"
-                                            width="110px"
+                                            width="160px"
                                             align="center"
                                             sclass="cheque-table-header" />
                             </listhead>
