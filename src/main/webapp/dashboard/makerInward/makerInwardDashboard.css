@@ -1,11 +1,8 @@
-/* maker Inward dashboard - inherits from dashboard.css */
-
 /* ============================================================
-   dashboard.css  –  Inward Dashboard (ExpressClear CTS)
-   Matches the screenshot: light grey shell, white cards,
-   navy topbar, amber Go-button for Reject & Repair
+   makerInwardDashboard.css  –  Inward Dashboard (ExpressClear CTS)
    ============================================================ */
-/*maker inward dashboard list css */
+
+/* ── Status Badges ─────────────────────────────────────────── */
 .status-badge {
     display: inline-block;
     padding: 2px 10px;
@@ -18,7 +15,7 @@
 .status-approved { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
 .status-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-/* ---------- shell & layout ---------- */
+/* ── Shell & Layout ────────────────────────────────────────── */
 .dash-shell {
     display: flex;
     flex-direction: column;
@@ -38,13 +35,13 @@
     overflow-y: auto;
 }
 
-/* ---------- main content area ---------- */
+/* ── Main Content Area ─────────────────────────────────────── */
 .dash-main {
     padding: 24px 32px;
     max-width: 1200px;
 }
 
-/* ---------- breadcrumb ---------- */
+/* ── Breadcrumb ────────────────────────────────────────────── */
 .breadcrumb {
     display: flex;
     align-items: center;
@@ -75,7 +72,7 @@
     font-weight: 700;
 }
 
-/* ---------- page title ---------- */
+/* ── Page Title ────────────────────────────────────────────── */
 .page-title-block {
     margin-bottom: 24px;
 }
@@ -87,6 +84,7 @@
     letter-spacing: -0.3px;
 }
 
+/* ── Stat Cards ────────────────────────────────────────────── */
 .stat-cards-row {
     display: flex !important;
     flex-direction: row !important;
@@ -118,17 +116,9 @@
     box-shadow: 0 10px 32px rgba(0,0,0,0.18);
 }
 
-.stat-card--pending {
-    background: linear-gradient(135deg, #f97316, #c2410c);
-}
-
-.stat-card--cleared {
-    background: linear-gradient(135deg, #16a34a, #14532d);
-}
-
-.stat-card--inprocess {
-    background: linear-gradient(135deg, #1a2340, #2d3f6e);
-}
+.stat-card--pending   { background: linear-gradient(135deg, #f97316, #c2410c); }
+.stat-card--cleared   { background: linear-gradient(135deg, #16a34a, #14532d); }
+.stat-card--inprocess { background: linear-gradient(135deg, #1a2340, #2d3f6e); }
 
 .stat-number {
     font-size: 56px;
@@ -175,15 +165,13 @@
     transition: transform 0.1s;
 }
 
-.stat-card--pending  .stat-overlay-btn { color: #dc2626; }
-.stat-card--cleared  .stat-overlay-btn { color: #16a34a; }
+.stat-card--pending   .stat-overlay-btn { color: #dc2626; }
+.stat-card--cleared   .stat-overlay-btn { color: #16a34a; }
 .stat-card--inprocess .stat-overlay-btn { color: #1a2340; }
 
-.stat-overlay-btn:hover {
-    transform: scale(1.04);
-}
+.stat-overlay-btn:hover { transform: scale(1.04); }
 
-/* ---------- action cards row ---------- */
+/* ── Action Cards ──────────────────────────────────────────── */
 .action-cards-row {
     display: flex;
     gap: 20px;
@@ -208,9 +196,7 @@
     box-sizing: border-box;
 }
 
-.action-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
-}
+.action-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.10); }
 
 .card-left {
     display: flex;
@@ -218,7 +204,6 @@
     gap: 16px;
 }
 
-/* icon box */
 .card-icon {
     width: 44px;
     height: 44px;
@@ -230,15 +215,8 @@
     flex-shrink: 0;
 }
 
-.file-icon {
-    background: #e8edf5;
-    color: #1e3a5f;
-}
-
-.repair-icon {
-    background: #e8edf5;
-    color: #1e3a5f;
-}
+.file-icon   { background: #e8edf5; color: #1e3a5f; }
+.repair-icon { background: #e8edf5; color: #1e3a5f; }
 
 .card-text {
     display: flex;
@@ -257,7 +235,7 @@
     color: #6b7280;
 }
 
-/* ---------- Go buttons ---------- */
+/* ── Go Buttons ────────────────────────────────────────────── */
 .go-btn {
     border: none;
     border-radius: 6px;
@@ -279,17 +257,9 @@
     filter: brightness(0.95);
 }
 
-.go-btn-blue {
-    background: #1e3a5f;
-    color: #ffffff;
-}
+.go-btn-blue { background: #1e3a5f; color: #ffffff; }
+.go-btn-gold { background: #c8860a; color: #ffffff; }
 
-.go-btn-gold {
-    background: #c8860a;
-    color: #ffffff;
-}
-
-/* ZK button reset */
 .go-btn.z-button {
     border: none !important;
     background-image: none !important;
@@ -297,7 +267,7 @@
     line-height: 1.4;
 }
 
-/* ---------- Inward Batches section ---------- */
+/* ── Batches Section Container ─────────────────────────────── */
 .batches-section {
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -307,14 +277,9 @@
 }
 
 .batches-header {
-    padding: 14px 20px;
+    padding: 16px 20px;
     border-bottom: 1px solid #e5e7eb;
-}
-
-.batches-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #111827;
+    background: #fafafa;
 }
 
 .batches-body {
@@ -330,7 +295,136 @@
     font-size: 14px;
 }
 
-/* ---------- batch listbox ---------- */
+/* ── Section Title Row ─────────────────────────────────────── */
+.batches-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.batches-title-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.batches-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.batches-title.z-label {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+    letter-spacing: -0.2px;
+}
+
+.batches-count-badge.z-label {
+    background: #1a2340;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 2px 10px;
+    border-radius: 20px;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────── */
+.batches-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Search */
+.toolbar-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    padding: 0 10px;
+    height: 36px;
+}
+
+.search-icon {
+    font-size: 14px;
+    color: #9ca3af;
+    line-height: 1;
+}
+
+.batch-search-box.z-textbox {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 13.5px !important;
+    color: #111827 !important;
+    outline: none;
+}
+
+/* Date Filter */
+.toolbar-date-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toolbar-label.z-label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+}
+
+.batch-date-box.z-datebox {
+    border: 1px solid #d1d5db !important;
+    border-radius: 7px !important;
+    font-size: 13.5px !important;
+    height: 36px !important;
+    padding: 0 8px !important;
+    background: #f9fafb !important;
+}
+
+/* Clear Date Button */
+.btn-clear-date.z-button {
+    border: 1px solid #d1d5db !important;
+    background: #f3f4f6 !important;
+    border-radius: 6px !important;
+    color: #6b7280 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    padding: 0 10px !important;
+    height: 36px !important;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-clear-date.z-button:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+}
+
+/* Sort */
+.toolbar-sort-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.batch-sort-box.z-combobox {
+    border: 1px solid #d1d5db !important;
+    border-radius: 7px !important;
+    font-size: 13.5px !important;
+    height: 36px !important;
+    background: #f9fafb !important;
+}
+
+/* ── Batch Listbox ─────────────────────────────────────────── */
 .batch-listbox {
     width: 100%;
     border: none !important;
@@ -344,13 +438,8 @@
     color: #374151;
 }
 
-.batch-listbox .z-listitem:nth-child(even) {
-    background: #f9fafb;
-}
-
-.batch-listbox .z-listitem:hover {
-    background: #eff6ff;
-}
+.batch-listbox .z-listitem:nth-child(even) { background: #f9fafb; }
+.batch-listbox .z-listitem:hover           { background: #eff6ff; }
 
 .batch-listbox .z-listcell {
     font-size: 13.5px;
@@ -358,7 +447,27 @@
     padding: 10px 14px;
 }
 
-/* ---------- footer ---------- */
+/* ── Action Button ─────────────────────────────────────────── */
+.btn-view {
+    background-color: #1a2340;
+    color: white;
+    width: 70px;
+    padding: 4px 0;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.btn-view.z-button {
+    border: none !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+.batch-listbox{
+	background:#1a2340;
+}
+/* ── Footer ────────────────────────────────────────────────── */
 .dash-footer {
     background: #1a2340;
     color: #9ca3af;
@@ -370,20 +479,4 @@
 
 .dash-footer .z-label {
     color: #9ca3af;
-}
-
-.pendingBatches {
-    background: #1a2340;
-}
-
-.btn-view {
-    background-color: #1a2340;
-    color: white;
-    margin-right: 10px;
-    width: 60px;
-    padding: 0;
-}
-
-.pendingBatchesHeader {
-    background: #1a2340;
 }
