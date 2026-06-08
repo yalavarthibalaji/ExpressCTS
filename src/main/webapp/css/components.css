@@ -490,3 +490,278 @@ table.dt tr:hover td { background: #eef3fa; }
 .access-denied .adi { font-size: 36px; margin-bottom: 10px; }
 .access-denied .adt { font-size: 16px; font-weight: 700; color: var(--danger); }
 .access-denied .adm { font-size: 13px; color: var(--t2); margin-top: 6px; }
+
+
+/* ════════════════════════════════════════════════════
+   PAGE SHELL & LOGO
+   Common page wrapper override (used by all outward pages)
+   ════════════════════════════════════════════════════ */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.logo {
+  width: 26px;
+  height: 26px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--r4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* ════════════════════════════════════════════════════
+   FORM LABELS (extended)
+   ════════════════════════════════════════════════════ */
+.fg-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.req {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+/* ════════════════════════════════════════════════════
+   CHEQUE IMAGE PANEL (shared by MICR Repair, Account Entry, View Batches, Checker Queue)
+   ════════════════════════════════════════════════════ */
+.chq-img-panel {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: var(--r4);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+.chq-img-actual,
+.z-image.chq-img-actual,
+img.z-image.chq-img-actual,
+.chq-img-panel .z-image,
+.chq-img-panel img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 260px !important;
+  object-fit: contain !important;
+  display: block !important;
+  background: #fff;
+}
+
+.chq-tabs {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+.chq-tab {
+  padding: 4px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r4);
+  background: #fff;
+  font-size: 12px;
+  color: var(--t2);
+  cursor: pointer;
+  font-weight: 500;
+}
+.chq-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.chq-tab:hover:not(.active) {
+  background: var(--alt);
+}
+
+/* ════════════════════════════════════════════════════
+   EMPTY STATE BOX (shared by MICR Repair, Account Entry, View Batches)
+   ════════════════════════════════════════════════════ */
+.empty-box {
+  padding: 40px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+.empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--t1);
+  margin-bottom: 6px;
+}
+.empty-sub {
+  font-size: 13px;
+  color: var(--tm);
+  line-height: 1.5;
+}
+
+/* ════════════════════════════════════════════════════
+   REJECT PANEL (shared by MICR Repair, Account Entry)
+   ════════════════════════════════════════════════════ */
+.reject-panel {
+  margin-top: 10px;
+  border: 1px solid var(--danger-b);
+  border-radius: var(--r6);
+  background: var(--danger-bg);
+  padding: 12px;
+}
+.reject-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+
+/* ════════════════════════════════════════════════════
+   OCR/CORRECT FIELD HIGHLIGHT (MICR Repair "blue field")
+   ════════════════════════════════════════════════════ */
+.field-ocr,
+.z-textbox.fi.field-ocr {
+  background: #EBF5FB !important;
+  border-color: #90B4F5 !important;
+}
+
+/* ════════════════════════════════════════════════════
+   TEXT COLOUR HELPERS
+   ════════════════════════════════════════════════════ */
+.txt-success { color: var(--success); }
+.txt-warn    { color: var(--warning); }
+.txt-primary { color: var(--primary); }
+
+/* ════════════════════════════════════════════════════
+   VALUE LABEL/VALUE STANDALONE (used by Account Entry, View Batches)
+   Note: .vr .vl / .vr .vv already exist for nested rows.
+   These standalone ones are used in card-style detail views.
+   ════════════════════════════════════════════════════ */
+.vl   { color: var(--tm); font-size: 12px; min-width: 110px; }
+.vv   { color: var(--t1); font-weight: 500; font-family: var(--mono); }
+.vvn  { color: var(--t1); font-weight: 500; }
+
+/* ════════════════════════════════════════════════════
+   EXTRA MARGIN/LAYOUT HELPERS
+   ════════════════════════════════════════════════════ */
+.mb10     { margin-bottom: 10px; }
+.mt4      { margin-top: 4px; }
+.flex-col { display: flex; flex-direction: column; }
+
+/* ════════════════════════════════════════════════════
+   ZK COMPONENT OVERRIDES
+   Makes ZK widgets look like the design's plain HTML elements.
+   These were duplicated across every outward page — now central.
+   ════════════════════════════════════════════════════ */
+
+/* ZK intbox / decimalbox → .fi look */
+.z-intbox.fi,
+.z-decimalbox.fi {
+  padding: 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r4) !important;
+  height: 32px !important;
+  background: #fff !important;
+}
+.z-intbox.fi input,
+.z-decimalbox.fi input {
+  height: 30px !important;
+  padding: 0 10px !important;
+  font-size: 13px !important;
+  color: var(--t1) !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  width: 100% !important;
+  font-family: var(--font) !important;
+}
+.z-intbox.fi:focus-within,
+.z-decimalbox.fi:focus-within {
+  border-color: var(--primary-light) !important;
+  box-shadow: 0 0 0 2px rgba(43, 91, 168, .1) !important;
+}
+
+/* ZK textbox → .fi look */
+.z-textbox.fi {
+  height: 32px !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r4) !important;
+  font-size: 13px !important;
+  font-family: var(--font) !important;
+  color: var(--t1) !important;
+}
+
+/* ZK listbox mold="select" → .fs look */
+.z-listbox.fs {
+  height: 32px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r4) !important;
+  font-size: 12px !important;
+  font-family: var(--font) !important;
+  background: #fff !important;
+}
+
+/* ZK image inside cheque panel */
+.z-image {
+  display: block;
+}
+
+/* ZK button — keep app font */
+.z-button.btn {
+  font-family: var(--font) !important;
+}
+
+/* ZK Grid → reference table.dt look */
+.dt-grid .z-grid-header .z-grid-hd {
+  background: var(--alt) !important;
+  border-bottom: 2px solid var(--border-s) !important;
+  padding: 0 12px !important;
+  height: auto !important;
+  min-height: 36px !important;
+  text-align: left !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--t2) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .4px !important;
+  white-space: nowrap !important;
+  vertical-align: top !important;
+  padding-top: 8px !important;
+  padding-bottom: 6px !important;
+}
+.dt-grid .z-row td,
+.dt-grid .z-row .z-row-cnt td {
+  border-bottom: 1px solid var(--border) !important;
+  padding: 0 12px !important;
+  height: 34px !important;
+  vertical-align: middle !important;
+  font-size: 13px !important;
+  color: var(--t1) !important;
+}
+.dt-grid .z-row:nth-child(even) td { background: #F7F9FC !important; }
+.dt-grid .z-row:hover td           { background: #eef3fa !important; }
+.dt-grid .z-row:last-child td      { border-bottom: none !important; }
+
+/* Newly uploaded row — yellow highlight */
+.dt-grid .z-row.row-new td { background: #FFFDE7 !important; }
+
+/* ZK <include> wrapper must be transparent to flex layout */
+.body-row > .z-include {
+  display: contents;
+}
+.body-row > .z-include > .sidebar {
+  display: flex;
+  flex-direction: column;
+}

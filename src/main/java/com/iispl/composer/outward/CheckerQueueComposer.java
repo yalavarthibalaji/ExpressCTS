@@ -53,6 +53,7 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
     // ── Page State ────────────────────────────────────────────────
     private Long                checkerId;
     private Long                currentBatchDbId;
+    private String              currentBatchIdCache;   // batch ID cached for modals (survives status change)
     private List<OutwardCheque> chequeList  = new ArrayList<>();
     private int                 chequeIndex = 0;
 
@@ -309,6 +310,8 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
         }
 
         currentBatchDbId = batchDbId;
+        OutwardBatch openedBatch = findBatchById(batchDbId);
+        currentBatchIdCache = (openedBatch != null) ? openedBatch.getBatchId() : "—";
         chequeList = checkerService.getChequesForBatch(batchDbId);
 
         if (chequeList == null || chequeList.isEmpty()) {
@@ -318,8 +321,7 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
 
         chequeIndex = findFirstUnactionedIndex();
 
-        OutwardBatch batch = findBatchById(batchDbId);
-        cqBatchBadge.setValue(batch != null ? "Batch: " + batch.getBatchId() : "Batch: —");
+        cqBatchBadge.setValue("Batch: " + currentBatchIdCache);
 
         showProcessView();
         showFrontTab();
@@ -333,7 +335,8 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
 
     @Listen("onClick = #cqBackBtn")
     public void onBackToQueue() {
-        currentBatchDbId = null;
+        currentBatchDbId    = null;
+        currentBatchIdCache = null;
         chequeList       = new ArrayList<>();
         chequeIndex      = 0;
         List<OutwardBatch> batches = checkerService.getCheckerQueueBatches();
@@ -646,12 +649,12 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
         cqReferReason.setSelectedIndex(0);
         cqReferModule.setSelectedIndex(0);
         cqReferRemarks.setValue("");
-        cqReferModal.setVisible(true);
+        cqReferModal.setSclass("modal-ov open");
     }
 
     @Listen("onClick = #cqReferModalCloseBtn; onClick = #cqCancelReferBtn")
     public void onCancelRefer() {
-        cqReferModal.setVisible(false);
+        cqReferModal.setSclass("modal-ov");
     }
 
     @Listen("onClick = #cqConfirmReferBtn")
@@ -670,7 +673,7 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
                 cheque.getId(), reasonCode, remarks, checkerId, currentBatchDbId);
         if (!success) return;
         cheque.setStatus("CHECKER_REFERRED");
-        cqReferModal.setVisible(false);
+        cqReferModal.setSclass("modal-ov");
         updateStatusBadge("CHECKER_REFERRED");
         disableActionButtons();
         updateProgress();
@@ -709,34 +712,37 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
             if ("CHECKER_REFERRED".equals(c.getStatus())) referCount++;
             if ("CHECKER_PASSED".equals(c.getStatus()))   passCount++;
         }
-        OutwardBatch batch = findBatchById(currentBatchDbId);
-        cqHoldMessage.setValue("Batch " + (batch != null ? batch.getBatchId() : "—")
+        // Use cached batch id — batch may now be CHECKER_HOLD and still in queue,
+        // but cache is safe either way.
+        cqHoldMessage.setValue("Batch " + currentBatchIdCache
             + " has " + referCount + " referred cheque(s) and " + passCount
             + " passed cheque(s). Referred cheques sent back to Maker.");
-        cqHoldModal.setVisible(true);
+        cqHoldModal.setSclass("modal-ov open");
     }
 
     @Listen("onClick = #cqHoldOkBtn")
-    public void onHoldOk() { cqHoldModal.setVisible(false); onBackToQueue(); }
+    public void onHoldOk() { cqHoldModal.setSclass("modal-ov"); onBackToQueue(); }
 
     // ════════════════════════════════════════════════════════════════
     //  Ready to Export Modal
     // ════════════════════════════════════════════════════════════════
 
     private void showReadyModal(int passCount, int rejectCount) {
-        OutwardBatch batch = findBatchById(currentBatchDbId);
-        cqReadyBatchId.setValue(batch != null ? batch.getBatchId() : "—");
+        // Use cached batch id — by this point the batch has been auto-approved
+        // (CHECKER_APPROVED) and is NO LONGER returned by getCheckerQueueBatches(),
+        // so a fresh findBatchById(currentBatchDbId) lookup would return null.
+        cqReadyBatchId.setValue(currentBatchIdCache);
         cqReadyPassCount.setValue(String.valueOf(passCount));
         cqReadyRejectCount.setValue(String.valueOf(rejectCount));
-        cqReadyModal.setVisible(true);
+        cqReadyModal.setSclass("modal-ov open");
     }
 
     @Listen("onClick = #cqStayInQueueBtn")
-    public void onStayInQueue() { cqReadyModal.setVisible(false); onBackToQueue(); }
+    public void onStayInQueue() { cqReadyModal.setSclass("modal-ov"); onBackToQueue(); }
 
     @Listen("onClick = #cqGoToExportBtn")
     public void onGoToExport() {
-        cqReadyModal.setVisible(false);
+        cqReadyModal.setSclass("modal-ov");
         Executions.sendRedirect("/outward/demExport/demExport.zul");
     }
 

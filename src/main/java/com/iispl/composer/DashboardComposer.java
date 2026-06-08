@@ -311,20 +311,28 @@ public class DashboardComposer extends SelectorComposer<Component> {
         return LocalTime.now().isBefore(LocalTime.NOON)
             ? "Morning Clearing" : "Afternoon Clearing";
     }
-
+    
     /**
      * Human-readable label for each batch status.
-     * NOTE: "ENTRY_DONE" removed — not a real status in the flow.
+     * Covers full workflow including post-submission checker statuses
+     * because a maker sees their own batches even after they move to checker.
      */
     private String formatStatusLabel(String status) {
         if (status == null) return "-";
         switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR":  return "Needs MICR Repair";
-            case "ENTRY_PENDING": return "Pending Data Entry";
-            case "SUBMITTED":     return "Submitted";
-            case "REFER_BACK":    return "Referred Back";
-            case "REJECTED":      return "Rejected";
-            default:              return status;
+            // ── Maker-side ──
+            case "NEEDS_REPAIR":         return "Needs MICR Repair";
+            case "ENTRY_PENDING":        return "Pending Data Entry";
+            case "SUBMITTED":            return "Submitted";
+            case "REFER_BACK":           return "Referred Back";
+            // ── Checker-side (read-only for maker) ──
+            case "CHECKER_IN_PROGRESS":  return "Checker In Progress";
+            case "CHECKER_HOLD":         return "On Hold";
+            case "CHECKER_APPROVED":     return "Approved";
+            case "EXPORTED":             return "Exported";
+            // ── Final ──
+            case "REJECTED":             return "Rejected";
+            default:                     return status;
         }
     }
 
@@ -334,14 +342,19 @@ public class DashboardComposer extends SelectorComposer<Component> {
     private String resolveStatusSclass(String status) {
         if (status == null) return "status-badge";
         switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR":  return "status-badge status-pending";
-            case "ENTRY_PENDING": return "status-badge status-received";
-            case "SUBMITTED":     return "status-badge status-approved";
-            case "REFER_BACK":    return "status-badge status-refer";
-            case "REJECTED":      return "status-badge status-rejected";
-            default:              return "status-badge";
+            case "NEEDS_REPAIR":         return "status-badge status-pending";
+            case "ENTRY_PENDING":        return "status-badge status-received";
+            case "SUBMITTED":            return "status-badge status-info";
+            case "REFER_BACK":           return "status-badge status-refer";
+            case "CHECKER_IN_PROGRESS":  return "status-badge status-info";
+            case "CHECKER_HOLD":         return "status-badge status-refer";
+            case "CHECKER_APPROVED":     return "status-badge status-approved";
+            case "EXPORTED":             return "status-badge status-exported";
+            case "REJECTED":             return "status-badge status-rejected";
+            default:                     return "status-badge";
         }
     }
+   
 
     private String formatRole(String code) {
         if (code == null) return "";

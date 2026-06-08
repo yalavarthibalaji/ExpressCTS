@@ -18,10 +18,7 @@
 -->
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
-    xmlns:n="native"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.zkoss.org/2005/zul
-                        http://www.zkoss.org/2005/zul/zul.xsd">
+    xmlns:n="native">
 
 <div sclass="shell-layout"
      apply="com.iispl.composer.outward.CheckerQueueComposer">
@@ -502,7 +499,7 @@
     <!-- ═══════════════════════════════════════════════════════
          MODAL 1 — REFER CHEQUE
     ═══════════════════════════════════════════════════════ -->
-    <div id="cqReferModal" sclass="modal-ov" visible="false">
+    <div id="cqReferModal" sclass="modal-ov">
         <div sclass="modal" style="width:460px">
             <div sclass="modal-hdr">
                 <div sclass="modal-title">↩ Refer Cheque to Maker</div>
@@ -596,7 +593,7 @@
          MODAL 2 — BATCH ON HOLD
          Shown when all cheques actioned but some are referred
     ═══════════════════════════════════════════════════════ -->
-    <div id="cqHoldModal" sclass="modal-ov" visible="false">
+    <div id="cqHoldModal" sclass="modal-ov">
         <div sclass="modal" style="width:440px">
             <div sclass="modal-hdr">
                 <div sclass="modal-title">⏸ Batch Placed on Hold</div>
@@ -624,7 +621,7 @@
          MODAL 3 — BATCH READY TO EXPORT
          Shown when all cheques passed or rejected (none referred)
     ═══════════════════════════════════════════════════════ -->
-    <div id="cqReadyModal" sclass="modal-ov" visible="false">
+    <div id="cqReadyModal" sclass="modal-ov">
         <div sclass="modal" style="width:440px">
             <div sclass="modal-hdr">
                 <div sclass="modal-title">✅ Batch Processing Complete</div>

@@ -1,12 +1,13 @@
 package com.iispl.daoImpl;
 
 import com.iispl.dao.OutwardBatchDao;
+
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.NativeQuery;
-
+import org.hibernate.Hibernate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -253,7 +254,23 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             String sql = "SELECT * FROM outward_batch ORDER BY created_at DESC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
-            return q.list();
+            List<OutwardBatch> results = q.list();
+
+            // FIX: Initialize lazy User proxies BEFORE closing the session.
+            for (OutwardBatch b : results) {
+                if (b.getCreatedBy() != null) {
+                    Hibernate.initialize(b.getCreatedBy());
+                }
+                if (b.getSubmittedBy() != null) {
+                    Hibernate.initialize(b.getSubmittedBy());
+                }
+                if (b.getVerifiedBy() != null) {
+                    Hibernate.initialize(b.getVerifiedBy());
+                }
+            }
+
+            System.out.println("OutwardBatchDao → findAll: " + results.size());
+            return results;
         } catch (Exception e) {
             System.err.println("OutwardBatchDao → findAll failed: " + e.getMessage());
             return new ArrayList<>();
@@ -270,13 +287,28 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
             String sql = "SELECT * FROM outward_batch "
-                       + "WHERE status IN ('SUBMITTED', "
-                       +                  "'CHECKER_IN_PROGRESS', "
-                       +                  "'CHECKER_HOLD') "
+                       + "WHERE status IN ('SUBMITTED', 'CHECKER_IN_PROGRESS', 'CHECKER_HOLD') "
                        + "ORDER BY created_at ASC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
-            return q.list();
+            List<OutwardBatch> results = q.list();
+
+            // FIX: Initialize lazy User proxies BEFORE closing the session.
+            for (OutwardBatch b : results) {
+                if (b.getSubmittedBy() != null) {
+                    Hibernate.initialize(b.getSubmittedBy());
+                }
+                if (b.getCreatedBy() != null) {
+                    Hibernate.initialize(b.getCreatedBy());
+                }
+                if (b.getVerifiedBy() != null) {
+                    Hibernate.initialize(b.getVerifiedBy());
+                }
+            }
+
+            System.out.println("OutwardBatchDao → findCheckerQueueBatches: "
+                    + results.size());
+            return results;
         } catch (Exception e) {
             System.err.println("OutwardBatchDao → findCheckerQueueBatches failed: "
                     + e.getMessage());
@@ -285,7 +317,6 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
-
     // ════════════════════════════════════════════════════
     //  Checker Outward — Approved (ready for DEM Export)
     // ════════════════════════════════════════════════════
@@ -296,10 +327,29 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
         try {
             String sql = "SELECT * FROM outward_batch "
                        + "WHERE status = 'CHECKER_APPROVED' "
-                       + "ORDER BY updated_at DESC";
+                       + "ORDER BY verified_at DESC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
-            return q.list();
+            List<OutwardBatch> results = q.list();
+
+            // FIX: Initialize lazy User proxies BEFORE closing the session.
+            // Composer calls batch.getVerifiedBy().getFullName() at render time
+            // — without this, LazyInitializationException is thrown.
+            for (OutwardBatch b : results) {
+                if (b.getVerifiedBy() != null) {
+                    Hibernate.initialize(b.getVerifiedBy());
+                }
+                if (b.getSubmittedBy() != null) {
+                    Hibernate.initialize(b.getSubmittedBy());
+                }
+                if (b.getCreatedBy() != null) {
+                    Hibernate.initialize(b.getCreatedBy());
+                }
+            }
+
+            System.out.println("OutwardBatchDao → findCheckerApprovedBatches: "
+                    + results.size());
+            return results;
         } catch (Exception e) {
             System.err.println("OutwardBatchDao → findCheckerApprovedBatches failed: "
                     + e.getMessage());
@@ -308,7 +358,6 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
-
     // ════════════════════════════════════════════════════
     //  Checker Outward — Count by status (dashboard summary)
     // ════════════════════════════════════════════════════

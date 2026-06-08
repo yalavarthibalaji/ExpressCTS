@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page title="ExpressCTS — Account and Amount Entry"
+<?page title="ExpressCTS — Account &amp; Amount Entry"
       contentType="text/html;charset=UTF-8"?>
 <?link rel="stylesheet" type="text/css"
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
-<?link rel="stylesheet" type="text/css"
-      href="/outward/acctAmount/acctAmount.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/outward/acctAmount/acctAmount.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
     xmlns:n="native">

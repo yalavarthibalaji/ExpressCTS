@@ -1,9 +1,134 @@
-/*
- * File: reports/reports.css
- * Purpose: Page-specific styles for Reports.
- *          Import order: global.css → components.css → layout.css → this file.
- *          Styles for report table, download buttons
- */
+/* ════════════════════════════════════════════════════
+   reports.css
+   Page-specific styles ONLY.
+   Shared styles come from: global.css → components.css → layout.css
+   ════════════════════════════════════════════════════ */
 
-/* Add reports-specific styles here only. */
-/* Styles that are shared across pages belong in css/components.css */
+/* ════════════════════════════════════════════════════
+   TWO-COLUMN GRID — report list (left) + config panel (right)
+   ════════════════════════════════════════════════════ */
+.rpt-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+/* ════════════════════════════════════════════════════
+   LEFT — REPORT LIST
+   ════════════════════════════════════════════════════ */
+.rpt-list-card {
+    min-height: 380px;
+}
+
+.rpt-list {
+    border: none !important;
+    width: 100% !important;
+}
+
+.rpt-list .z-listbox-body {
+    border: none !important;
+}
+
+.rpt-list .z-listitem {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid var(--border) !important;
+    cursor: pointer;
+    font-size: 13px !important;
+    color: var(--t1) !important;
+    border-left: 3px solid transparent !important;
+}
+
+.rpt-list .z-listitem:hover {
+    background: var(--alt) !important;
+}
+
+.rpt-list .z-listitem.z-listitem-selected,
+.rpt-list .z-listitem-selected {
+    background: var(--primary-bg) !important;
+    color: var(--primary) !important;
+    border-left: 3px solid var(--primary) !important;
+    font-weight: 600;
+}
+
+.rpt-list .z-listitem:last-child {
+    border-bottom: none !important;
+}
+
+/* ════════════════════════════════════════════════════
+   RIGHT — CONFIG PANEL
+   ════════════════════════════════════════════════════ */
+.rpt-config-card {
+    min-height: 380px;
+}
+
+/* Report info block at top of config */
+.rpt-info {
+    padding: 14px 16px;
+    background: var(--alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r4);
+}
+.rpt-info-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--t1);
+    margin-bottom: 6px;
+}
+.rpt-info-desc {
+    display: block;
+    font-size: 12px;
+    color: var(--tm);
+    line-height: 1.5;
+}
+
+/* Generate button row */
+.rpt-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* Status pane below the generate button */
+.status-pane {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: var(--r4);
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+}
+
+/* ZK Datebox styled like a normal .fi field */
+.z-datebox.fi {
+    width: 100% !important;
+    height: 32px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--r4) !important;
+    background: #fff !important;
+}
+.z-datebox.fi input {
+    height: 30px !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+    font-family: var(--font) !important;
+    color: var(--t1) !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    width: 100% !important;
+}
+.z-datebox.fi:focus-within {
+    border-color: var(--primary-light) !important;
+    box-shadow: 0 0 0 2px rgba(43, 91, 168, .1) !important;
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — stack columns on small screens
+   ════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .rpt-grid {
+        grid-template-columns: 1fr;
+    }
+}

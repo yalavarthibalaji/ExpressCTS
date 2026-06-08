@@ -76,13 +76,9 @@ public class CheckerServiceImpl implements CheckerService {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Dashboard Summary
-    // ════════════════════════════════════════════════════════════════════════
-
     /**
-     * Returns the four dashboard summary counts.
-     * Map keys: "pending", "inProgress", "hold", "approved"
+     * Returns the five dashboard summary counts.
+     * Map keys: "pending", "inProgress", "hold", "approved", "exported"
      */
     @Override
     public Map<String, Integer> getDashboardCounts() {
@@ -92,12 +88,14 @@ public class CheckerServiceImpl implements CheckerService {
             counts.put("inProgress", batchDao.countByStatus("CHECKER_IN_PROGRESS"));
             counts.put("hold",       batchDao.countByStatus("CHECKER_HOLD"));
             counts.put("approved",   batchDao.countByStatus("CHECKER_APPROVED"));
+            counts.put("exported",   batchDao.countByStatus("EXPORTED"));
 
             System.out.println("CheckerService → getDashboardCounts:"
                     + " pending="    + counts.get("pending")
                     + " inProgress=" + counts.get("inProgress")
                     + " hold="       + counts.get("hold")
-                    + " approved="   + counts.get("approved"));
+                    + " approved="   + counts.get("approved")
+                    + " exported="   + counts.get("exported"));
 
         } catch (Exception e) {
             System.err.println("CheckerService → getDashboardCounts failed: "
@@ -106,10 +104,10 @@ public class CheckerServiceImpl implements CheckerService {
             counts.putIfAbsent("inProgress", 0);
             counts.putIfAbsent("hold",       0);
             counts.putIfAbsent("approved",   0);
+            counts.putIfAbsent("exported",   0);
         }
         return counts;
     }
-
     // ════════════════════════════════════════════════════════════════════════
     //  Batch Operations
     // ════════════════════════════════════════════════════════════════════════

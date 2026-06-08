@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressCTS — DEM Export"
+      contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
@@ -6,21 +10,284 @@
 
 <!--
     File    : outward/demExport/demExport.zul
-    Purpose : DEM Export — Generate and transmit CXF and CIGF files to NPCI
+    Purpose : DEM Export — Generate and transmit CXF / CIGF files to NPCI
     Composer: com.iispl.composer.DemExportComposer
 -->
 
-<div xmlns="http://www.zkoss.org/2005/zul"
-     apply="com.iispl.composer.DemExportComposer">
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
 
-    <!-- Page Header -->
-    <div sclass="page-hdr">
-        <div>
-            <div sclass="page-title">DEM Export</div>
-            <div sclass="page-sub">Generate and transmit CXF and CIGF files to NPCI</div>
+<div sclass="shell" apply="com.iispl.composer.DemExportComposer">
+
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
+
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="dash-main">
+
+                <!-- ───────── Page Header ───────── -->
+                <div sclass="page-hdr">
+                    <div>
+                        <div sclass="page-title">DEM Export</div>
+                        <div sclass="page-sub">
+                            Generate CXF and CIGF files from approved batches for NPCI submission.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════
+                     VIEW 1 — Empty State
+                     ═════════════════════════════════════════════════ -->
+                <div id="emptyStateView" visible="false" sclass="empty-box">
+                    <div sclass="empty-title">No batches ready for export</div>
+                    <div sclass="empty-sub">
+                        Batches approved by Checker will appear here automatically.
+                    </div>
+                    <button id="gotoQueueBtn"
+                            sclass="btn bp"
+                            label="Go to Verification Queue"
+                            style="margin-top:14px;"/>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════
+                     VIEW 2 — Batch List
+                     ═════════════════════════════════════════════════ -->
+                <div id="batchListView" visible="false">
+
+                    <!-- Stats row -->
+                    <div sclass="export-stats mb16">
+                        <div sclass="export-stat">
+                            <div sclass="export-stat-lbl">Ready for Export</div>
+                            <label id="statApproved"
+                                   sclass="export-stat-val txt-primary"
+                                   value="0"/>
+                        </div>
+                        <div sclass="export-stat">
+                            <div sclass="export-stat-lbl">Already Exported</div>
+                            <label id="statExported"
+                                   sclass="export-stat-val txt-success"
+                                   value="0"/>
+                        </div>
+                        <div sclass="export-stat">
+                            <div sclass="export-stat-lbl">Total Cheques in Queue</div>
+                            <label id="statTotalCheques"
+                                   sclass="export-stat-val"
+                                   value="0"/>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div sclass="chq-tabs">
+                        <button id="tabApprovedBtn"
+                                sclass="chq-tab active"
+                                label="Ready for Export"/>
+                        <button id="tabExportedBtn"
+                                sclass="chq-tab"
+                                label="Exported"/>
+                    </div>
+
+                    <!-- Filter + Grid -->
+                    <div sclass="card mt12">
+                        <div sclass="card-hdr">
+                            <div sclass="card-title">Batches</div>
+                            <div sclass="flex gap8">
+                                <textbox id="listSearchBox"
+                                         sclass="fi"
+                                         placeholder="Search batch ID..."
+                                         style="width:240px;"
+                                         instant="true"/>
+                            </div>
+                        </div>
+                        <div sclass="card-body" style="padding:0;">
+                            <grid id="exportBatchGrid"
+                                  sclass="dt-grid"
+                                  width="100%">
+                                <columns>
+                                    <column label="Batch ID"      width="170px"/>
+                                    <column label="Cheques"       width="90px"/>
+                                    <column label="Total Amount"  width="160px"/>
+                                    <column label="Approved On"   width="160px"/>
+                                    <column label="Verified By"   width="180px"/>
+                                    <column label="Status"        width="120px"/>
+                                    <column label="Actions"       />
+                                </columns>
+                                <rows id="exportBatchRows"/>
+                            </grid>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═════════════════════════════════════════════════
+                     VIEW 3 — Export Detail
+                     ═════════════════════════════════════════════════ -->
+                <div id="exportDetailView" visible="false">
+
+                    <!-- Toolbar -->
+                    <div sclass="card mb12">
+                        <div sclass="card-hdr">
+                            <div sclass="flex gap8 items-c">
+                                <button id="backToListBtn"
+                                        sclass="btn bo btn-sm"
+                                        label="← Back"/>
+                                <label sclass="card-title" value="Export Detail —"/>
+                                <label id="detailBatchBadge"
+                                       sclass="badge b-pass"
+                                       value=""/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Summary -->
+                    <div sclass="card mb12">
+                        <div sclass="card-body">
+                            <div sclass="vs">
+                                <div sclass="vs-title">BATCH SUMMARY</div>
+                                <div sclass="vr">
+                                    <label sclass="vl" value="Batch ID"/>
+                                    <label id="detailBatchId"
+                                           sclass="vv" value="—"/>
+                                </div>
+                                <div sclass="vr">
+                                    <label sclass="vl" value="Cheques Approved"/>
+                                    <label id="detailChequeCount"
+                                           sclass="vvn" value="—"/>
+                                </div>
+                                <div sclass="vr">
+                                    <label sclass="vl" value="Total Amount"/>
+                                    <label id="detailAmount"
+                                           sclass="vvn" value="—"/>
+                                </div>
+                                <div sclass="vr">
+                                    <label sclass="vl" value="Approved On"/>
+                                    <label id="detailApprovedDate"
+                                           sclass="vvn" value="—"/>
+                                </div>
+                                <div sclass="vr">
+                                    <label sclass="vl" value="Verified By"/>
+                                    <label id="detailVerifiedBy"
+                                           sclass="vvn" value="—"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generate Trigger (shown when not yet exported) -->
+                    <div id="generateArea"
+                         sclass="card mb12"
+                         visible="false">
+                        <div sclass="card-body generate-pane">
+                            <div sclass="generate-info">
+                                This batch is approved and ready for DEM Export.
+                                Click below to generate the
+                                <n:strong>CXF</n:strong> (cheque exchange XML) and
+                                <n:strong>CIGF</n:strong> (image manifest XML)
+                                files for NPCI submission.
+                            </div>
+                            <button id="generateBtn"
+                                    sclass="btn bp btn-lg"
+                                    label="Generate Export Files"/>
+                        </div>
+                    </div>
+
+                    <!-- File Cards (shown after export) -->
+                    <div id="fileCardsArea" visible="false">
+                        <div sclass="file-cards-row">
+
+                            <!-- CXF Card -->
+                            <div sclass="file-card">
+                                <div sclass="file-card-hdr">
+                                    <div sclass="file-icon file-icon-xml">CXF</div>
+                                    <div sclass="file-meta">
+                                        <div sclass="file-type-lbl">Cheque Exchange File</div>
+                                        <label id="cxfFileName"
+                                               sclass="file-name"
+                                               value="—"/>
+                                    </div>
+                                    <label id="cxfStatusBadge"
+                                           sclass="badge b-info"
+                                           value="GENERATED"/>
+                                </div>
+                                <div sclass="file-card-body">
+                                    <div sclass="file-row">
+                                        <label sclass="vl" value="File Size"/>
+                                        <label id="cxfFileSize"
+                                               sclass="vvn" value="—"/>
+                                    </div>
+                                    <div sclass="file-row">
+                                        <label sclass="vl" value="Generated"/>
+                                        <label id="cxfGenTime"
+                                               sclass="vvn" value="—"/>
+                                    </div>
+                                    <div sclass="file-row">
+                                        <label sclass="vl" value="Path"/>
+                                        <label id="cxfFilePath"
+                                               sclass="vv mono file-path"
+                                               value="—"/>
+                                    </div>
+                                </div>
+                                <div sclass="file-card-foot">
+                                    <button id="cxfDownloadBtn"
+                                            sclass="btn bp btn-sm"
+                                            label="Download"/>
+                                    <button id="cxfTransmitBtn"
+                                            sclass="btn bs btn-sm"
+                                            label="Mark Transmitted"/>
+                                </div>
+                            </div>
+
+                            <!-- CIGF Card -->
+                            <div sclass="file-card">
+                                <div sclass="file-card-hdr">
+                                    <div sclass="file-icon file-icon-img">CIGF</div>
+                                    <div sclass="file-meta">
+                                        <div sclass="file-type-lbl">Cheque Image Group File</div>
+                                        <label id="cigfFileName"
+                                               sclass="file-name"
+                                               value="—"/>
+                                    </div>
+                                    <label id="cigfStatusBadge"
+                                           sclass="badge b-info"
+                                           value="GENERATED"/>
+                                </div>
+                                <div sclass="file-card-body">
+                                    <div sclass="file-row">
+                                        <label sclass="vl" value="File Size"/>
+                                        <label id="cigfFileSize"
+                                               sclass="vvn" value="—"/>
+                                    </div>
+                                    <div sclass="file-row">
+                                        <label sclass="vl" value="Generated"/>
+                                        <label id="cigfGenTime"
+                                               sclass="vvn" value="—"/>
+                                    </div>
+                                    <div sclass="file-row">
+                                        <label sclass="vl" value="Path"/>
+                                        <label id="cigfFilePath"
+                                               sclass="vv mono file-path"
+                                               value="—"/>
+                                    </div>
+                                </div>
+                                <div sclass="file-card-foot">
+                                    <button id="cigfDownloadBtn"
+                                            sclass="btn bp btn-sm"
+                                            label="Download"/>
+                                    <button id="cigfTransmitBtn"
+                                            sclass="btn bs btn-sm"
+                                            label="Mark Transmitted"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
         </div>
     </div>
 
-    <!-- Page content goes here -->
-
 </div>
+</zk>

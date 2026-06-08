@@ -56,10 +56,6 @@ public interface CheckerService {
      */
     List<OutwardBatch> getCheckerQueueBatches();
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Dashboard Summary
-    // ════════════════════════════════════════════════════════════════════════
-
     /**
      * Returns summary counts for the Checker Outward dashboard.
      *
@@ -69,13 +65,14 @@ public interface CheckerService {
      *   "hold"        → count of batches with status = CHECKER_HOLD
      *   "approved"    → count of batches with status = CHECKER_APPROVED
      *                   (ready for DEM Export)
+     *   "exported"    → count of batches with status = EXPORTED
+     *                   (fully exported via DEM Export module)
      *
      * Used by: CheckerOutwardDashboardComposer (summary counts section).
      *
-     * @return Map<String, Integer> with the four keys above, never null
+     * @return Map<String, Integer> with the five keys above, never null
      */
     Map<String, Integer> getDashboardCounts();
-
     // ════════════════════════════════════════════════════════════════════════
     //  Batch Operations
     // ════════════════════════════════════════════════════════════════════════

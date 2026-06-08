@@ -164,20 +164,16 @@ public class CheckerOutwardDashboardComposer extends SelectorComposer<Component>
         }
     }
 
-    // ════════════════════════════════════════════════════
-    //  Summary Counts
-    // ════════════════════════════════════════════════════
-
     /**
-     * Loads the four summary counts using CheckerService.getDashboardCounts().
+     * Loads the four summary counts using CheckerService.getDashboardCounts()
+     * plus a separate count for fully-exported batches.
      *
      * Map keys returned by the service:
      *   "pending"     → SUBMITTED batches       → Pending Queue label
      *   "inProgress"  → CHECKER_IN_PROGRESS     → included in On Hold display
      *   "hold"        → CHECKER_HOLD batches    → On Hold label
      *   "approved"    → CHECKER_APPROVED        → Ready to Export label
-     *
-     * DEM Exported count is set to 0 for now (DEM Export module is a future step).
+     *   "exported"    → EXPORTED                → DEM Exported label (real count)
      */
     private void loadSummary() {
         Map<String, Integer> counts = checkerService.getDashboardCounts();
@@ -186,6 +182,7 @@ public class CheckerOutwardDashboardComposer extends SelectorComposer<Component>
         int inProgress = counts.getOrDefault("inProgress", 0);
         int hold       = counts.getOrDefault("hold",       0);
         int approved   = counts.getOrDefault("approved",   0);
+        int exported   = counts.getOrDefault("exported",   0);
 
         // "On Hold" shows both actively-in-progress and referred-back batches
         int onHold = inProgress + hold;
@@ -193,7 +190,7 @@ public class CheckerOutwardDashboardComposer extends SelectorComposer<Component>
         sumPending.setValue(String.valueOf(pending));
         sumOnHold.setValue(String.valueOf(onHold));
         sumReadyExport.setValue(String.valueOf(approved));
-        sumExported.setValue("0");  // DEM Export module — future step
+        sumExported.setValue(String.valueOf(exported));
     }
 
     // ════════════════════════════════════════════════════

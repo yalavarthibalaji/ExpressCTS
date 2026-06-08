@@ -663,34 +663,62 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     //  Status Label / Badge Helpers
     // ════════════════════════════════════════════════════
 
-    private String getStatusLabel(String status) {
-        if (status == null) return "Unknown";
-        switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR":  return "Needs MICR Repair";
-            case "ENTRY_PENDING": return "Pending Data Entry";
-            case "SUBMITTED":     return "Submitted";
-            case "REFER_BACK":    return "Referred Back";
-            case "PASSED":        return "Passed";
-            case "REJECTED":      return "Rejected";
-            case "PENDING":       return "Pending";
-            default:              return status;
-        }
-    }
+ // ════════════════════════════════════════════════════
+//  Status Label / Badge Helpers
+//  Covers ALL statuses across the outward workflow:
+//     Maker side  : NEEDS_REPAIR → ENTRY_PENDING → SUBMITTED
+//     Checker side: CHECKER_IN_PROGRESS → CHECKER_HOLD → CHECKER_APPROVED
+//     Cheque-level: CHECKER_PASSED / CHECKER_REJECTED / CHECKER_REFERRED
+//     Final       : EXPORTED / REFER_BACK / REJECTED
+// ════════════════════════════════════════════════════
 
-    private String getStatusBadgeClass(String status) {
-        if (status == null) return "badge b-grey";
-        switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR":  return "badge b-pend";
-            case "ENTRY_PENDING": return "badge b-info";
-            case "SUBMITTED":     return "badge b-pass";
-            case "REFER_BACK":    return "badge b-warn";
-            case "PASSED":        return "badge b-pass";
-            case "REJECTED":      return "badge b-fail";
-            case "PENDING":       return "badge b-pend";
-            default:              return "badge b-grey";
-        }
+private String getStatusLabel(String status) {
+    if (status == null) return "Unknown";
+    switch (status.toUpperCase()) {
+        // ── Batch-level statuses ──
+        case "NEEDS_REPAIR":         return "Needs MICR Repair";
+        case "ENTRY_PENDING":        return "Pending Data Entry";
+        case "SUBMITTED":            return "Submitted to Checker";
+        case "REFER_BACK":           return "Referred Back to Maker";
+        case "CHECKER_IN_PROGRESS":  return "Checker In Progress";
+        case "CHECKER_HOLD":         return "On Hold (Refer Pending)";
+        case "CHECKER_APPROVED":     return "Approved by Checker";
+        case "EXPORTED":             return "DEM Exported";
+        // ── Cheque-level statuses ──
+        case "PENDING":              return "Pending";
+        case "ENTRY_DONE":           return "Entry Done";
+        case "CHECKER_PASSED":       return "Passed";
+        case "CHECKER_REJECTED":     return "Rejected by Checker";
+        case "CHECKER_REFERRED":     return "Referred";
+        case "PASSED":               return "Passed";
+        case "REJECTED":             return "Rejected";
+        default:                     return status;
     }
+}
 
+private String getStatusBadgeClass(String status) {
+    if (status == null) return "badge b-grey";
+    switch (status.toUpperCase()) {
+        // ── Batch-level ──
+        case "NEEDS_REPAIR":         return "badge b-pend";
+        case "ENTRY_PENDING":        return "badge b-info";
+        case "SUBMITTED":            return "badge b-info";
+        case "REFER_BACK":           return "badge b-warn";
+        case "CHECKER_IN_PROGRESS":  return "badge b-info";
+        case "CHECKER_HOLD":         return "badge b-warn";
+        case "CHECKER_APPROVED":     return "badge b-pass";
+        case "EXPORTED":             return "badge b-cbs";
+        // ── Cheque-level ──
+        case "PENDING":              return "badge b-pend";
+        case "ENTRY_DONE":           return "badge b-info";
+        case "CHECKER_PASSED":       return "badge b-pass";
+        case "CHECKER_REJECTED":     return "badge b-fail";
+        case "CHECKER_REFERRED":     return "badge b-warn";
+        case "PASSED":               return "badge b-pass";
+        case "REJECTED":             return "badge b-fail";
+        default:                     return "badge b-grey";
+    }
+}
     // ════════════════════════════════════════════════════
     //  General Helpers
     // ════════════════════════════════════════════════════

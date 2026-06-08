@@ -1,26 +1,127 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?page title="ExpressCTS — Reports"
+      contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/reports/reports.css"?>
 
 <!--
-    File    : reports/reports.zul
-    Purpose : Reports — Generate and download outward and inward batch reports
+    File    : webapp/reports/reports.zul
+    Purpose : Outward Reports — select report, set date range, download PDF
     Composer: com.iispl.composer.ReportsComposer
 -->
 
-<div xmlns="http://www.zkoss.org/2005/zul"
-     apply="com.iispl.composer.ReportsComposer">
+<zk xmlns="http://www.zkoss.org/2005/zul"
+    xmlns:n="native">
 
-    <!-- Page Header -->
-    <div sclass="page-hdr">
-        <div>
-            <div sclass="page-title">Reports</div>
-            <div sclass="page-sub">Generate and download outward and inward batch reports</div>
+<div sclass="shell" apply="com.iispl.composer.ReportsComposer">
+
+    <div sclass="topbar">
+        <include src="/component/topbar.zul" />
+    </div>
+
+    <div sclass="body-row">
+        <include src="/component/sidebar.zul" />
+
+        <div sclass="main">
+            <div sclass="dash-main">
+
+                <!-- Page Header -->
+                <div sclass="page-hdr">
+                    <div>
+                        <div sclass="page-title">Outward Reports</div>
+                        <div sclass="page-sub">
+                            Select a report, choose a date range, and download as PDF.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Two-column layout: report list (left) + config panel (right) -->
+                <div sclass="rpt-grid">
+
+                    <!-- ───── LEFT: Report Type List ───── -->
+                    <div sclass="card rpt-list-card">
+                        <div sclass="card-hdr">
+                            <div sclass="card-title">Available Reports</div>
+                        </div>
+                        <div sclass="card-body" style="padding:0;">
+                            <listbox id="reportTypeList"
+                                     sclass="rpt-list"
+                                     vflex="1">
+                                <listitem label="📊 Daily Outward Summary"
+                                          value="DAILY_SUMMARY"/>
+                                <listitem label="📋 Batch-wise Detail Report"
+                                          value="BATCH_DETAIL"/>
+                                <listitem label="✅ Checker Action Report"
+                                          value="CHECKER_ACTION"/>
+                                <listitem label="👤 Maker Performance Report"
+                                          value="MAKER_PERFORMANCE"/>
+                                <listitem label="❌ Rejection Report"
+                                          value="REJECTION"/>
+                            </listbox>
+                        </div>
+                    </div>
+
+                    <!-- ───── RIGHT: Date Range + Generate ───── -->
+                    <div sclass="card rpt-config-card">
+                        <div sclass="card-hdr">
+                            <div sclass="card-title">Report Configuration</div>
+                        </div>
+                        <div sclass="card-body">
+
+                            <!-- Selected report info -->
+                            <div sclass="rpt-info">
+                                <label id="selectedReportTitle"
+                                       sclass="rpt-info-title"
+                                       value="Select a report from the left"/>
+                                <label id="selectedReportDesc"
+                                       sclass="rpt-info-desc"
+                                       value=""/>
+                            </div>
+
+                            <!-- Date range -->
+                            <div sclass="frow c2 mt16">
+                                <div sclass="fg">
+                                    <n:label class="fg-lbl">From Date</n:label>
+                                    <datebox id="fromDate"
+                                             sclass="fi"
+                                             format="dd/MM/yyyy"
+                                             width="100%"/>
+                                </div>
+                                <div sclass="fg">
+                                    <n:label class="fg-lbl">To Date</n:label>
+                                    <datebox id="toDate"
+                                             sclass="fi"
+                                             format="dd/MM/yyyy"
+                                             width="100%"/>
+                                </div>
+                            </div>
+
+                            <!-- Generate button row -->
+                            <div sclass="rpt-actions">
+                                <button id="generateBtn"
+                                        sclass="btn bp btn-lg"
+                                        label="Generate PDF"/>
+                            </div>
+
+                            <!-- Status area (success/warn/error messages) -->
+                            <div id="statusArea"
+                                 sclass="status-pane note info"
+                                 visible="false">
+                                <label id="statusMessage" value=""/>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
         </div>
     </div>
 
-    <!-- Page content goes here -->
-
 </div>
+</zk>

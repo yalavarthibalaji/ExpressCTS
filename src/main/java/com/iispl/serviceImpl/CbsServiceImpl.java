@@ -33,10 +33,13 @@ import com.iispl.service.CbsService;
  *   "cityCode"           → String
  *   "chequeBookIssued"   → boolean
  */
+
+
+//
 public class CbsServiceImpl implements CbsService {
 
     private static final String FIREBASE_BASE_URL =
-        "https://cbs-validation-api-default-rtdb.asia-southeast1.firebasedatabase.app";
+        "https://outward-cbsvalidation-api-default-rtdb.asia-southeast1.firebasedatabase.app";
 
     private static final int CONNECT_TIMEOUT_MS = 6000;
     private static final int READ_TIMEOUT_MS    = 10000;

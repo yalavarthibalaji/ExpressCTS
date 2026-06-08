@@ -625,3 +625,18 @@
     color: #E65100;
     border-color: #FFCC80;
 }
+
+/* ════════════════════════════════════════════════════
+   STATUS BADGES — additional states for checker flow
+════════════════════════════════════════════════════ */
+.status-badge.status-info {
+    background: var(--info-bg);
+    color: var(--info);
+    border: 1px solid var(--info-b);
+}
+
+.status-badge.status-exported {
+    background: #E0F2F1;
+    color: #00695C;
+    border: 1px solid #80CBC4;
+}
