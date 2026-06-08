@@ -20,4 +20,8 @@ public interface RejectRepairDao {
     List<InwardCheque> findStep3ChequesByBatchId(String batchId);
 
     void updateBatchStatus(String batchId, String status, String repairStatus);
+
+ // RejectRepairDao additions
+    InwardCheque findChequeById(Long chequeId);
+    void updateBatchMicrErrorCount(String batchId, int count);
 }
