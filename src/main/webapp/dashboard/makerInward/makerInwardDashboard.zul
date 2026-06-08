@@ -6,117 +6,206 @@
 <?link rel="stylesheet" type="text/css" href="/dashboard/makerInward/makerInwardDashboard.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
-<div sclass="dash-shell" apply="com.iispl.composer.MakerInwardDashboardComposer">
+	<div sclass="dash-shell"
+		apply="com.iispl.composer.MakerInwardDashboardComposer">
 
-    <!-- Topbar -->
-    <div sclass="topbar">
-        <include src="/component/topbar.zul" />
-    </div>
+		<!-- Topbar -->
+		<div sclass="topbar">
+			<include src="/component/topbar.zul" />
+		</div>
 
-    <!-- Body: Sidebar + Main -->
-    <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
+		<!-- Body: Sidebar + Main -->
+		<div sclass="body-row">
+			<include src="/component/sidebar.zul" />
 
-        <div sclass="main">
-            <div sclass="dash-main">
+			<div sclass="main">
+				<div sclass="dash-main">
 
-                <!-- Breadcrumb -->
-                <div sclass="breadcrumb">
-                    <label sclass="breadcrumb-home" value="Home" />
-                    <span sclass="breadcrumb-sep">›</span>
-                    <label sclass="breadcrumb-current" value="Dashboard" />
-                </div>
+					<!-- Breadcrumb -->
+					<div sclass="breadcrumb">
+						<label sclass="breadcrumb-home" value="Home" />
+						<span sclass="breadcrumb-sep">›</span>
+						<label sclass="breadcrumb-current"
+							value="Dashboard" />
+					</div>
 
-                <!-- Page Title -->
-                <div sclass="page-title-block">
-                    <label sclass="page-title" value="Dashboard" />
-                </div>
-                
-               <div sclass="stat-cards-row">
+					<!-- Page Title -->
+					<div sclass="page-title-block">
+						<label sclass="page-title" value="Dashboard" />
+					</div>
 
-    <div sclass="stat-card stat-card--pending" id="statPending">
-        <label sclass="stat-number" id="lblPendingCount" value="0"/>
-        <label sclass="stat-label" value="Pending batches"/>
-        <div sclass="stat-card-overlay">
-            <button sclass="stat-overlay-btn" id="btnPendingOverlay" label="Go to Repair"/>
-        </div>
-    </div>
+					<!-- Stat Cards -->
+					<div sclass="stat-cards-row">
 
-    <div sclass="stat-card stat-card--cleared" id="statCleared">
-        <label sclass="stat-number" id="lblClearedCount" value="0"/>
-        <label sclass="stat-label" value="Cleared batches"/>
-        <div sclass="stat-card-overlay">
-            <button sclass="stat-overlay-btn" id="btnClearedOverlay" label="View Batches"/>
-        </div>
-    </div>
+						<div sclass="stat-card stat-card--pending"
+							id="statPending">
+							<label sclass="stat-number"
+								id="lblPendingCount" value="0" />
+							<label sclass="stat-label"
+								value="Pending batches" />
+							<div sclass="stat-card-overlay">
+								<button sclass="stat-overlay-btn"
+									id="btnPendingOverlay" label="Go to Repair" />
+							</div>
+						</div>
 
-    <div sclass="stat-card stat-card--inprocess" id="statTotal">
-        <label sclass="stat-number" id="lblTotalCount" value="0"/>
-        <label sclass="stat-label" value="Total batches"/>
-    </div>
+						<div sclass="stat-card stat-card--cleared"
+							id="statCleared">
+							<label sclass="stat-number"
+								id="lblClearedCount" value="0" />
+							<label sclass="stat-label"
+								value="Cleared batches" />
+							<div sclass="stat-card-overlay">
+								<button sclass="stat-overlay-btn"
+									id="btnClearedOverlay" label="View Batches" />
+							</div>
+						</div>
 
-</div>
+						<div sclass="stat-card stat-card--inprocess"
+							id="statTotal">
+							<label sclass="stat-number"
+								id="lblTotalCount" value="0" />
+							<label sclass="stat-label"
+								value="Total batches" />
+						</div>
 
-                <!-- Action Cards Row -->
-                <div sclass="action-cards-row">
+					</div>
 
-                    <!-- File Processing Card -->
-                    <div sclass="action-card">
-                        <div sclass="card-left">
-                            <div sclass="card-icon file-icon">&#x2191;</div>
-                            <div sclass="card-text">
-                                <label sclass="card-title" value="File Processing" />
-                                <label sclass="card-desc"  value="Upload inward cheque files" />
-                            </div>
-                        </div>
-                        <button sclass="go-btn go-btn-blue"
-                                label="Go →"
-                                id="btnFileProcessing" />
-                    </div>
+					<!-- Action Cards Row -->
+					<div sclass="action-cards-row">
 
-                    <!-- Reject and Repair Card -->
-                    <div sclass="action-card">
-                        <div sclass="card-left">
-                            <div sclass="card-icon repair-icon">&#x1F527;</div>
-                            <div sclass="card-text">
-                                <label sclass="card-title" value="Reject &amp; Repair" />
-                                <label sclass="card-desc"  value="Fix errors in inward cheques" />
-                            </div>
-                        </div>
-                        <button sclass="go-btn go-btn-gold"
-                                label="Go →"
-                                id="btnRejectRepair" />
-                    </div>
+						<div sclass="action-card">
+							<div sclass="card-left">
+								<div sclass="card-icon file-icon">
+									&#x2191;
+								</div>
+								<div sclass="card-text">
+									<label sclass="card-title"
+										value="File Processing" />
+									<label sclass="card-desc"
+										value="Upload inward cheque files" />
+								</div>
+							</div>
+							<button sclass="go-btn go-btn-blue"
+								label="Go →" id="btnFileProcessing" />
+						</div>
 
-                </div>
-			
-			
-			<div>
-				<label value = "Pending Batches"/>
-				<listbox width="100%" id="pendingBatches" sclass="pendingBatches">
-				    <listhead>
-				        <listheader label="Batch ID" sclass="pendingBatchesHeader" />
-				        <listheader label="No. of Cheques" sclass="pendingBatchesHeader"/>
-				        <listheader label="Micr Error Count" sclass="pendingBatchesHeader" />
-				        <listheader label="Parsed At" sclass="pendingBatchesHeader" />
-				        <listheader label="Status" sclass="pendingBatchesHeader" />
-				        <listheader label="Action" sclass="pendingBatchesHeader"/>
-				    </listhead>
-				</listbox>
-				
-				<label id="emptyBatchesMsg" value="No pending batches"/>
-			</div>
-               
+						<div sclass="action-card">
+							<div sclass="card-left">
+								<div sclass="card-icon repair-icon">
+									&#x1F527;
+								</div>
+								<div sclass="card-text">
+									<label sclass="card-title"
+										value="Reject &amp; Repair" />
+									<label sclass="card-desc"
+										value="Fix errors in inward cheques" />
+								</div>
+							</div>
+							<button sclass="go-btn go-btn-gold"
+								label="Go →" id="btnRejectRepair" />
+						</div>
 
-            </div>
-        </div>
-    </div>
+					</div>
 
-    <!-- Footer -->
-    <div sclass="dash-footer">
-        <label value="ExpressClear CTS - IISPL" />
-    </div>
-    
+					<!-- Pending Batches Section -->
+					<div sclass="batches-section">
 
-</div>
+						<!-- Section Header -->
+						<div sclass="batches-header">
+							<div sclass="batches-title-row">
+								<div sclass="batches-title-left">
+									<span sclass="batches-icon">
+										&#x1F4CB;
+									</span>
+									<label sclass="batches-title"
+										value="Pending Batches" />
+									<label sclass="batches-count-badge"
+										id="lblTableCount" value="0" />
+								</div>
+							</div>
+
+							<!-- Toolbar -->
+							<div sclass="batches-toolbar">
+
+								<!-- Search -->
+								<div sclass="toolbar-search-wrap">
+									<span sclass="search-icon">
+										&#x1F50D;
+									</span>
+									<textbox id="txtBatchSearch"
+										sclass="batch-search-box"
+										placeholder="Search batch ID or status..." width="220px"
+										instant="true" />
+								</div>
+
+								<!-- Date Filter -->
+								<div sclass="toolbar-date-wrap">
+									<label sclass="toolbar-label"
+										value="Date:" />
+									<datebox id="dateBatchFilter"
+										sclass="batch-date-box" format="dd-MM-yyyy"
+										style="width:180px;min-width:180px" placeholder="Pick a date" />
+									<button sclass="btn-clear-date"
+										id="btnClearDate" label="✕" tooltiptext="Clear date filter" />
+								</div>
+
+								<!-- Sort -->
+								<div sclass="toolbar-sort-wrap">
+									<label sclass="toolbar-label"
+										value="Sort:" />
+									<combobox id="cmbSort"
+										sclass="batch-sort-box" readonly="true" width="140px">
+										<comboitem label="Newest First"
+											value="NEWEST" />
+										<comboitem label="Oldest First"
+											value="OLDEST" />
+										<comboitem label="Most Errors"
+											value="ERRORS" />
+										<comboitem label="Most Cheques"
+											value="CHEQUES" />
+									</combobox>
+								</div>
+
+							</div>
+						</div>
+
+						<!-- Batch Table -->
+						<div sclass="batches-body">
+							<listbox width="100%" id="pendingBatches"
+								sclass="batch-listbox" height="320px">
+								<listhead>
+									<listheader label="Batch ID"
+										width="160px" sclass="batch-listbox" />
+									<listheader label="No. of Cheques"
+										width="140px" align="center" sclass="batch-listbox" />
+									<listheader label="MICR Error Count"
+										width="150px" align="center" sclass="batch-listbox" />
+									<listheader label="Parsed At"
+										hflex="1" sclass="batch-listbox" />
+									<listheader label="Status"
+										width="130px" align="center" sclass="batch-listbox" />
+									<listheader label="Action"
+										width="110px" align="center" sclass="batch-listbox" />
+								</listhead>
+							</listbox>
+
+							<!-- Empty state -->
+							<label id="emptyBatchesMsg"
+								sclass="batches-empty" value="No pending batches found."
+								visible="false" />
+						</div>
+
+					</div><!-- /batches-section -->
+
+				</div><!-- /dash-main -->
+			</div><!-- /main -->
+		</div><!-- /body-row -->
+
+		<!-- Footer -->
+		<div sclass="dash-footer">
+			<label value="ExpressClear CTS - IISPL" />
+		</div>
+
+	</div>
 </zk>

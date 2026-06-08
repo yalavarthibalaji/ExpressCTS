@@ -133,6 +133,33 @@ public class RejectRepairDaoImpl implements RejectRepairDao {
             throw new RuntimeException("DB error in findStep2ChequesByBatchId", e);
         }
     }
+    
+ // RejectRepairDaoImpl — findChequeById
+    @Override
+    public InwardCheque findChequeById(Long chequeId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(InwardCheque.class, chequeId);
+        }
+    }
+
+    // RejectRepairDaoImpl — updateBatchMicrErrorCount
+    @Override
+    public void updateBatchMicrErrorCount(String batchId, int count) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.createMutationQuery(
+                    "UPDATE InwardBatch b SET b.micrErrorCount = :cnt " +
+                    "WHERE b.batchId = :bid")
+                   .setParameter("cnt", count)
+                   .setParameter("bid", batchId)
+                   .executeUpdate();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            throw new RuntimeException("updateBatchMicrErrorCount failed", e);
+        }
+    }
 
     // ════════════════════════════════════════════════
     //  Step 3 — Payee Name & Account Entry

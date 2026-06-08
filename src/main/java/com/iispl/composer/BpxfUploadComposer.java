@@ -31,7 +31,11 @@ import com.iispl.util.SessionUtil;
 public class BpxfUploadComposer extends SelectorComposer<Component> {
 
     private static final long serialVersionUID = 1L;
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
+    private static final DateTimeFormatter FMT =
+            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
+    // ── Wired Components ──────────────────────────────────────────────────
 
     @Wire("#batchNameBox")       private Textbox batchNameBox;
     @Wire("#fileNameDisplay")    private Textbox fileNameDisplay;
@@ -44,12 +48,18 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
     @Wire("#panelManual")        private Div     panelManual;
     @Wire("#panelAuto")          private Div     panelAuto;
 
+    // ── State ─────────────────────────────────────────────────────────────
+
     private Media                uploadedFile = null;
     private List<InwardBatchDto> allBatches   = null;
-    private final BpxfUploadService service   = new BpxfUploadServiceImpl();
 
-    private Thread                 watchThread  = null;
-    private BpxfFolderWatchService watchService = null;
+    // ── Services ──────────────────────────────────────────────────────────
+
+    private final BpxfUploadService    service      = new BpxfUploadServiceImpl();
+    private Thread                     watchThread  = null;
+    private BpxfFolderWatchService     watchService = null;
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
@@ -59,6 +69,10 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
         updateWatcherStatus();
         subscribeToQueue();
     }
+
+    // =====================================================================
+    // TAB SWITCHING
+    // =====================================================================
 
     @Listen("onClick = #tabManual")
     public void onTabManual() {
@@ -76,6 +90,10 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
         panelManual.setVisible(false);
     }
 
+    // =====================================================================
+    // FILE UPLOAD
+    // =====================================================================
+
     @Listen("onUpload = #uploadBtn")
     public void onUpload(org.zkoss.zk.ui.event.UploadEvent event) {
         Media media = event.getMedia();
@@ -85,34 +103,95 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
         }
     }
 
+    // =====================================================================
+    // PARSE — with duplicate file check
+    // =====================================================================
+
     @Listen("onClick = #parseBtn")
     public void onParse() throws InterruptedException {
+
+        // ── Validate: file must be selected ─────────────────────────────
         if (uploadedFile == null) {
-            Messagebox.show("Please upload a file first.", "Validation",
-                    Messagebox.OK, Messagebox.EXCLAMATION);
+            Messagebox.show(
+                    "Please upload a file first.",
+                    "Validation",
+                    Messagebox.OK,
+                    Messagebox.EXCLAMATION);
             return;
         }
 
+        // ── Validate: user session ───────────────────────────────────────
         LoginDTO operator = SessionUtil.getCurrentUser();
         if (operator == null) {
             Executions.sendRedirect("/login/login.zul");
             return;
         }
 
+        // ── Duplicate check — compare against already loaded batches ─────
+        String incomingFileName = uploadedFile.getName().trim();
+        if (allBatches != null) {
+            boolean alreadyUploaded = allBatches.stream()
+                    .anyMatch(b -> incomingFileName
+                            .equalsIgnoreCase(b.getSourceFileName()));
+            if (alreadyUploaded) {
+                Messagebox.show(
+                        "\"" + incomingFileName + "\" has already been uploaded.\n\n"
+                        + "Each file can only be processed once.\n"
+                        + "Please upload a different file.",
+                        "Duplicate File",
+                        Messagebox.OK,
+                        Messagebox.EXCLAMATION);
+                return;
+            }
+        }
+
+        // ── Parse and save ───────────────────────────────────────────────
         try {
             String batchName = batchNameBox.getValue().trim();
             service.parseAndSave(uploadedFile, batchName, operator);
+
+            // Reset form
             uploadedFile = null;
             fileNameDisplay.setValue("");
             batchNameBox.setValue("");
+
+            // Reload table
             loadBatches();
-            Messagebox.show("File parsed and saved successfully.", "Success",
-                    Messagebox.OK, Messagebox.INFORMATION);
+
+            Messagebox.show(
+                    "File parsed and saved successfully.",
+                    "Success",
+                    Messagebox.OK,
+                    Messagebox.INFORMATION);
+
         } catch (Exception e) {
-            Messagebox.show("Error: " + e.getMessage(), "Parse Failed",
-                    Messagebox.OK, Messagebox.ERROR);
+            // ── Fallback duplicate check from DB constraint violation ────
+            String msg = e.getMessage() != null
+                    ? e.getMessage().toLowerCase() : "";
+
+            if (msg.contains("duplicate")
+                    || msg.contains("already exists")
+                    || msg.contains("pkey")
+                    || msg.contains("unique constraint")) {
+                Messagebox.show(
+                        "This file has already been uploaded and processed.\n\n"
+                        + "Duplicate files cannot be re-imported.",
+                        "Duplicate File",
+                        Messagebox.OK,
+                        Messagebox.EXCLAMATION);
+            } else {
+                Messagebox.show(
+                        "Error: " + e.getMessage(),
+                        "Parse Failed",
+                        Messagebox.OK,
+                        Messagebox.ERROR);
+            }
         }
     }
+
+    // =====================================================================
+    // SEARCH
+    // =====================================================================
 
     @Listen("onChanging = #searchBox")
     public void onSearch() {
@@ -127,7 +206,9 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
         }
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────
+    // =====================================================================
+    // WATCHER
+    // =====================================================================
 
     private void startWatcher() {
         LoginDTO operator = SessionUtil.getCurrentUser();
@@ -153,15 +234,24 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
 
     private void subscribeToQueue() {
         EventQueue<Event> queue = EventQueues.lookup(
-                BpxfFolderWatchService.QUEUE_NAME, EventQueues.APPLICATION, true);
+                BpxfFolderWatchService.QUEUE_NAME,
+                EventQueues.APPLICATION,
+                true);
 
         queue.subscribe(event -> {
             String fileName = (String) event.getData();
             loadBatches();
-            Messagebox.show("Auto-imported: " + fileName, "New File Detected",
-                    Messagebox.OK, Messagebox.INFORMATION);
+            Messagebox.show(
+                    "Auto-imported: " + fileName,
+                    "New File Detected",
+                    Messagebox.OK,
+                    Messagebox.INFORMATION);
         }, true);
     }
+
+    // =====================================================================
+    // TABLE
+    // =====================================================================
 
     private void loadBatches() {
         allBatches = service.getAllBatches();
@@ -173,28 +263,30 @@ public class BpxfUploadComposer extends SelectorComposer<Component> {
 
     private void appendRow(InwardBatchDto dto) {
         Listitem item = new Listitem();
+
         item.appendChild(new Listcell(dto.getBatchId()));
         item.appendChild(new Listcell(dto.getSourceFileName()));
         item.appendChild(new Listcell(String.valueOf(dto.getTotalCheques())));
         item.appendChild(new Listcell(String.valueOf(dto.getMicrErrorCount())));
-        item.appendChild(new Listcell(dto.getParsedAt() != null
-                ? dto.getParsedAt().format(FMT) : "—"));
+        item.appendChild(new Listcell(
+                dto.getParsedAt() != null ? dto.getParsedAt().format(FMT) : "—"));
         item.appendChild(new Listcell(dto.getStatus()));
 
+        // Action buttons
         Listcell actionCell = new Listcell();
 
         Button viewBtn = new Button("View");
         viewBtn.setSclass("btn-view");
-        viewBtn.addEventListener("onClick", event -> {
-            Executions.sendRedirect("/inward/viewBatches/viewBatches.zul");
-        });
+        viewBtn.addEventListener("onClick", event ->
+                Executions.sendRedirect("/inward/viewBatches/viewBatches.zul"));
         actionCell.appendChild(viewBtn);
 
         Button repairBtn = new Button("Repair");
         repairBtn.setSclass("btn-view");
-        repairBtn.addEventListener("onClick", event -> {
-            Executions.sendRedirect("/inward/inwardMicr/RejectRepair.zul");
-        });
+        repairBtn.addEventListener("onClick", event ->
+                Executions.sendRedirect(
+                        "/inward/inwardMicr/RejectRepair.zul"
+                        + "?batchId=" + dto.getBatchId()));
         actionCell.appendChild(repairBtn);
 
         item.appendChild(actionCell);
