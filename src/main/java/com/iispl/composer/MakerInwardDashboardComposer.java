@@ -321,7 +321,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
 
     @Listen("onClick = #btnClearedOverlay")
     public void onClearedOverlay() {
-        Executions.getCurrent().sendRedirect("/inward/bpxfUpload/bpxfUpload.zul");
+        Executions.getCurrent().sendRedirect("/inward/viewBatches/viewBatches.zul");
     }
 
     @Listen("onClick = #btnTotalOverlay")
