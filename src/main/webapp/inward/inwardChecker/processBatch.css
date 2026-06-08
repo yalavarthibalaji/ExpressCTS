@@ -140,26 +140,6 @@
     gap: 12px !important;
 }
 
-/* Back button */
-.pv-btn-back .z-button {
-    background: var(--surface) !important;
-    color: var(--t2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--r6) !important;
-    height: 32px !important;
-    padding: 0 14px !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    font-family: var(--font) !important;
-    cursor: pointer !important;
-    transition: all 0.15s !important;
-}
-.pv-btn-back .z-button:hover {
-    background: var(--alt) !important;
-    border-color: var(--border-s) !important;
-    color: var(--t1) !important;
-}
-
 /* Batch badge label */
 .pv-batch-badge.z-label {
     font-size: 11px !important;
@@ -170,33 +150,6 @@
     border: 1px solid var(--info-b) !important;
     border-radius: var(--r4) !important;
     padding: 3px 12px !important;
-}
-
-/* Prev / Next nav buttons */
-.pv-btn-nav .z-button {
-    background: var(--surface) !important;
-    color: var(--primary) !important;
-    border: 1.5px solid var(--primary) !important;
-    border-radius: var(--r6) !important;
-    height: 32px !important;
-    padding: 0 16px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    font-family: var(--font) !important;
-    cursor: pointer !important;
-    transition: all 0.15s !important;
-}
-.pv-btn-nav .z-button:hover {
-    background: var(--primary) !important;
-    color: #fff !important;
-}
-.pv-btn-nav .z-button[disabled],
-.pv-btn-nav .z-button:disabled {
-    opacity: 0.4 !important;
-    cursor: not-allowed !important;
-    background: var(--surface) !important;
-    color: var(--tm) !important;
-    border-color: var(--border) !important;
 }
 
 /* Record label */
@@ -254,157 +207,84 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   8. IMAGE SECTION — inside left panel
+   8. IMAGE SECTION — tab bar + image panels inside left panel
    ═══════════════════════════════════════════════════════════ */
 .pb-img-section {
     background: var(--surface) !important;
     border-bottom: 1px solid var(--border) !important;
     overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
-/* ═══════════════════════════════════════════════════════════
-   IMAGE VIEW SWITCHER BAR — checkbox-pill style
-   Front | Back | ─── | Greyscale
-   ═══════════════════════════════════════════════════════════ */
 
-.pb-view-bar {
+/* ─── Image viewer tab bar ────────────────────────────────── */
+/* Wraps the three .tab divs; uses the same underline pattern
+   as .tabs in components.css but scoped tightly to this panel */
+.pb-img-tabs {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    padding: 8px 14px !important;
-    background: #f1f5f9 !important;
-    border-bottom: 1px solid var(--border) !important;
-}
-
-/* Thin vertical separator between Front/Back and Greyscale */
-.pb-view-sep {
-    width: 1px !important;
-    height: 18px !important;
-    background: #cbd5e1 !important;
-    margin: 0 4px !important;
+    border-bottom: 2px solid var(--border) !important;
+    background: var(--alt) !important;
+    padding: 0 14px !important;
     flex-shrink: 0 !important;
 }
 
-/* Base pill button — looks like an unchecked checkbox pill */
-.pv-view-btn .z-button {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    height: 28px !important;
-    padding: 0 12px !important;
-    background: #fff !important;
-    border: 1.5px solid #cbd5e1 !important;
-    border-radius: 6px !important;
-    color: #64748b !important;
+/* Each tab div — inherits .tab from components.css.
+   The z-label wrapper ZK adds is transparent: we size the div. */
+.pb-img-tabs .tab {
+    padding: 8px 16px !important;
     font-size: 12px !important;
     font-weight: 500 !important;
-    font-family: var(--font) !important;
+    color: var(--tm) !important;
     cursor: pointer !important;
-    transition: all 0.15s !important;
-    box-shadow: none !important;
+    border-bottom: 2px solid transparent !important;
+    margin-bottom: -2px !important;
     white-space: nowrap !important;
+    user-select: none !important;
+    transition: color 0.15s, border-color 0.15s !important;
 }
 
-/* Unchecked pill: prepend an open square ☐ via pseudo-content trick
-   ZK <button> renders as <td><a class="z-button">text</a></td>
-   We use ::before on .z-button to inject the checkbox icon */
-.pv-view-btn .z-button::before {
-    content: "\2610" !important;   /* ☐ — Unicode BALLOT BOX */
-    font-size: 14px !important;
-    line-height: 1 !important;
-    color: #94a3b8 !important;
-    margin-right: 5px !important;
+.pb-img-tabs .tab:hover {
+    color: var(--t2) !important;
+    background: rgba(0,0,0,0.03) !important;
 }
 
-.pv-view-btn .z-button:hover {
-    border-color: #94a3b8 !important;
-    color: #334155 !important;
-    background: #f8fafc !important;
-}
-
-/* Active / selected pill — filled checkbox ☑ + highlight */
-.pv-view-btn.active .z-button {
-    background: #1e3a5f !important;
-    border-color: #1e3a5f !important;
-    color: #fff !important;
+.pb-img-tabs .tab.active {
+    color: var(--primary) !important;
+    border-bottom-color: var(--primary) !important;
     font-weight: 600 !important;
-    box-shadow: 0 1px 4px rgba(30,58,95,0.22) !important;
-}
-.pv-view-btn.active .z-button::before {
-    content: "\2611" !important;   /* ☑ — Unicode BALLOT BOX WITH CHECK */
-    color: #93c5fd !important;
 }
 
-/* ── Greyscale checkbox-pill — same base, but teal/neutral accent ── */
-.pv-view-chk .z-button {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    height: 28px !important;
-    padding: 0 12px !important;
-    background: #fff !important;
-    border: 1.5px solid #cbd5e1 !important;
-    border-radius: 6px !important;
-    color: #64748b !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    font-family: var(--font) !important;
-    cursor: pointer !important;
-    transition: all 0.15s !important;
-    box-shadow: none !important;
-    white-space: nowrap !important;
-}
-.pv-view-chk .z-button::before {
-    content: "\2610" !important;   /* ☐ unchecked */
-    font-size: 14px !important;
-    line-height: 1 !important;
-    color: #94a3b8 !important;
-    margin-right: 5px !important;
-}
-.pv-view-chk .z-button:hover {
-    border-color: #94a3b8 !important;
-    color: #334155 !important;
-    background: #f8fafc !important;
-}
-/* Greyscale ON — grey/charcoal checked pill */
-.pv-view-chk.active .z-button {
-    background: #475569 !important;
-    border-color: #475569 !important;
-    color: #fff !important;
-    font-weight: 600 !important;
-    box-shadow: 0 1px 4px rgba(71,85,105,0.22) !important;
-}
-.pv-view-chk.active .z-button::before {
-    content: "\2611" !important;   /* ☑ checked */
-    color: #e2e8f0 !important;
-}
-
-/* Greyscale filter applied to image when active */
-.pb-img-actual.greyscale {
-    filter: grayscale(100%) !important;
-    transition: filter 0.25s ease !important;
-}
-.pb-img-actual {
-    transition: filter 0.25s ease !important;
-}
-
+/* ─── Image panel container ───────────────────────────────── */
 .pb-img-panel {
-    padding: 16px !important;
+    padding: 20px 16px !important;
     background: #f0f4f8 !important;
-    min-height: 140px !important;
+    min-height: 160px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
 }
+
+/* ─── Cheque image itself ─────────────────────────────────── */
 .pb-img-actual {
     max-width: 100% !important;
-    max-height: 220px !important;
+    max-height: 240px !important;
     height: auto !important;
+    width: auto !important;
     object-fit: contain !important;
     display: block !important;
     border-radius: var(--r6) !important;
     box-shadow: 0 4px 16px rgba(0,0,0,0.14) !important;
     border: 1px solid var(--border) !important;
+    transition: filter 0.25s ease !important;
 }
+
+/* Greyscale tab image — permanent CSS filter; no class toggle needed */
+.pb-img-grey {
+    filter: grayscale(100%) !important;
+}
+
+/* ─── No-image placeholder ────────────────────────────────── */
 .pb-no-img-msg.z-label {
     display: block !important;
     text-align: center !important;
@@ -656,51 +536,95 @@
     margin: 8px 0 10px !important;
 }
 
-/* Accept */
-/* Accept — solid green from default */
-.pv-btn-accept .z-button {
-    background: #16a34a !important;
-    color: #fff !important;
-    border: 1.5px solid #15803d !important;
-    border-radius: var(--r6) !important;
-    height: 38px !important; padding: 0 22px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    font-family: var(--font) !important; cursor: pointer !important;
-    transition: all 0.15s !important; white-space: nowrap !important;
-    box-shadow: 0 2px 6px rgba(22,163,74,0.25) !important;
+/* ═══════════════════════════════════════════════════════════
+   ZK BUTTON SHIM — maps components.css design tokens through
+   ZK's .z-button renderer.
+   All action buttons use btn bp / bs / bd / bo / btn-lg.
+   Image-view tabs (pb-img-tabs .tab) use components.css .tab styles
+   scoped by pb-img-tabs; they are not action buttons.
+   ═══════════════════════════════════════════════════════════ */
+.z-button.btn {
+    height: 32px !important;
+    padding: 0 14px !important;
+    border-radius: var(--r4) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    border: none !important;
+    line-height: 1 !important;
+    transition: all 0.15s !important;
+    font-family: var(--font) !important;
 }
-.pv-btn-accept .z-button:hover { background: #15803d !important; box-shadow: 0 4px 12px rgba(22,163,74,0.35) !important; }
-.pv-btn-accept-on .z-button    { background: #14532d !important; color: #fff !important; border-color: #14532d !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(22,163,74,0.3) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
 
-/* Return — solid red from default */
-.pv-btn-return .z-button {
-    background: #dc2626 !important;
-    color: #fff !important;
-    border: 1.5px solid #b91c1c !important;
-    border-radius: var(--r6) !important;
-    height: 38px !important; padding: 0 22px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    font-family: var(--font) !important; cursor: pointer !important;
-    transition: all 0.15s !important; white-space: nowrap !important;
-    box-shadow: 0 2px 6px rgba(220,38,38,0.25) !important;
+/* btn-lg — used for Submit Batch (primary CTA) */
+.z-button.btn.btn-lg {
+    height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 22px !important;
+    font-weight: 700 !important;
 }
-.pv-btn-return .z-button:hover { background: #b91c1c !important; box-shadow: 0 4px 12px rgba(220,38,38,0.35) !important; }
-.pv-btn-return-on .z-button    { background: #7f1d1d !important; color: #fff !important; border-color: #7f1d1d !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.3) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
 
-/* Send Back — solid slate-blue */
-.pv-btn-sendback .z-button {
-    background: #475569 !important;
-    color: #fff !important;
-    border: 1.5px solid #334155 !important;
-    border-radius: var(--r6) !important;
-    height: 38px !important; padding: 0 22px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    font-family: var(--font) !important; cursor: pointer !important;
-    transition: all 0.15s !important; white-space: nowrap !important;
-    box-shadow: 0 2px 6px rgba(71,85,105,0.2) !important;
+.z-button.bp { background: var(--primary) !important;   color: #fff !important; border: none !important; }
+.z-button.bp:hover { background: var(--primary-light) !important; }
+
+.z-button.bs { background: var(--success) !important;   color: #fff !important; border: none !important; }
+.z-button.bs:hover { background: #156a3e !important; }
+
+.z-button.bd { background: var(--danger) !important;    color: #fff !important; border: none !important; }
+.z-button.bd:hover { background: #a93226 !important; }
+
+.z-button.bw { background: var(--warning) !important;   color: #fff !important; border: none !important; }
+.z-button.bw:hover { background: #9a5e00 !important; }
+
+.z-button.bo {
+    background: var(--surface) !important;
+    color: var(--t2) !important;
+    border: 1px solid var(--border) !important;
 }
-.pv-btn-sendback .z-button:hover { background: #334155 !important; box-shadow: 0 4px 12px rgba(71,85,105,0.3) !important; }
-.pv-btn-sendback-on .z-button    { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(71,85,105,0.25) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
+.z-button.bo:hover {
+    background: var(--alt) !important;
+    border-color: var(--border-s) !important;
+    color: var(--t1) !important;
+}
+
+/* Disabled state */
+.z-button.btn.disabled,
+.z-button.btn[disabled],
+.z-button.btn:disabled {
+    background: #E0E0E0 !important;
+    color: #9E9E9E !important;
+    border: 1px solid #BDBDBD !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+}
+
+/* btn-on — toggled/selected state for Accept / Return / Send Back.
+   Set by ProcessBatchComposer.updateActionButtonStates() via setSclass.
+   Adds a visible ring so the user knows which action is currently selected. */
+.z-button.btn.btn-on {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.18) !important;
+    font-weight: 700 !important;
+}
+.z-button.bs.btn-on { box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.35) !important; }
+.z-button.bd.btn-on { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.35) !important; }
+.z-button.bo.btn-on {
+    background: var(--alt) !important;
+    border-color: var(--border-s) !important;
+    color: var(--t1) !important;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.20) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BADGE SYSTEM — defined in components.css; no local override
+   needed. This comment is retained for reference only.
+   ═══════════════════════════════════════════════════════════ */
 
 /* Return reason box */
 .pv-reason-box      { background: var(--danger-bg) !important; border: 1px solid var(--danger-b) !important; border-radius: var(--r6) !important; padding: 12px 14px !important; margin-top: 8px !important; }
@@ -708,15 +632,6 @@
 .pv-reason-combo .z-combobox       { width: 100% !important; height: 32px !important; border: 1px solid var(--danger-b) !important; border-radius: var(--r4) !important; background: #fff !important; }
 .pv-reason-combo .z-combobox-input { font-size: 12px !important; color: var(--t1) !important; font-family: var(--font) !important; padding: 0 8px !important; background: transparent !important; border: none !important; height: 30px !important; }
 
-/* ═══════════════════════════════════════════════════════════
-   13. BADGE SYSTEM
-   ═══════════════════════════════════════════════════════════ */
-.badge          { display: inline-block !important; font-size: 11px !important; font-weight: 600 !important; padding: 3px 9px !important; border-radius: 20px !important; text-transform: uppercase !important; letter-spacing: .03em !important; white-space: nowrap !important; font-family: var(--font) !important; }
-.badge.b-pass   { background: var(--success-bg) !important; color: var(--success) !important; border: 1px solid var(--success-b) !important; }
-.badge.b-fail   { background: var(--danger-bg) !important;  color: var(--danger) !important;  border: 1px solid var(--danger-b) !important; }
-.badge.b-pend   { background: var(--warning-bg) !important; color: var(--warning) !important; border: 1px solid var(--warning-b) !important; }
-.badge.b-info   { background: var(--info-bg) !important;    color: var(--info) !important;    border: 1px solid var(--info-b) !important; }
-.badge.b-grey   { background: var(--alt) !important;        color: var(--tm) !important;      border: 1px solid var(--border) !important; }
 
 /* ═══════════════════════════════════════════════════════════
    14. STICKY FOOTER
@@ -734,9 +649,3 @@
 }
 .pv-footer-progress.z-label { font-size: 12px !important; font-weight: 600 !important; color: var(--t2) !important; font-family: var(--font) !important; }
 .pv-footer-buttons  { display: flex !important; gap: 10px !important; align-items: center !important; }
-.pv-footer-cancel .z-button  { background: var(--surface) !important; color: var(--t2) !important; border: 1px solid var(--border) !important; border-radius: var(--r6) !important; height: 36px !important; padding: 0 22px !important; font-size: 13px !important; font-weight: 500 !important; font-family: var(--font) !important; cursor: pointer !important; transition: all 0.15s !important; }
-.pv-footer-cancel .z-button:hover { background: var(--alt) !important; border-color: var(--border-s) !important; }
-.pv-footer-submit .z-button  { background: var(--primary) !important; color: #fff !important; border: none !important; border-radius: var(--r6) !important; height: 36px !important; padding: 0 28px !important; font-size: 13px !important; font-weight: 700 !important; font-family: var(--font) !important; cursor: pointer !important; transition: all 0.15s !important; box-shadow: 0 2px 8px rgba(26,60,110,0.25) !important; }
-.pv-footer-submit .z-button:hover { background: var(--primary-light) !important; box-shadow: 0 4px 14px rgba(26,60,110,0.35) !important; }
-.pv-footer-submit .z-button:disabled,
-.pv-footer-submit .z-button[disabled] { background: #94a3b8 !important; opacity: 0.7 !important; cursor: not-allowed !important; box-shadow: none !important; }

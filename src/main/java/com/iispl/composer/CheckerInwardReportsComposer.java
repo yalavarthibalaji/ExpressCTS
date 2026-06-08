@@ -229,7 +229,7 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
             // VALIDATION 7 — Button disabled for non-eligible batches
             Listcell actionCell = new Listcell();
             Button btnDebit     = new Button("Generate to Debit");
-            btnDebit.setSclass("btn rpt-btn-debit" +
+            btnDebit.setSclass("btn bp" +
                                (dto.isDebitEligible() ? "" : " disabled"));
             btnDebit.setDisabled(!dto.isDebitEligible());
             btnDebit.setTooltiptext(

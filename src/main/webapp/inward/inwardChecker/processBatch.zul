@@ -65,7 +65,7 @@
                 <div sclass="pb-nav-bar">
                     <div sclass="pb-nav-left">
                         <button id="btnBackToList"
-                                sclass="pv-btn-back"
+                                sclass="btn bo"
                                 label="← Back" />
                         <label id="lblBatchBadge"
                                sclass="pv-batch-badge"
@@ -73,14 +73,14 @@
                     </div>
                     <div sclass="pb-nav-center">
                         <button id="btnPrev"
-                                sclass="pv-btn-nav"
+                                sclass="btn bo"
                                 label="← Prev"
                                 disabled="true" />
                         <label id="lblRecordNav"
                                sclass="pv-record-label"
                                value="Record — of —" />
                         <button id="btnNext"
-                                sclass="pv-btn-nav"
+                                sclass="btn bo"
                                 label="Next →" />
                     </div>
                 </div>
@@ -102,15 +102,11 @@
                     <!-- Image section — checkbox-style view switcher -->
                     <div sclass="pb-img-section">
 
-                        <!-- View switcher bar: Front | Back | Greyscale -->
-                        <div sclass="pb-view-bar">
-                            <button id="pvFrontTab" sclass="pv-view-btn active"
-                                    label="Front" />
-                            <button id="pvBackTab"  sclass="pv-view-btn"
-                                    label="Back" />
-                            <div sclass="pb-view-sep" />
-                            <button id="pvGreyscaleBtn" sclass="pv-view-chk"
-                                    label="Greyscale" />
+                        <!-- Image viewer tabs: Front | Back | Greyscale -->
+                        <div sclass="pb-img-tabs">
+                            <div id="pvFrontTab"     sclass="tab active"   onClick="onFrontTab()">Front</div>
+                            <div id="pvBackTab"      sclass="tab"          onClick="onBackTab()">Back</div>
+                            <div id="pvGreyscaleTab" sclass="tab"          onClick="onGreyscaleTab()">Greyscale</div>
                         </div>
 
                         <div id="pvImgSection" visible="true">
@@ -119,6 +115,9 @@
                             </div>
                             <div id="pvBackPanel" sclass="pb-img-panel" visible="false">
                                 <image id="pvBackImg" sclass="pb-img-actual" />
+                            </div>
+                            <div id="pvGreyscalePanel" sclass="pb-img-panel" visible="false">
+                                <image id="pvGreyscaleImg" sclass="pb-img-actual pb-img-grey" />
                             </div>
                         </div>
                         <label id="pvNoImgMsg"
@@ -269,13 +268,13 @@
                         <div sclass="pv-section-label">ACTION</div>
                         <div sclass="pv-action-buttons">
                             <button id="btnAccept"
-                                    sclass="pv-btn-accept"
+                                    sclass="btn bs"
                                     label="✓ Accept → ACK" />
                             <button id="btnReturn"
-                                    sclass="pv-btn-return"
+                                    sclass="btn bd"
                                     label="✗ Return → RRF" />
                             <button id="btnSendBack"
-                                    sclass="pv-btn-sendback"
+                                    sclass="btn bo"
                                     label="↩ Send Back" />
                         </div>
                         <div id="divReturnReasonBox"
@@ -301,10 +300,10 @@
                        value="0 of 0 cheques actioned" />
                 <div sclass="pv-footer-buttons">
                     <button id="btnCancel"
-                            sclass="pv-footer-cancel"
+                            sclass="btn bo"
                             label="Cancel" />
                     <button id="btnSubmit"
-                            sclass="pv-footer-submit"
+                            sclass="btn bp btn-lg"
                             label="Submit Batch"
                             disabled="true" />
                 </div>
