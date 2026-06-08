@@ -1,5 +1,8 @@
-/target/
+# Build output
+target/
+
+# Firebase credentials — never commit this
 src/main/resources/firebase-service-account.json
-src/main/resources/firebase-service-account.json
-src/main/resource/firebase-service-account.json
-src/main/resources/firebase-service-account.json
+
+# All JSON files in resources (broader safety net)
+src/main/resources/*.json
