@@ -7,311 +7,285 @@
 <?link rel="stylesheet" type="text/css" href="/inward/inwardChecker/processBatch.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul">
-<div sclass="dash-shell" apply="com.iispl.composer.ProcessBatchComposer">
+	<div sclass="dash-shell"
+		apply="com.iispl.composer.ProcessBatchComposer">
 
-    <include src="/component/topbar.zul" />
+		<include src="/component/topbar.zul" />
 
-    <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
+		<div sclass="body-row">
+			<include src="/component/sidebar.zul" />
 
-        <div sclass="main">
+			<div sclass="main">
 
-            <!-- ══ TOP AREA — fixed, never scrolls ══ -->
-            <div sclass="pb-top-area">
+				<!-- ══ TOP AREA — fixed, never scrolls ══ -->
+				<div sclass="pb-top-area">
 
-                <!-- Summary Bar -->
-                <div sclass="pv-summary-bar">
-                    <div sclass="pv-summary-item">
-                        <label sclass="pv-summary-label" value="BATCH ID" />
-                        <label id="lblBatchId" sclass="pv-summary-value pv-mono" value="—" />
-                    </div>
-                    <div sclass="pv-summary-item">
-                        <label sclass="pv-summary-label" value="DATE" />
-                        <label id="lblBatchDate" sclass="pv-summary-value" value="—" />
-                    </div>
-                    <div sclass="pv-summary-item">
-                        <label sclass="pv-summary-label" value="CHEQUES" />
-                        <label id="lblTotalCheques" sclass="pv-summary-value" value="—" />
-                    </div>
-                    <div sclass="pv-summary-item">
-                        <label sclass="pv-summary-label" value="TOTAL AMOUNT" />
-                        <label id="lblTotalAmount" sclass="pv-summary-value pv-amount" value="—" />
-                    </div>
-                    <div sclass="pv-summary-item">
-                        <label sclass="pv-summary-label" value="MICR ERRORS" />
-                        <label id="lblMicrErrors" sclass="pv-summary-value" value="—" />
-                    </div>
-                    <div sclass="pv-summary-item">
-                        <label sclass="pv-summary-label" value="SOURCE FILE" />
-                        <label id="lblSourceFile" sclass="pv-summary-value" value="—" />
-                    </div>
-                </div>
+					<!-- Summary Bar -->
+					<div sclass="pv-summary-bar">
+						<div sclass="pv-summary-item">
+							<label sclass="pv-summary-label"
+								value="BATCH ID" />
+							<label id="lblBatchId"
+								sclass="pv-summary-value pv-mono" value="—" />
+						</div>
+						<div sclass="pv-summary-item">
+							<label sclass="pv-summary-label"
+								value="DATE" />
+							<label id="lblBatchDate"
+								sclass="pv-summary-value" value="—" />
+						</div>
+						<div sclass="pv-summary-item">
+							<label sclass="pv-summary-label"
+								value="CHEQUES" />
+							<label id="lblTotalCheques"
+								sclass="pv-summary-value" value="—" />
+						</div>
+						<div sclass="pv-summary-item">
+							<label sclass="pv-summary-label"
+								value="TOTAL AMOUNT" />
+							<label id="lblTotalAmount"
+								sclass="pv-summary-value pv-amount" value="—" />
+						</div>
+						<div sclass="pv-summary-item">
+							<label sclass="pv-summary-label"
+								value="MICR ERRORS" />
+							<label id="lblMicrErrors"
+								sclass="pv-summary-value" value="—" />
+						</div>
+						<div sclass="pv-summary-item">
+							<label sclass="pv-summary-label"
+								value="SOURCE FILE" />
+							<label id="lblSourceFile"
+								sclass="pv-summary-value" value="—" />
+						</div>
+					</div>
 
-                <!-- Progress Strip -->
-                <div sclass="pv-progress-strip">
-                    <label id="lblProgressText"
-                           sclass="pv-progress-text"
-                           value="0 of 0 cheques actioned" />
-                    <div sclass="pv-progress-track">
-                        <div id="divProgressFill" sclass="pv-progress-fill"
-                             style="width:0%" />
-                    </div>
-                    <label id="lblProgressCounter"
-                           sclass="pv-progress-counter"
-                           value="0/0" />
-                </div>
+					<!-- Progress Strip -->
+					<div sclass="pv-progress-strip">
+						<label id="lblProgressText"
+							sclass="pv-progress-text" value="0 of 0 cheques actioned" />
+						<div sclass="pv-progress-track">
+							<div id="divProgressFill"
+								sclass="pv-progress-fill" style="width:0%" />
+						</div>
+						<label id="lblProgressCounter"
+							sclass="pv-progress-counter" value="0/0" />
+					</div>
 
-                <!-- Nav Bar -->
-                <div sclass="pb-nav-bar">
-                    <div sclass="pb-nav-left">
-                        <button id="btnBackToList"
-                                sclass="btn bo"
-                                label="← Back" />
-                        <label id="lblBatchBadge"
-                               sclass="pv-batch-badge"
-                               value="BATCH: —" />
-                    </div>
-                    <div sclass="pb-nav-center">
-                        <button id="btnPrev"
-                                sclass="btn bo"
-                                label="← Prev"
-                                disabled="true" />
-                        <label id="lblRecordNav"
-                               sclass="pv-record-label"
-                               value="Record — of —" />
-                        <button id="btnNext"
-                                sclass="btn bo"
-                                label="Next →" />
-                    </div>
-                </div>
+					<!-- Nav Bar -->
+					<div sclass="pb-nav-bar">
+						<div sclass="pb-nav-left">
+							<button id="btnBackToList" sclass="btn bo"
+								label="← Back" />
+							<label id="lblBatchBadge"
+								sclass="pv-batch-badge" value="BATCH: —" />
+						</div>
+						<div sclass="pb-nav-center">
+							<button id="btnPrev" sclass="btn bo"
+								label="← Prev" disabled="true" />
+							<label id="lblRecordNav"
+								sclass="pv-record-label" value="Record — of —" />
+							<button id="btnNext" sclass="btn bo"
+								label="Next →" />
+						</div>
+					</div>
 
-            </div><!-- end pb-top-area -->
+				</div><!-- end pb-top-area -->
 
-            <!-- ══ SPLIT PANEL — fills remaining height, each side scrolls ══ -->
-            <div sclass="pb-split">
+				<!-- ══ SPLIT PANEL ══ -->
+				<div sclass="pb-split">
 
-                <!-- ════════════════════════════════════
-                     LEFT — Cheque Image + Card
-                     ════════════════════════════════════ -->
-                <div sclass="pb-left">
+					<!-- ════ LEFT — Cheque Image + Card ════ -->
+					<div sclass="pb-left">
 
-                    <div sclass="pb-panel-hdr">
-                        <label sclass="pb-panel-title" value="Inward Cheque" />
-                    </div>
+						<div sclass="pb-panel-hdr">
+							<label sclass="pb-panel-title"
+								value="Inward Cheque" />
+						</div>
 
-                    <!-- Image section — checkbox-style view switcher -->
-                    <div sclass="pb-img-section">
+						<!-- Image section -->
+						<div sclass="pb-img-section">
 
-                        <!-- Image viewer tabs: Front | Back | Greyscale -->
-                        <div sclass="pb-img-tabs">
-                            <div id="pvFrontTab"     sclass="tab active"   onClick="onFrontTab()">Front</div>
-                            <div id="pvBackTab"      sclass="tab"          onClick="onBackTab()">Back</div>
-                            <div id="pvGreyscaleTab" sclass="tab"          onClick="onGreyscaleTab()">Greyscale</div>
-                        </div>
+							<!-- ✅ FIX: Use <button> with id so @Listen works,
+								NOT <div onClick="onBackTab()"> which is JS -->
+							<div sclass="pb-img-tabs">
+								<button id="pvFrontTab"
+									sclass="tab active" label="Front" />
+								<button id="pvBackTab" sclass="tab"
+									label="Back" />
+								<button id="pvGreyscaleTab" sclass="tab"
+									label="Greyscale" />
+							</div>
 
-                        <div id="pvImgSection" visible="true">
-                            <div id="pvFrontPanel" sclass="pb-img-panel" visible="true">
-                                <image id="pvFrontImg" sclass="pb-img-actual" />
-                            </div>
-                            <div id="pvBackPanel" sclass="pb-img-panel" visible="false">
-                                <image id="pvBackImg" sclass="pb-img-actual" />
-                            </div>
-                            <div id="pvGreyscalePanel" sclass="pb-img-panel" visible="false">
-                                <image id="pvGreyscaleImg" sclass="pb-img-actual pb-img-grey" />
-                            </div>
-                        </div>
-                        <label id="pvNoImgMsg"
-                               sclass="pb-no-img-msg"
-                               value="No cheque image available."
-                               visible="false" />
-                    </div>
+							<div id="pvImgSection" visible="true">
+								<div id="pvFrontPanel"
+									sclass="pb-img-panel pb-panel-active">
+									<image id="pvFrontImg"
+										sclass="pb-img-actual" />
+								</div>
+								<div id="pvBackPanel"
+									sclass="pb-img-panel">
+									<image id="pvBackImg"
+										sclass="pb-img-actual" />
+								</div>
+								<div id="pvGreyscalePanel"
+									sclass="pb-img-panel">
+									<image id="pvGreyscaleImg"
+										sclass="pb-img-actual pb-img-grey" />
+								</div>
+							</div>
 
-                    <!-- Cheque fields card — styled like a real bank cheque -->
-                    <div sclass="pv-cheque-card">
-                        <div sclass="pv-cheque-header">
-                            <div>
-                                <label id="lblChequeBankName"
-                                       sclass="pv-cheque-bank"
-                                       value="—" />
-                                <label id="lblChequePresenting"
-                                       sclass="pv-cheque-presenting"
-                                       value="—" />
-                            </div>
-                            <label id="lblChequeDate"
-                                   sclass="pv-cheque-date"
-                                   value="—" />
-                        </div>
-                        <div sclass="pv-cheque-divider" />
-                        <label id="lblChequePayee"
-                               sclass="pv-cheque-payee"
-                               value="Pay: —" />
-                        <label id="lblChequeAmountWords"
-                               sclass="pv-cheque-words"
-                               value="—" />
-                        <div sclass="pv-cheque-amount-row">
-                            <label id="lblChequeAmountBox"
-                                   sclass="pv-cheque-amount-box"
-                                   value="₹ —" />
-                        </div>
-                        <div sclass="pv-cheque-divider" />
-                        <label id="lblMicrLine"
-                               sclass="pv-cheque-micr"
-                               value="—" />
-                    </div>
+						</div>
 
-                </div><!-- end pb-left -->
+						<!-- Cheque fields card -->
 
-                <!-- ════════════════════════════════════
-                     RIGHT — Technical Verification
-                     ════════════════════════════════════ -->
-                <div sclass="pb-right">
 
-                    <div sclass="pv-panel-header">
-                        <label sclass="pv-panel-title"
-                               value="Technical Verification" />
-                        <label id="lblTechStatus"
-                               sclass="pv-badge-pending"
-                               value="PENDING" />
-                    </div>
+					</div><!-- end pb-left -->
 
-                    <!-- CBS Validation -->
-                    <div sclass="pv-section">
-                        <div sclass="pv-section-label">
-                            <span sclass="pv-section-dot" /> CBS VALIDATION
-                        </div>
-                        <div sclass="pv-section-body">
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="MICR Code" />
-                                <label id="lblCbsMicrCode"
-                                       sclass="pv-field-val pv-mono"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Bank Code" />
-                                <label id="lblCbsBankCode"
-                                       sclass="pv-field-val"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Our Bank Code" />
-                                <label id="lblCbsOurBankCode"
-                                       sclass="pv-field-val pv-our-bank"
-                                       value="—" />
-                            </div>
-                        </div>
-                    </div>
+					<!-- ════ RIGHT — Technical Verification ════ -->
+					<div sclass="pb-right">
 
-                    <!-- Presenting Details -->
-                    <div sclass="pv-section">
-                        <div sclass="pv-section-label">PRESENTING DETAILS</div>
-                        <div sclass="pv-section-body">
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Presenting Bank" />
-                                <label id="lblPresBank"
-                                       sclass="pv-field-val"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Cheque No." />
-                                <label id="lblPresChequeNo"
-                                       sclass="pv-field-val"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Amount" />
-                                <label id="lblPresAmount"
-                                       sclass="pv-field-val"
-                                       value="—" />
-                            </div>
-                        </div>
-                    </div>
+						<div sclass="pv-panel-header">
+							<label sclass="pv-panel-title"
+								value="Technical Verification" />
+							<label id="lblTechStatus"
+								sclass="pv-badge-pending" value="PENDING" />
+						</div>
 
-                    <!-- Our Account CBS — holder + balance from Firebase -->
-                    <div sclass="pv-section">
-                        <div sclass="pv-section-label">OUR ACCOUNT (CBS)</div>
-                        <div sclass="pv-section-body">
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Account No." />
-                                <label id="lblAcctNo"
-                                       sclass="pv-field-val pv-mono"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Holder" />
-                                <label id="lblAcctHolder"
-                                       sclass="pv-field-val"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Balance" />
-                                <label id="lblAcctBalance"
-                                       sclass="pv-field-val"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Account Valid" />
-                                <label id="lblCbsAcctValid"
-                                       sclass="badge b-grey"
-                                       value="—" />
-                            </div>
-                            <div sclass="pv-field-row">
-                                <label sclass="pv-field-key" value="Bank Matched" />
-                                <label id="lblCbsBankMatch"
-                                       sclass="badge b-grey"
-                                       value="—" />
-                            </div>
-                        </div>
-                    </div>
+						<!-- CBS Validation -->
+						<div sclass="pv-section">
+							<div sclass="pv-section-label">
+								<span sclass="pv-section-dot" />
+								CBS VALIDATION
+							</div>
+							<div sclass="pv-section-body">
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="MICR Code" />
+									<label id="lblCbsMicrCode"
+										sclass="pv-field-val pv-mono" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Bank Code" />
+									<label id="lblCbsBankCode"
+										sclass="pv-field-val" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Our Bank Code" />
+									<label id="lblCbsOurBankCode"
+										sclass="pv-field-val pv-our-bank" value="—" />
+								</div>
+							</div>
+						</div>
 
-                    <!-- Action -->
-                    <div sclass="pv-action-section">
-                        <div sclass="pv-section-label">ACTION</div>
-                        <div sclass="pv-action-buttons">
-                            <button id="btnAccept"
-                                    sclass="btn bs"
-                                    label="✓ Accept → ACK" />
-                            <button id="btnReturn"
-                                    sclass="btn bd"
-                                    label="✗ Return → RRF" />
-                            <button id="btnSendBack"
-                                    sclass="btn bo"
-                                    label="↩ Send Back" />
-                        </div>
-                        <div id="divReturnReasonBox"
-                             sclass="pv-reason-box"
-                             visible="false">
-                            <label sclass="pv-reason-label"
-                                   value="RETURN REASON (NPCI CODE)" />
-                            <combobox id="comboReturnReason"
-                                      readonly="true"
-                                      placeholder="Select return reason..."
-                                      sclass="pv-reason-combo" />
-                        </div>
-                    </div>
+						<!-- Presenting Details -->
+						<div sclass="pv-section">
+							<div sclass="pv-section-label">
+								PRESENTING DETAILS
+							</div>
+							<div sclass="pv-section-body">
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Presenting Bank" />
+									<label id="lblPresBank"
+										sclass="pv-field-val" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Cheque No." />
+									<label id="lblPresChequeNo"
+										sclass="pv-field-val" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Amount" />
+									<label id="lblPresAmount"
+										sclass="pv-field-val" value="—" />
+								</div>
+							</div>
+						</div>
 
-                </div><!-- end pb-right -->
+						<!-- Our Account CBS -->
+						<div sclass="pv-section">
+							<div sclass="pv-section-label">
+								OUR ACCOUNT (CBS)
+							</div>
+							<div sclass="pv-section-body">
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Account No." />
+									<label id="lblAcctNo"
+										sclass="pv-field-val pv-mono" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Holder" />
+									<label id="lblAcctHolder"
+										sclass="pv-field-val" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Balance" />
+									<label id="lblAcctBalance"
+										sclass="pv-field-val" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Account Valid" />
+									<label id="lblCbsAcctValid"
+										sclass="badge b-grey" value="—" />
+								</div>
+								<div sclass="pv-field-row">
+									<label sclass="pv-field-key"
+										value="Bank Matched" />
+									<label id="lblCbsBankMatch"
+										sclass="badge b-grey" value="—" />
+								</div>
+							</div>
+						</div>
 
-            </div><!-- end pb-split -->
+						<!-- Action -->
+						<div sclass="pv-action-section">
+							<div sclass="pv-section-label">ACTION</div>
+							<div sclass="pv-action-buttons">
+								<button id="btnAccept" sclass="btn bs"
+									label="✓ Accept → ACK" />
+								<button id="btnReturn" sclass="btn bd"
+									label="✗ Return → RRF" />
+								<button id="btnSendBack" sclass="btn bo"
+									label="↩ Send Back" />
+							</div>
+							<div id="divReturnReasonBox"
+								sclass="pv-reason-box" visible="false">
+								<label sclass="pv-reason-label"
+									value="RETURN REASON (NPCI CODE)" />
+								<combobox id="comboReturnReason"
+									readonly="true" placeholder="Select return reason..."
+									sclass="pv-reason-combo" />
+							</div>
+						</div>
 
-            <!-- Footer — outside split, sticks to bottom -->
-            <div sclass="pv-footer">
-                <label id="lblFooterProgress"
-                       sclass="pv-footer-progress"
-                       value="0 of 0 cheques actioned" />
-                <div sclass="pv-footer-buttons">
-                    <button id="btnCancel"
-                            sclass="btn bo"
-                            label="Cancel" />
-                    <button id="btnSubmit"
-                            sclass="btn bp btn-lg"
-                            label="Submit Batch"
-                            disabled="true" />
-                </div>
-            </div>
+					</div><!-- end pb-right -->
 
-            <include src="/component/statusbar.zul" />
+				</div><!-- end pb-split -->
 
-        </div><!-- end .main -->
-    </div><!-- end .body-row -->
-</div>
+				<!-- Footer -->
+				<div sclass="pv-footer">
+					<label id="lblFooterProgress"
+						sclass="pv-footer-progress" value="0 of 0 cheques actioned" />
+					<div sclass="pv-footer-buttons">
+						<button id="btnCancel" sclass="btn bo"
+							label="Cancel" />
+						<button id="btnSubmit" sclass="btn bp btn-lg"
+							label="Submit Batch" disabled="true" />
+					</div>
+				</div>
+
+				<include src="/component/statusbar.zul" />
+
+			</div><!-- end .main -->
+		</div><!-- end .body-row -->
+	</div>
 </zk>

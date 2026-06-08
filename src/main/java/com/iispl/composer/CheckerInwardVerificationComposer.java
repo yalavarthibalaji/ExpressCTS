@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Sessions;
+import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
@@ -80,25 +82,47 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
     // EVENT HANDLERS — called from ZUL onChanging / onChange
     // ─────────────────────────────────────────────────────────────────────────
 
-    public void onSearchPending() {
-        String keyword = txtSearchPending != null
-                ? txtSearchPending.getValue().trim() : "";
+    @Listen("onChanging = #txtSearchPending")
+    public void onSearchPending(InputEvent e) {
+        String keyword = e.getValue() != null ? e.getValue().trim() : "";
         loadPendingBatches(keyword);
     }
 
-    public void onSearchCleared() {
-        String keyword = txtSearchCleared != null
-                ? txtSearchCleared.getValue().trim() : "";
+    @Listen("onChanging = #txtSearchCleared")
+    public void onSearchClearedTyping(InputEvent e) {
+        String keyword = e.getValue() != null ? e.getValue().trim() : "";
         Date from = dtFromCleared != null ? dtFromCleared.getValue() : null;
         Date to   = dtToCleared   != null ? dtToCleared.getValue()   : null;
         loadClearedBatches(keyword, from, to);
     }
 
-    public void onSearchFailed() {
-        String keyword  = txtSearchFailed  != null ? txtSearchFailed.getValue().trim()  : "";
-        String batchId  = txtBatchIdFilter != null ? txtBatchIdFilter.getValue().trim() : "";
-        Date   from     = dtFromFailed     != null ? dtFromFailed.getValue()             : null;
-        Date   to       = dtToFailed       != null ? dtToFailed.getValue()               : null;
+    @Listen("onChange = #dtFromCleared, #dtToCleared")
+    public void onSearchClearedDate() {
+        String keyword = txtSearchCleared != null ? txtSearchCleared.getValue().trim() : "";
+        Date from = dtFromCleared != null ? dtFromCleared.getValue() : null;
+        Date to   = dtToCleared   != null ? dtToCleared.getValue()   : null;
+        loadClearedBatches(keyword, from, to);
+    }
+
+    @Listen("onChanging = #txtSearchFailed, #txtBatchIdFilter")
+    public void onSearchFailedTyping(InputEvent e) {
+        // Read live value from whichever textbox fired, fall back to current value of the other
+        String keyword = txtSearchFailed  != null ? txtSearchFailed.getValue().trim()  : "";
+        String batchId = txtBatchIdFilter != null ? txtBatchIdFilter.getValue().trim() : "";
+        // Override with the live typed value from the event source
+        if (e.getTarget() == txtSearchFailed)  keyword  = e.getValue() != null ? e.getValue().trim() : "";
+        if (e.getTarget() == txtBatchIdFilter) batchId  = e.getValue() != null ? e.getValue().trim() : "";
+        Date from = dtFromFailed != null ? dtFromFailed.getValue() : null;
+        Date to   = dtToFailed   != null ? dtToFailed.getValue()   : null;
+        loadFailedCheques(keyword, from, to, batchId);
+    }
+
+    @Listen("onChange = #dtFromFailed, #dtToFailed")
+    public void onSearchFailedDate() {
+        String keyword = txtSearchFailed  != null ? txtSearchFailed.getValue().trim()  : "";
+        String batchId = txtBatchIdFilter != null ? txtBatchIdFilter.getValue().trim() : "";
+        Date   from    = dtFromFailed     != null ? dtFromFailed.getValue()             : null;
+        Date   to      = dtToFailed       != null ? dtToFailed.getValue()               : null;
         loadFailedCheques(keyword, from, to, batchId);
     }
 

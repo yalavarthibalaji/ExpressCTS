@@ -20,13 +20,14 @@ import jakarta.xml.bind.Unmarshaller;
  *
  * Responsibilities:
  *   1. Accept the uploaded ZIP file
- *   2. Extract its contents to /opt/cts/inward/images/<batchId>/
+ *   2. Extract its contents to /home/administrator/BpxfFile/<batchId>/
  *   3. Locate the XML file inside the ZIP
  *   4. Parse the XML using JAXB → returns BpxfRoot object
  */
 public class BpxfParser {
 
-    private static final String BASE_IMAGE_DIR = "/home/administrator/BpxfFile/Bpxf_Batch_1";
+    // Base directory — trailing slash required, NO batchId baked in
+    private static final String BASE_IMAGE_DIR = "/home/administrator/BpxfFile/";
 
     // ── Result class ──────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ public class BpxfParser {
     public static ParseResult parse(File zipFile, String batchId)
             throws IOException, JAXBException {
 
-        // 1. Create extraction directory
+        // 1. Create extraction directory: /home/administrator/BpxfFile/<batchId>/
         String extractedDirPath = BASE_IMAGE_DIR + batchId + "/";
         File   extractedDir     = new File(extractedDirPath);
         if (!extractedDir.exists()) {
@@ -133,10 +134,12 @@ public class BpxfParser {
     /**
      * Resolves relative image path from XML to absolute disk path.
      *
+     * ZIP extracts to: BASE/<batchId>/<batchId>/<relative-path>
+     *
      * Example:
      *   batchId      = "Bpxf_Batch_1"
      *   relativePath = "/cheques/cheque001(front)"
-     *   result       = "/opt/cts/inward/images/Bpxf_Batch_1/cheques/cheque001(front).png"
+     *   result       = "/home/administrator/BpxfFile/Bpxf_Batch_1/Bpxf_Batch_1/cheques/cheque001(front).png"
      */
     public static String buildImagePath(String batchId, String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) return null;
@@ -146,7 +149,7 @@ public class BpxfParser {
                 && !rel.toLowerCase().endsWith(".jpeg")) {
             rel = rel + ".png";
         }
-        // ZIP extracts to BASE/batchId/batchId/ — add batchId twice
+        // ZIP extracts to BASE/<batchId>/<batchId>/ — inner folder named same as batchId
         return BASE_IMAGE_DIR + batchId + "/" + batchId + "/" + rel;
     }
 }

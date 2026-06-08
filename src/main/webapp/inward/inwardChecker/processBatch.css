@@ -18,6 +18,9 @@
     height: 100vh !important;
     overflow: hidden !important;
 }
+
+/* panel visibility — controlled by setVisible() in Java, see pb-img-panel rules in section 8 */
+
 .dash-shell > .body-row  { flex: 1 !important; display: flex !important; min-height: 0 !important; overflow: hidden !important; }
 .body-row   > .z-div     { height: 100% !important; display: flex !important; }
 .body-row   > .main      { flex: 1 !important; display: flex !important; flex-direction: column !important; min-height: 0 !important; overflow: hidden !important; }
@@ -257,12 +260,22 @@
 
 /* ─── Image panel container ───────────────────────────────── */
 .pb-img-panel {
+    /* Hidden by default — Java setVisible(true/false) controls which panel shows.
+       When ZK sets visible=true it removes display:none from inline style.
+       When ZK sets visible=false it adds display:none to inline style.
+       We set flex here so the active panel lays out correctly. */
+    display: none !important;
     padding: 20px 16px !important;
     background: #f0f4f8 !important;
     min-height: 160px !important;
-    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+}
+
+/* Active panel — ZK sets visible=true → removes inline display:none.
+   We need this to override the display:none above. */
+.pb-img-panel.pb-panel-active {
+    display: flex !important;
 }
 
 /* ─── Cheque image itself ─────────────────────────────────── */

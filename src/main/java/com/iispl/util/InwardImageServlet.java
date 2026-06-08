@@ -15,7 +15,7 @@ import java.io.OutputStream;
 public class InwardImageServlet extends HttpServlet {
 
     /** Only allow access to CTS image directory — no directory traversal */
-    private static final String ALLOWED_PREFIX = "/home/administrator/BpxfFile/Bpxf_Batch_1";
+    private static final String ALLOWED_PREFIX = "/home/administrator/BpxfFile/";
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)

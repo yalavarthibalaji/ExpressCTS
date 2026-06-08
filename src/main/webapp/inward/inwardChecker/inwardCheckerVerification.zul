@@ -68,8 +68,7 @@
                                     <textbox id="txtSearchPending"
                                              sclass="fi rpt-fi-search"
                                              placeholder="🔍 Search batch..."
-                                             maxlength="30"
-                                             onChanging="onSearchPending()" />
+                                             maxlength="30" />
                                 </div>
 
                                 <listbox id="lstPending"
@@ -97,20 +96,17 @@
                                     <textbox id="txtSearchCleared"
                                              sclass="fi rpt-fi-search"
                                              placeholder="🔍 Search batch..."
-                                             maxlength="30"
-                                             onChanging="onSearchCleared()" />
+                                             maxlength="30" />
                                     <datebox id="dtFromCleared"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
                                              cols="12"
-                                             placeholder="From Date"
-                                             onChange="onSearchCleared()" />
+                                             placeholder="From Date" />
                                     <datebox id="dtToCleared"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
                                              cols="12"
-                                             placeholder="To Date"
-                                             onChange="onSearchCleared()" />
+                                             placeholder="To Date" />
                                 </div>
 
                                 <listbox id="lstCleared"
@@ -138,25 +134,21 @@
                                     <textbox id="txtSearchFailed"
                                              sclass="fi rpt-fi-search"
                                              placeholder="🔍 Search cheques..."
-                                             maxlength="30"
-                                             onChanging="onSearchFailed()" />
+                                             maxlength="30" />
                                     <datebox id="dtFromFailed"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
                                              cols="12"
-                                             placeholder="From Date"
-                                             onChange="onSearchFailed()" />
+                                             placeholder="From Date" />
                                     <datebox id="dtToFailed"
                                              sclass="fi rpt-fi-date"
                                              format="dd/MM/yyyy"
                                              cols="12"
-                                             placeholder="To Date"
-                                             onChange="onSearchFailed()" />
+                                             placeholder="To Date" />
                                     <textbox id="txtBatchIdFilter"
                                              sclass="fi rpt-fi-search"
                                              placeholder="Filter by batch ID..."
-                                             maxlength="30"
-                                             onChanging="onSearchFailed()" />
+                                             maxlength="30" />
                                 </div>
 
                                 <listbox id="lstFailed"

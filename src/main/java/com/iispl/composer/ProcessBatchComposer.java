@@ -84,10 +84,11 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Wire private Image  pvFrontImg;
     @Wire private Image  pvBackImg;
     @Wire private Image  pvGreyscaleImg;
-    @Wire private Div    pvFrontTab;       // tab div (not a button)
-    @Wire private Div    pvBackTab;        // tab div (not a button)
-    @Wire private Div    pvGreyscaleTab;   // tab div (not a button)
+    @Wire private Button    pvFrontTab;       // tab div (not a button)
+    @Wire private Button    pvBackTab;        // tab div (not a button)
+    @Wire private Button    pvGreyscaleTab;   // tab div (not a button)
     @Wire private Label  pvNoImgMsg;
+    
 
     // ── LEFT — Cheque card labels ─────────────────────────────────────────────
     @Wire private Label  lblChequeBankName;
@@ -143,7 +144,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 
     // Firebase CBS service — initialised once, reused for every cheque
     private final CbsFirebaseService cbsService = new CbsFirebaseService();
-
+    
     // ══════════════════════════════════════════════════════════════════════════
     //  Lifecycle
     // ══════════════════════════════════════════════════════════════════════════
@@ -151,9 +152,15 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Override
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
-
-        // ── Enable Server Push — MUST be before any background thread UI update ──
         getSelf().getDesktop().enableServerPush(true);
+
+        // ── Wire tab buttons manually (most reliable in nested ZUL) ──
+        if (pvFrontTab != null)
+            pvFrontTab.addEventListener("onClick", e -> showTab("FRONT"));
+        if (pvBackTab != null)
+            pvBackTab.addEventListener("onClick", e -> showTab("BACK"));
+        if (pvGreyscaleTab != null)
+            pvGreyscaleTab.addEventListener("onClick", e -> showTab("GREY"));
 
         String batchId = (String) Sessions.getCurrent()
                 .getAttribute("selectedBatchId");
@@ -262,6 +269,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         if (pvGreyscaleImg != null) pvGreyscaleImg.setSrc(frontSrc);
 
         showTab("FRONT");
+        
     }
 
     private String imgUrl(String path) {
@@ -269,27 +277,55 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         catch (UnsupportedEncodingException e) { return "/imageServlet?path=" + path; }
     }
 
-    public void onFrontTab()      { showTab("FRONT"); }
-    public void onBackTab()       { showTab("BACK");  }
-    public void onGreyscaleTab()  { showTab("GREY");  }
 
     /**
      * Central tab-switching method.
      * Shows the requested image panel and highlights the matching tab div.
      * Greyscale tab shows the front image with a CSS filter — no extra DB field needed.
      */
+    /**
+     * Switches the visible image panel when user clicks Front / Back / Greyscale tab.
+     *
+     * TWO-STEP approach (both steps are required):
+     *
+     * Step 1 — setVisible(true/false)
+     *   ZK renders this as inline style="display:none" on the <div>.
+     *   This is the RELIABLE way to show/hide panels in ZK.
+     *   CSS alone (sclass toggle) was causing all three panels to show
+     *   simultaneously because ZK's default <div> has no inline style,
+     *   so a :not([style]) CSS selector matched all panels at once.
+     *
+     * Step 2 — setSclass() for the active border highlight
+     *   pb-panel-active adds a coloured bottom border to the visible panel.
+     *   This is purely decorative — visibility is controlled by setVisible().
+     */
     private void showTab(String tab) {
         activeTab = tab;
 
-        // Show / hide image panels
-        if (pvFrontPanel     != null) pvFrontPanel.setVisible("FRONT".equals(tab));
-        if (pvBackPanel      != null) pvBackPanel.setVisible("BACK".equals(tab));
+        // ── Step 1: setVisible — primary visibility control ──────────────────
+        if (pvFrontPanel != null)     pvFrontPanel.setVisible("FRONT".equals(tab));
+        if (pvBackPanel != null)      pvBackPanel.setVisible("BACK".equals(tab));
         if (pvGreyscalePanel != null) pvGreyscalePanel.setVisible("GREY".equals(tab));
 
-        // Highlight the active tab div; deactivate the others
-        if (pvFrontTab     != null) pvFrontTab.setSclass("FRONT".equals(tab) ? "tab active" : "tab");
-        if (pvBackTab      != null) pvBackTab.setSclass("BACK".equals(tab)  ? "tab active" : "tab");
-        if (pvGreyscaleTab != null) pvGreyscaleTab.setSclass("GREY".equals(tab)  ? "tab active" : "tab");
+        // ── Step 2: setSclass — active border highlight on panel ─────────────
+        if (pvFrontPanel != null)
+            pvFrontPanel.setSclass("FRONT".equals(tab) ? "pb-img-panel pb-panel-active" : "pb-img-panel");
+        if (pvBackPanel != null)
+            pvBackPanel.setSclass("BACK".equals(tab) ? "pb-img-panel pb-panel-active" : "pb-img-panel");
+        if (pvGreyscalePanel != null)
+            pvGreyscalePanel.setSclass("GREY".equals(tab) ? "pb-img-panel pb-panel-active" : "pb-img-panel");
+
+        // ── Step 3: highlight active tab button ──────────────────────────────
+        if (pvFrontTab != null)
+            pvFrontTab.setSclass("FRONT".equals(tab) ? "tab active" : "tab");
+        if (pvBackTab != null)
+            pvBackTab.setSclass("BACK".equals(tab) ? "tab active" : "tab");
+        if (pvGreyscaleTab != null)
+            pvGreyscaleTab.setSclass("GREY".equals(tab) ? "tab active" : "tab");
+
+        // ── Step 4: sync greyscale image src with front ──────────────────────
+        if ("GREY".equals(tab) && pvFrontImg != null && pvGreyscaleImg != null)
+            pvGreyscaleImg.setSrc(pvFrontImg.getSrc());
     }
 
     // ══════════════════════════════════════════════════════════════════════════

@@ -27,7 +27,7 @@ public class FirebaseConfig {
 
             FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                .setDatabaseUrl("https://cbs-validation-api-default-rtdb.asia-southeast1.firebasedatabase.app")
+                .setDatabaseUrl("https://cbs-validation-api-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .build();
 
             FirebaseApp.initializeApp(options);
