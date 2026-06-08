@@ -388,4 +388,109 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
             session.close();
         }
     }
+ // ════════════════════════════════════════════════════
+    //  Checker Outward — Load all cheques (no filter)
+    // ════════════════════════════════════════════════════
+
+ // File: java/com/iispl/daoImpl/OutwardChequeDaoImpl.java
+ // CHANGE: Only the findAllByBatchDbId() method below.
+ // Replace the existing findAllByBatchDbId() with this version.
+
+     // ════════════════════════════════════════════════════
+     //  Checker Outward — Load all cheques (no filter)
+     // ════════════════════════════════════════════════════
+
+     @Override
+     public List<OutwardCheque> findAllByBatchDbId(Long batchDbId) {
+         Session session = HibernateUtil.getSessionFactory().openSession();
+         try {
+             // Step 1: Load all cheques for this batch using native SQL
+             String sql = "SELECT * FROM outward_cheque "
+                        + "WHERE batch_id = :batchDbId "
+                        + "ORDER BY seq_no ASC";
+             NativeQuery<OutwardCheque> q =
+                     session.createNativeQuery(sql, OutwardCheque.class);
+             q.setParameter("batchDbId", batchDbId);
+             List<OutwardCheque> cheques = q.list();
+
+             // Step 2: Force-initialize the micrRepairs collection for each cheque
+             //         INSIDE this session before it closes.
+             //         This prevents LazyInitializationException in the composer
+             //         when renderChequeView() calls cheque.getMicrRepairs().
+             for (OutwardCheque cheque : cheques) {
+                 if (cheque.getMicrRepairs() != null) {
+                     // Calling size() forces Hibernate to execute the SELECT
+                     // and populate the collection while the session is still open
+                     cheque.getMicrRepairs().size();
+                 }
+             }
+
+             return cheques;
+
+         } catch (Exception e) {
+             System.err.println("OutwardChequeDao → findAllByBatchDbId failed: "
+                     + e.getMessage());
+             return new ArrayList<>();
+         } finally {
+             session.close();
+         }
+     }
+
+    // ════════════════════════════════════════════════════
+    //  Checker Outward — Update cheque status after action
+    // ════════════════════════════════════════════════════
+
+    @Override
+    public boolean updateCheckerStatus(Long chequeId, String newStatus) {
+        Session     session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tx      = null;
+        try {
+            tx = session.beginTransaction();
+            String sql = "UPDATE outward_cheque "
+                       + "SET status     = :newStatus, "
+                       + "    updated_at = NOW() "
+                       + "WHERE id = :chequeId";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("newStatus", newStatus);
+            q.setParameter("chequeId",  chequeId);
+            int rows = q.executeUpdate();
+            tx.commit();
+            System.out.println("OutwardChequeDao → Checker status updated to "
+                    + newStatus + " for chequeId=" + chequeId);
+            return rows > 0;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            System.err.println("OutwardChequeDao → updateCheckerStatus failed: "
+                    + e.getMessage());
+            return false;
+        } finally {
+            session.close();
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Checker Outward — Count cheques still awaiting action
+    // ════════════════════════════════════════════════════
+
+    @Override
+    public int countPendingCheckerActions(Long batchDbId) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT COUNT(*) FROM outward_cheque "
+                       + "WHERE batch_id = :batchDbId "
+                       + "AND   status   = 'ENTRY_DONE'";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("batchDbId", batchDbId);
+            Number count = (Number) q.uniqueResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception e) {
+            System.err.println("OutwardChequeDao → countPendingCheckerActions failed: "
+                    + e.getMessage());
+            return 0;
+        } finally {
+            session.close();
+        }
+    }
+    
+    
 }

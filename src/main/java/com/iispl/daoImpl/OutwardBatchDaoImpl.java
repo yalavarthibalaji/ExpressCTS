@@ -261,4 +261,74 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
+ // ════════════════════════════════════════════════════
+    //  Checker Outward — Queue
+    // ════════════════════════════════════════════════════
+
+    @Override
+    public List<OutwardBatch> findCheckerQueueBatches() {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT * FROM outward_batch "
+                       + "WHERE status IN ('SUBMITTED', "
+                       +                  "'CHECKER_IN_PROGRESS', "
+                       +                  "'CHECKER_HOLD') "
+                       + "ORDER BY created_at ASC";
+            NativeQuery<OutwardBatch> q =
+                    session.createNativeQuery(sql, OutwardBatch.class);
+            return q.list();
+        } catch (Exception e) {
+            System.err.println("OutwardBatchDao → findCheckerQueueBatches failed: "
+                    + e.getMessage());
+            return new ArrayList<>();
+        } finally {
+            session.close();
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Checker Outward — Approved (ready for DEM Export)
+    // ════════════════════════════════════════════════════
+
+    @Override
+    public List<OutwardBatch> findCheckerApprovedBatches() {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT * FROM outward_batch "
+                       + "WHERE status = 'CHECKER_APPROVED' "
+                       + "ORDER BY updated_at DESC";
+            NativeQuery<OutwardBatch> q =
+                    session.createNativeQuery(sql, OutwardBatch.class);
+            return q.list();
+        } catch (Exception e) {
+            System.err.println("OutwardBatchDao → findCheckerApprovedBatches failed: "
+                    + e.getMessage());
+            return new ArrayList<>();
+        } finally {
+            session.close();
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Checker Outward — Count by status (dashboard summary)
+    // ════════════════════════════════════════════════════
+
+    @Override
+    public int countByStatus(String status) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            String sql = "SELECT COUNT(*) FROM outward_batch "
+                       + "WHERE status = :status";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("status", status);
+            Number count = (Number) q.uniqueResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception e) {
+            System.err.println("OutwardBatchDao → countByStatus failed: "
+                    + e.getMessage());
+            return 0;
+        } finally {
+            session.close();
+        }
+    }
 }

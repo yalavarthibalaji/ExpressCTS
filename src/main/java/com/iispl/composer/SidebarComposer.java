@@ -1,3 +1,5 @@
+// File: java/com/iispl/composer/SidebarComposer.java
+
 package com.iispl.composer;
 
 import com.iispl.dto.LoginDTO;
@@ -51,47 +53,49 @@ public class SidebarComposer extends SelectorComposer<Component> {
 
     // ════════════════════════════════════════════
     //  Role-specific menus
-    //  Pass NULL as targetUrl to render an item as "disabled / Coming Soon"
+    //  Pass NULL as targetUrl to render as disabled (not yet implemented)
     // ════════════════════════════════════════════
 
     private void renderAdminNav() {
         addSectionTitle("ADMINISTRATION");
-        addNavItem("Dashboard",        "/admin/adminDashboard.zul");
-        addNavItem("User Management",  "/admin/userManagement/userManagement.zul");
-        addNavItem("View Batches",     "/outward/viewBatches/viewBatches.zul");
-        addNavItem("Reports",          null);
-        addNavItem("Audit Logs",       null);
+        addNavItem("Dashboard",       "/admin/adminDashboard.zul");
+        addNavItem("User Management", "/admin/userManagement/userManagement.zul");
+        addNavItem("View Batches",    "/outward/viewBatches/viewBatches.zul");
+        addNavItem("Reports",         null);
+        addNavItem("Audit Logs",      null);
     }
 
     private void renderMakerOutwardNav() {
         addSectionTitle("OUTWARD");
-        addNavItem("Dashboard",        "/dashboard/makerOutward/makerOutwardDashboard.zul");
-        addNavItem("Batch Upload",      "/outward/batchUpload/batchUpload.zul");
-        addNavItem("MICR Repair",      "/outward/micrRepair/micrRepair.zul");
-        addNavItem("Data Entry", "/outward/acctAmount/acctAmount.zul");
-        addNavItem("View Batches" , "/outward/viewBatches/viewBatches.zul");
+        addNavItem("Dashboard",    "/dashboard/makerOutward/makerOutwardDashboard.zul");
+        addNavItem("Batch Upload", "/outward/batchUpload/batchUpload.zul");
+        addNavItem("MICR Repair",  "/outward/micrRepair/micrRepair.zul");
+        addNavItem("Data Entry",   "/outward/acctAmount/acctAmount.zul");
+        addNavItem("View Batches", "/outward/viewBatches/viewBatches.zul");
     }
 
     private void renderCheckerOutwardNav() {
         addSectionTitle("OUTWARD");
-        addNavItem("Dashboard",            "/dashboard/checkerOutward/checkerOutwardDashboard.zul");
-        addNavItem("Verification Queue",   null);
-        addNavItem("DEM Export",           null);
-        addNavItem("Reports",              null);
+        // FIX: All three items previously had null (disabled).
+        // Now correctly wired to their ZUL paths.
+        addNavItem("Dashboard",           "/dashboard/checkerOutward/checkerOutwardDashboard.zul");
+        addNavItem("Verification Queue",  "/outward/checkerQueue/checkerQueue.zul");
+        addNavItem("DEM Export",          null);  // Not yet implemented — remains disabled
+        addNavItem("Reports",             null);  // Not yet implemented — remains disabled
     }
 
     private void renderMakerInwardNav() {
         addSectionTitle("INWARD");
-        addNavItem("Dashboard",          "/dashboard/makerInward/makerInwardDashboard.zul");
-        addNavItem("File Processing",    "/inward/bpxfUpload/bpxfUpload.zul");
-        addNavItem("Inward Correction",  "/inward/inwardMicr/inwardMicr.zul");
+        addNavItem("Dashboard",         "/dashboard/makerInward/makerInwardDashboard.zul");
+        addNavItem("File Processing",   "/inward/bpxfUpload/bpxfUpload.zul");
+        addNavItem("Inward Correction", "/inward/inwardMicr/inwardMicr.zul");
     }
 
     private void renderCheckerInwardNav() {
         addSectionTitle("INWARD");
         addNavItem("Dashboard",          "/dashboard/checkerInward/checkerInwardDashboard.zul");
-        addNavItem("Verification Queue", null);
-        addNavItem("Reports",            null);
+        addNavItem("Verification Queue", null);  // Not yet implemented
+        addNavItem("Reports",            null);  // Not yet implemented
     }
 
     // ════════════════════════════════════════════
@@ -108,7 +112,8 @@ public class SidebarComposer extends SelectorComposer<Component> {
 
     /**
      * Creates a single clickable navigation item.
-     * If targetUrl is null, the item is rendered as disabled (Coming Soon).
+     * If targetUrl is null → item is rendered as disabled (greyed out, no click).
+     * If targetUrl matches currentPath → item is highlighted as active.
      */
     private void addNavItem(String label, String targetUrl) {
         boolean disabled = (targetUrl == null);
@@ -132,7 +137,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
         lbl.setSclass("nav-label");
         item.appendChild(lbl);
 
-        // Click handler (only for enabled items)
+        // Click handler — only attached for enabled items
         if (!disabled) {
             final String url = targetUrl;
             item.addEventListener(Events.ON_CLICK, new EventListener<Event>() {

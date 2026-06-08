@@ -40,4 +40,41 @@ public interface OutwardBatchDao {
      * Used on View Batches screen for ADMIN role.
      */
     List<OutwardBatch> findAll();
+
+    // ── Checker Outward ──────────────────────────────────────────────────────
+
+    /**
+     * Find all batches currently visible in the Checker's queue.
+     *
+     * Statuses included:
+     *   SUBMITTED          — Maker submitted, waiting for Checker to start.
+     *   CHECKER_IN_PROGRESS — Checker has opened the batch and is working on it.
+     *   CHECKER_HOLD       — One or more cheques referred back to Maker;
+     *                        batch returns here after Maker re-submits.
+     *
+     * Used in: CheckerQueue page (batch list table),
+     *          CheckerServiceImpl.getCheckerQueueBatches().
+     */
+    List<OutwardBatch> findCheckerQueueBatches();
+
+    /**
+     * Find all batches that have been fully verified by the Checker.
+     *
+     * Status: CHECKER_APPROVED
+     * These batches are ready for DEM Export (CXF/CIGF file generation).
+     *
+     * Used in: DEM Export page (future step).
+     */
+    List<OutwardBatch> findCheckerApprovedBatches();
+
+    /**
+     * Count batches that match a given status string.
+     *
+     * Used in: CheckerOutward Dashboard summary labels
+     *          (Pending Queue, On Hold, Ready to Export counts).
+     *
+     * @param status  Exact status string, e.g. "SUBMITTED", "CHECKER_HOLD"
+     * @return        Number of batches with that status
+     */
+    int countByStatus(String status);
 }
