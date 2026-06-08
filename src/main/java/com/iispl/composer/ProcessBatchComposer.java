@@ -84,6 +84,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Wire private Image  pvBackImg;
     @Wire private Button pvFrontTab;
     @Wire private Button pvBackTab;
+    @Wire private Button pvGreyscaleBtn;   // greyscale toggle
     @Wire private Label  pvNoImgMsg;
 
     // ── LEFT — Cheque card labels ─────────────────────────────────────────────
@@ -132,6 +133,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     private int                currentIndex = 0;
     private Map<Long, String>  actionMap    = new HashMap<>();
     private Map<Long, String>  reasonMap    = new HashMap<>();
+    private boolean            greyscaleOn  = false;  // greyscale toggle state
 
     // ── Services ──────────────────────────────────────────────────────────────
     private final CheckerBatchProcessService batchService =
@@ -230,6 +232,11 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     // ══════════════════════════════════════════════════════════════════════════
 
     private void loadImages(InwardCheque c) {
+        // Reset greyscale state for each new cheque
+        greyscaleOn = false;
+        if (pvGreyscaleBtn != null) pvGreyscaleBtn.setSclass("pv-view-chk");
+        if (pvFrontImg     != null) pvFrontImg.setSclass("pb-img-actual");
+        if (pvBackImg      != null) pvBackImg.setSclass("pb-img-actual");
         String front = c.getFrontImagePath();
         String back  = c.getBackImagePath();
 
@@ -265,15 +272,37 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     public void onBackTab() {
         if (pvFrontPanel != null) pvFrontPanel.setVisible(false);
         if (pvBackPanel  != null) pvBackPanel.setVisible(true);
-        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-img-tab");
-        if (pvBackTab    != null) pvBackTab.setSclass("pv-img-tab active");
+        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-view-btn");
+        if (pvBackTab    != null) pvBackTab.setSclass("pv-view-btn active");
+        applyGreyscale();
+    }
+
+    @Listen("onClick = #pvGreyscaleBtn")
+    public void onGreyscale() {
+        greyscaleOn = !greyscaleOn;
+        if (pvGreyscaleBtn != null)
+            pvGreyscaleBtn.setSclass(greyscaleOn ? "pv-view-chk active" : "pv-view-chk");
+        applyGreyscale();
+    }
+
+    /**
+     * Applies or removes the greyscale CSS class on both image elements.
+     * ZK <image> renders as <img> — we toggle the sclass "greyscale"
+     * which maps to: filter: grayscale(100%) in processBatch.css
+     */
+    private void applyGreyscale() {
+        String baseSclass = "pb-img-actual";
+        String sclass     = greyscaleOn ? baseSclass + " greyscale" : baseSclass;
+        if (pvFrontImg != null) pvFrontImg.setSclass(sclass);
+        if (pvBackImg  != null) pvBackImg.setSclass(sclass);
     }
 
     private void showFrontTab() {
         if (pvFrontPanel != null) pvFrontPanel.setVisible(true);
         if (pvBackPanel  != null) pvBackPanel.setVisible(false);
-        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-img-tab active");
-        if (pvBackTab    != null) pvBackTab.setSclass("pv-img-tab");
+        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-view-btn active");
+        if (pvBackTab    != null) pvBackTab.setSclass("pv-view-btn");
+        applyGreyscale();
     }
 
     // ══════════════════════════════════════════════════════════════════════════

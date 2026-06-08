@@ -99,14 +99,20 @@
                         <label sclass="pb-panel-title" value="Inward Cheque" />
                     </div>
 
-                    <!-- Image section — front/back tabs -->
+                    <!-- Image section — checkbox-style view switcher -->
                     <div sclass="pb-img-section">
-                        <div sclass="pb-img-tabbar">
-                            <button id="pvFrontTab" sclass="pv-img-tab active"
-                                    label="◉ Front" />
-                            <button id="pvBackTab"  sclass="pv-img-tab"
-                                    label="◎ Back" />
+
+                        <!-- View switcher bar: Front | Back | Greyscale -->
+                        <div sclass="pb-view-bar">
+                            <button id="pvFrontTab" sclass="pv-view-btn active"
+                                    label="Front" />
+                            <button id="pvBackTab"  sclass="pv-view-btn"
+                                    label="Back" />
+                            <div sclass="pb-view-sep" />
+                            <button id="pvGreyscaleBtn" sclass="pv-view-chk"
+                                    label="Greyscale" />
                         </div>
+
                         <div id="pvImgSection" visible="true">
                             <div id="pvFrontPanel" sclass="pb-img-panel" visible="true">
                                 <image id="pvFrontImg" sclass="pb-img-actual" />

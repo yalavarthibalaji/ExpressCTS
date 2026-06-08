@@ -261,31 +261,131 @@
     border-bottom: 1px solid var(--border) !important;
     overflow: hidden !important;
 }
-.pb-img-tabbar {
+/* ═══════════════════════════════════════════════════════════
+   IMAGE VIEW SWITCHER BAR — checkbox-pill style
+   Front | Back | ─── | Greyscale
+   ═══════════════════════════════════════════════════════════ */
+
+.pb-view-bar {
     display: flex !important;
-    background: #f8fafc !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px 14px !important;
+    background: #f1f5f9 !important;
     border-bottom: 1px solid var(--border) !important;
-    padding: 0 6px !important;
 }
-.pv-img-tab .z-button {
-    background: transparent !important;
-    border: none !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
-    color: var(--tm) !important;
+
+/* Thin vertical separator between Front/Back and Greyscale */
+.pb-view-sep {
+    width: 1px !important;
+    height: 18px !important;
+    background: #cbd5e1 !important;
+    margin: 0 4px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Base pill button — looks like an unchecked checkbox pill */
+.pv-view-btn .z-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 28px !important;
+    padding: 0 12px !important;
+    background: #fff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    color: #64748b !important;
     font-size: 12px !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     font-family: var(--font) !important;
-    padding: 9px 18px !important;
     cursor: pointer !important;
-    height: auto !important;
-    line-height: 1.4 !important;
-    margin-bottom: -1px !important;
     transition: all 0.15s !important;
     box-shadow: none !important;
+    white-space: nowrap !important;
 }
-.pv-img-tab .z-button:hover       { color: var(--primary) !important; background: transparent !important; }
-.pv-img-tab.active .z-button      { color: var(--primary) !important; border-bottom-color: var(--primary) !important; font-weight: 700 !important; }
+
+/* Unchecked pill: prepend an open square ☐ via pseudo-content trick
+   ZK <button> renders as <td><a class="z-button">text</a></td>
+   We use ::before on .z-button to inject the checkbox icon */
+.pv-view-btn .z-button::before {
+    content: "\2610" !important;   /* ☐ — Unicode BALLOT BOX */
+    font-size: 14px !important;
+    line-height: 1 !important;
+    color: #94a3b8 !important;
+    margin-right: 5px !important;
+}
+
+.pv-view-btn .z-button:hover {
+    border-color: #94a3b8 !important;
+    color: #334155 !important;
+    background: #f8fafc !important;
+}
+
+/* Active / selected pill — filled checkbox ☑ + highlight */
+.pv-view-btn.active .z-button {
+    background: #1e3a5f !important;
+    border-color: #1e3a5f !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(30,58,95,0.22) !important;
+}
+.pv-view-btn.active .z-button::before {
+    content: "\2611" !important;   /* ☑ — Unicode BALLOT BOX WITH CHECK */
+    color: #93c5fd !important;
+}
+
+/* ── Greyscale checkbox-pill — same base, but teal/neutral accent ── */
+.pv-view-chk .z-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 28px !important;
+    padding: 0 12px !important;
+    background: #fff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    color: #64748b !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    box-shadow: none !important;
+    white-space: nowrap !important;
+}
+.pv-view-chk .z-button::before {
+    content: "\2610" !important;   /* ☐ unchecked */
+    font-size: 14px !important;
+    line-height: 1 !important;
+    color: #94a3b8 !important;
+    margin-right: 5px !important;
+}
+.pv-view-chk .z-button:hover {
+    border-color: #94a3b8 !important;
+    color: #334155 !important;
+    background: #f8fafc !important;
+}
+/* Greyscale ON — grey/charcoal checked pill */
+.pv-view-chk.active .z-button {
+    background: #475569 !important;
+    border-color: #475569 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(71,85,105,0.22) !important;
+}
+.pv-view-chk.active .z-button::before {
+    content: "\2611" !important;   /* ☑ checked */
+    color: #e2e8f0 !important;
+}
+
+/* Greyscale filter applied to image when active */
+.pb-img-actual.greyscale {
+    filter: grayscale(100%) !important;
+    transition: filter 0.25s ease !important;
+}
+.pb-img-actual {
+    transition: filter 0.25s ease !important;
+}
 
 .pb-img-panel {
     padding: 16px !important;
@@ -557,46 +657,50 @@
 }
 
 /* Accept */
+/* Accept — solid green from default */
 .pv-btn-accept .z-button {
-    background: rgba(26,122,74,0.08) !important;
-    color: var(--success) !important;
-    border: 1.5px solid var(--success-b) !important;
+    background: #16a34a !important;
+    color: #fff !important;
+    border: 1.5px solid #15803d !important;
     border-radius: var(--r6) !important;
     height: 38px !important; padding: 0 22px !important;
     font-size: 13px !important; font-weight: 600 !important;
     font-family: var(--font) !important; cursor: pointer !important;
     transition: all 0.15s !important; white-space: nowrap !important;
+    box-shadow: 0 2px 6px rgba(22,163,74,0.25) !important;
 }
-.pv-btn-accept .z-button:hover { background: var(--success) !important; color: #fff !important; border-color: var(--success) !important; box-shadow: 0 4px 12px rgba(26,122,74,0.25) !important; }
-.pv-btn-accept-on .z-button    { background: var(--success) !important; color: #fff !important; border-color: var(--success) !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(26,122,74,0.2) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
+.pv-btn-accept .z-button:hover { background: #15803d !important; box-shadow: 0 4px 12px rgba(22,163,74,0.35) !important; }
+.pv-btn-accept-on .z-button    { background: #14532d !important; color: #fff !important; border-color: #14532d !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(22,163,74,0.3) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
 
-/* Return */
+/* Return — solid red from default */
 .pv-btn-return .z-button {
-    background: rgba(192,57,43,0.08) !important;
-    color: var(--danger) !important;
-    border: 1.5px solid var(--danger-b) !important;
+    background: #dc2626 !important;
+    color: #fff !important;
+    border: 1.5px solid #b91c1c !important;
     border-radius: var(--r6) !important;
     height: 38px !important; padding: 0 22px !important;
     font-size: 13px !important; font-weight: 600 !important;
     font-family: var(--font) !important; cursor: pointer !important;
     transition: all 0.15s !important; white-space: nowrap !important;
+    box-shadow: 0 2px 6px rgba(220,38,38,0.25) !important;
 }
-.pv-btn-return .z-button:hover { background: var(--danger) !important; color: #fff !important; border-color: var(--danger) !important; box-shadow: 0 4px 12px rgba(192,57,43,0.25) !important; }
-.pv-btn-return-on .z-button    { background: var(--danger) !important; color: #fff !important; border-color: var(--danger) !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(192,57,43,0.2) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
+.pv-btn-return .z-button:hover { background: #b91c1c !important; box-shadow: 0 4px 12px rgba(220,38,38,0.35) !important; }
+.pv-btn-return-on .z-button    { background: #7f1d1d !important; color: #fff !important; border-color: #7f1d1d !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.3) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
 
-/* Send Back */
+/* Send Back — solid slate-blue */
 .pv-btn-sendback .z-button {
-    background: rgba(184,111,0,0.08) !important;
-    color: var(--warning) !important;
-    border: 1.5px solid var(--warning-b) !important;
+    background: #475569 !important;
+    color: #fff !important;
+    border: 1.5px solid #334155 !important;
     border-radius: var(--r6) !important;
     height: 38px !important; padding: 0 22px !important;
     font-size: 13px !important; font-weight: 600 !important;
     font-family: var(--font) !important; cursor: pointer !important;
     transition: all 0.15s !important; white-space: nowrap !important;
+    box-shadow: 0 2px 6px rgba(71,85,105,0.2) !important;
 }
-.pv-btn-sendback .z-button:hover { background: var(--warning) !important; color: #fff !important; border-color: var(--warning) !important; box-shadow: 0 4px 12px rgba(184,111,0,0.25) !important; }
-.pv-btn-sendback-on .z-button    { background: var(--warning) !important; color: #fff !important; border-color: var(--warning) !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(184,111,0,0.2) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
+.pv-btn-sendback .z-button:hover { background: #334155 !important; box-shadow: 0 4px 12px rgba(71,85,105,0.3) !important; }
+.pv-btn-sendback-on .z-button    { background: #1e293b !important; color: #fff !important; border-color: #1e293b !important; font-weight: 700 !important; box-shadow: 0 0 0 3px rgba(71,85,105,0.25) !important; height: 38px !important; padding: 0 22px !important; border-radius: var(--r6) !important; font-size: 13px !important; font-family: var(--font) !important; }
 
 /* Return reason box */
 .pv-reason-box      { background: var(--danger-bg) !important; border: 1px solid var(--danger-b) !important; border-radius: var(--r6) !important; padding: 12px 14px !important; margin-top: 8px !important; }
