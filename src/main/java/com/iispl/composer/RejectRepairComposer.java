@@ -837,6 +837,7 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 		if (pos >= 0)
 			allCheques.set(pos, c);
 	}
+	
 
 	// ======================================================================
 	// MOVE TO NEXT PENDING

@@ -1,11 +1,12 @@
 package com.iispl.composer;
 
 import com.iispl.entity.inward.InwardCheque;
-import com.iispl.service.RejectRepairService;
-import com.iispl.serviceImpl.RejectRepairServiceImpl;
+import com.iispl.service.PayeeAccountService;
+import com.iispl.serviceImpl.PayeeAccountServiceImpl;
 
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Executions;
+import org.zkoss.zk.ui.Sessions;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
@@ -17,76 +18,137 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * PayeeAccountComposer — Step 3 Payee Name & Account Entry.
+ *
+ * Two panels:
+ *   • listPanel  — paginated table of all cheques in the batch
+ *   • detailPanel — split-screen: left = cheque reference card,
+ *                                 right = payee + account entry form
+ *
+ * Navigation between panels is driven by the "Enter" button in the table
+ * (list → detail) and the "← Back to List" button (detail → list).
+ *
+ * Prev / Next arrows in the detail panel let the maker walk through
+ * all cheques without returning to the list.
+ */
 public class PayeeAccountComposer extends SelectorComposer<Component> {
 
     private static final long serialVersionUID = 1L;
 
-    // ── Wired ─────────────────────────────────────────────────────────────
+    // ── Session / URL constants ────────────────────────────────────────────
+    private static final String SESSION_BATCH_ID  = "cts_inward_batch_id";
+    private static final String PAGE_STEP2        = "/inward/inwardMicr/DateAmount.zul";
+    private static final String PAGE_CHECKER      = "/inward/inwardChecker/InwardChecker.zul";
+    private static final int    PAGE_SIZE         = 10;
 
-    @Wire("#lblBatchBadge")    private Label    lblBatchBadge;
-    @Wire("#lblPendingBadge")  private Label    lblPendingBadge;
-    @Wire("#lblPageInfo")      private Label    lblPageInfo;
-    @Wire("#chequeListbox")    private Listbox  chequeListbox;
-    @Wire("#cmbFilter")        private Combobox cmbFilter;
-    @Wire("#btnPrevPage")      private Button   btnPrevPage;
-    @Wire("#btnNextPage")      private Button   btnNextPage;
+    // ══════════════════════════════════════════════════════════════════════
+    // @Wire — top-nav / breadcrumb labels
+    // ══════════════════════════════════════════════════════════════════════
+    @Wire("#lblUserRole")   private Label lblUserRole;
 
-    // Entry popup
-    @Wire("#entryPopup")       private Window   entryPopup;
-    @Wire("#lblPopupChqNo")    private Label    lblPopupChqNo;
-    @Wire("#lblPopupAmt")      private Label    lblPopupAmt;
-    @Wire("#lblPopupBank")     private Label    lblPopupBank;
-    @Wire("#txtPayeeName")     private Textbox  txtPayeeName;
-    @Wire("#txtAccNo")         private Textbox  txtAccNo;
-    @Wire("#txtEntryRemarks")  private Textbox  txtEntryRemarks;
-    @Wire("#btnSaveEntry")     private Button   btnSaveEntry;
-    @Wire("#btnReferEntry")    private Button   btnReferEntry;
-    @Wire("#btnCancelEntry")   private Button   btnCancelEntry;
+    // ══════════════════════════════════════════════════════════════════════
+    // @Wire — LIST panel
+    // ══════════════════════════════════════════════════════════════════════
+    @Wire("#listPanel")         private Div      listPanel;
+    @Wire("#lblBatchBadge")     private Label    lblBatchBadge;
+    @Wire("#lblPendingBadge")   private Label    lblPendingBadge;
+    @Wire("#cmbFilter")         private Combobox cmbFilter;
+    @Wire("#chequeListbox")     private Listbox  chequeListbox;
+    @Wire("#btnPrevPage")       private Button   btnPrevPage;
+    @Wire("#btnNextPage")       private Button   btnNextPage;
+    @Wire("#lblPageInfo")       private Label    lblPageInfo;
+    @Wire("#btnBackToStep2")    private Button   btnBackToStep2;
+    @Wire("#btnProceedChecker") private Button   btnProceedChecker;
 
-    // ── Service & state ───────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    // @Wire — DETAIL panel
+    // ══════════════════════════════════════════════════════════════════════
+    @Wire("#detailPanel")           private Div     detailPanel;
+    @Wire("#lblDetailBatchBadge")   private Label   lblDetailBatchBadge;
 
-    private final RejectRepairService service = new RejectRepairServiceImpl();
+    // Left card — cheque reference
+    @Wire("#btnPrevCheque")         private Button  btnPrevCheque;
+    @Wire("#btnNextCheque")         private Button  btnNextCheque;
+    @Wire("#lblNavIndicator")       private Label   lblNavIndicator;
+    @Wire("#lblRefBank")            private Label   lblRefBank;
+    @Wire("#lblRefPayeePlaceholder")private Label   lblRefPayeePlaceholder;
+    @Wire("#lblRefAmtWords")        private Label   lblRefAmtWords;
+    @Wire("#lblRefAmount")          private Label   lblRefAmount;
+    @Wire("#lblRefChequeNo")        private Label   lblRefChequeNo;
+
+    // Right form
+    @Wire("#txtPayeeName")          private Textbox txtPayeeName;
+    @Wire("#txtAccNo")              private Textbox txtAccNo;
+    @Wire("#txtEntryRemarks")       private Textbox txtEntryRemarks;
+    @Wire("#btnSaveEntry")          private Button  btnSaveEntry;
+    @Wire("#btnReferEntry")         private Button  btnReferEntry;
+    @Wire("#btnBackToList")         private Button  btnBackToList;
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Service & State
+    // ══════════════════════════════════════════════════════════════════════
+    private final PayeeAccountService service = new PayeeAccountServiceImpl();
 
     private String             currentBatchId;
-    private List<InwardCheque> allCheques;
-    private InwardCheque       selectedCheque;
+    private List<InwardCheque> allCheques;   // full unfiltered list for the batch
 
+    // List-panel pagination
     private int currentPage = 1;
-    private static final int PAGE_SIZE = 10;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    // Detail-panel navigation index (into allCheques, not filtered list)
+    private int detailIdx = 0;
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Lifecycle
+    // ══════════════════════════════════════════════════════════════════════
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
-
-        currentBatchId = Executions.getCurrent().getParameter("batchId");
-        if (currentBatchId == null || currentBatchId.trim().isEmpty()) {
-            var batches = service.getRepairEligibleBatches();
-            if (batches != null && !batches.isEmpty()) {
-                currentBatchId = batches.get(0).getBatchId();
-            }
-        }
-
-        if (currentBatchId != null) {
-            allCheques = service.getStep3ChequesByBatchId(currentBatchId);
-            if (lblBatchBadge != null) {
-                lblBatchBadge.setValue("BATCH: " + currentBatchId);
-            }
-            renderTable();
-        }
-
+        resolveBatchId();
+        loadCheques();
         wireEvents();
+        showListPanel();
     }
 
-    // ── Wire events ───────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────────
+
+    private void resolveBatchId() {
+        String param = Executions.getCurrent().getParameter("batchId");
+        if (param != null && !param.isBlank()) {
+            currentBatchId = param.trim();
+            Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
+        } else {
+            Object sess = Sessions.getCurrent().getAttribute(SESSION_BATCH_ID);
+            if (sess != null) {
+                currentBatchId = sess.toString();
+            }
+        }
+    }
+
+    private void loadCheques() {
+        if (currentBatchId == null || currentBatchId.isBlank()) {
+            allCheques = Collections.emptyList();
+            return;
+        }
+        allCheques = service.getChequesByBatchId(currentBatchId);
+        if (allCheques == null) allCheques = Collections.emptyList();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Event wiring (programmatic — works alongside @Listen)
+    // ══════════════════════════════════════════════════════════════════════
 
     private void wireEvents() {
+        // Filter combo
         if (cmbFilter != null) {
             cmbFilter.addEventListener(Events.ON_SELECT, e -> {
-                currentPage = 1; renderTable();
+                currentPage = 1;
+                renderTable();
             });
         }
+        // Pagination
         if (btnPrevPage != null) {
             btnPrevPage.addEventListener(Events.ON_CLICK, e -> {
                 if (currentPage > 1) { currentPage--; renderTable(); }
@@ -97,24 +159,55 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
                 if (currentPage < totalPages()) { currentPage++; renderTable(); }
             });
         }
-
-        // Popup buttons
+        // Detail navigation
+        if (btnPrevCheque != null) {
+            btnPrevCheque.addEventListener(Events.ON_CLICK, e -> {
+                if (detailIdx > 0) { detailIdx--; loadDetailRecord(); }
+            });
+        }
+        if (btnNextCheque != null) {
+            btnNextCheque.addEventListener(Events.ON_CLICK, e -> {
+                if (detailIdx < allCheques.size() - 1) { detailIdx++; loadDetailRecord(); }
+            });
+        }
+        // Detail form actions
         if (btnSaveEntry != null) {
             btnSaveEntry.addEventListener(Events.ON_CLICK, e -> doSaveEntry());
         }
         if (btnReferEntry != null) {
             btnReferEntry.addEventListener(Events.ON_CLICK, e -> doReferEntry());
         }
-        if (btnCancelEntry != null) {
-            btnCancelEntry.addEventListener(Events.ON_CLICK,
-                    e -> entryPopup.setVisible(false));
+        if (btnBackToList != null) {
+            btnBackToList.addEventListener(Events.ON_CLICK, e -> showListPanel());
         }
     }
 
-    // ── Render ────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    // PANEL SWITCHING
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void showListPanel() {
+        setVis(listPanel, true);
+        setVis(detailPanel, false);
+        updateBadges();
+        renderTable();
+    }
+
+    private void showDetailPanel(int idx) {
+        detailIdx = idx;
+        setVis(listPanel, false);
+        setVis(detailPanel, true);
+        if (lblDetailBatchBadge != null)
+            lblDetailBatchBadge.setValue("BATCH: " + currentBatchId);
+        loadDetailRecord();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // LIST PANEL — render table
+    // ══════════════════════════════════════════════════════════════════════
 
     private void renderTable() {
-        if (chequeListbox == null || allCheques == null) return;
+        if (chequeListbox == null) return;
 
         List<InwardCheque> filtered = getFilteredList();
         int total = filtered.size();
@@ -126,84 +219,118 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
         chequeListbox.getItems().clear();
         int rowNum = from + 1;
 
-        for (InwardCheque c : filtered.subList(from, to)) {
-            Listitem row = new Listitem();
+        for (int i = from; i < to; i++) {
+            InwardCheque c = filtered.get(i);
+            Listitem row   = new Listitem();
 
             addCell(row, String.valueOf(rowNum++));
-            addCell(row, c.getChequeNo());
+            addCell(row, nvl(c.getChequeNo()));
             addCell(row, nvl(c.getPresentingBankName()));
 
             // Amount — right-aligned
             Listcell amtCell = new Listcell(
                     c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
-            amtCell.setStyle("text-align:right");
+            amtCell.setStyle("text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px;");
             row.appendChild(amtCell);
 
-            // Payee Name — show "—" if not yet entered (matches Image 3)
+            // Payee Name
             addCell(row, nvlDash(c.getPayeeName()));
 
-            // Account No — show "—" if not yet entered
+            // Account No
             addCell(row, nvlDash(c.getDraweeAccountNumber()));
 
             // Status badge
             Listcell statusCell = new Listcell();
-            statusCell.setStyle("text-align:center");
+            statusCell.setStyle("text-align:center;");
             Label badge = new Label(resolveStatusLabel(c.getRepairStatus()));
             badge.setSclass(resolveStatusSclass(c.getRepairStatus()));
             statusCell.appendChild(badge);
             row.appendChild(statusCell);
 
-            // Action — Enter button
+            // Action — "Enter" button; find true index in allCheques for navigation
+            final int allIdx = allCheques.indexOf(c);
             Listcell actionCell = new Listcell();
-            actionCell.setStyle("text-align:center");
+            actionCell.setStyle("text-align:center;");
             Button enterBtn = new Button("Enter");
-            enterBtn.setSclass("btn-repair");
-            final InwardCheque ref = c;
-            enterBtn.addEventListener(Events.ON_CLICK, ev -> openEntryPopup(ref));
+            enterBtn.setSclass("btn-pa-enter");
+            enterBtn.addEventListener(Events.ON_CLICK, ev -> showDetailPanel(allIdx));
             actionCell.appendChild(enterBtn);
             row.appendChild(actionCell);
 
             chequeListbox.appendChild(row);
         }
 
-        // Pagination
+        // Pagination info
         int tp = totalPages(filtered);
-        if (lblPageInfo != null) {
-            lblPageInfo.setValue("Page " + currentPage + " of " + tp
-                    + " | " + total + " records");
-        }
+        if (lblPageInfo != null)
+            lblPageInfo.setValue("Page " + currentPage + " of " + tp + " | " + total + " records");
         if (btnPrevPage != null) btnPrevPage.setDisabled(currentPage <= 1);
         if (btnNextPage != null) btnNextPage.setDisabled(currentPage >= tp);
 
-        // Pending count — those with no payee or account yet
-        long pending = allCheques.stream()
-                .filter(c -> c.getPayeeName() == null || c.getPayeeName().isEmpty()
-                          || c.getDraweeAccountNumber() == null
-                          || c.getDraweeAccountNumber().isEmpty())
-                .count();
-        if (lblPendingBadge != null) lblPendingBadge.setValue(pending + " PENDING");
+        updateBadges();
     }
 
-    // ── Popup ─────────────────────────────────────────────────────────────
-
-    private void openEntryPopup(InwardCheque c) {
-        selectedCheque = c;
-        lblPopupChqNo.setValue(nvl(c.getChequeNo()));
-        lblPopupAmt.setValue(c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
-        lblPopupBank.setValue(nvl(c.getPresentingBankName()));
-        txtPayeeName.setValue(nvl2(c.getPayeeName()));
-        txtAccNo.setValue(nvl2(c.getDraweeAccountNumber()));
-        txtEntryRemarks.setValue(nvl2(c.getRemarks()));
-        entryPopup.setVisible(true);
+    private void updateBadges() {
+        if (lblBatchBadge != null && currentBatchId != null)
+            lblBatchBadge.setValue("BATCH: " + currentBatchId);
+        if (lblPendingBadge != null) {
+            long pending = service.countPending(allCheques);
+            lblPendingBadge.setValue(pending + " PENDING");
+        }
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // DETAIL PANEL — load record
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void loadDetailRecord() {
+        if (allCheques.isEmpty()) return;
+        detailIdx = Math.max(0, Math.min(detailIdx, allCheques.size() - 1));
+        InwardCheque c = allCheques.get(detailIdx);
+
+        // Navigation indicator
+        if (lblNavIndicator != null)
+            lblNavIndicator.setValue((detailIdx + 1) + " of " + allCheques.size());
+        if (btnPrevCheque != null) btnPrevCheque.setDisabled(detailIdx == 0);
+        if (btnNextCheque != null) btnNextCheque.setDisabled(detailIdx == allCheques.size() - 1);
+
+        // Left card — cheque reference
+        if (lblRefBank != null)
+            lblRefBank.setValue(nvl(c.getPresentingBankName()));
+        if (lblRefChequeNo != null)
+            lblRefChequeNo.setValue("Cheque No: " + nvl(c.getChequeNo()));
+        if (lblRefPayeePlaceholder != null) {
+            String payee = c.getPayeeName();
+            if (payee == null || payee.isBlank()) {
+                lblRefPayeePlaceholder.setValue("[Enter Payee Name]");
+                lblRefPayeePlaceholder.setStyle("color:#e65100; font-weight:600;");
+            } else {
+                lblRefPayeePlaceholder.setValue(payee);
+                lblRefPayeePlaceholder.setStyle("color:#1a2b45; font-weight:600;");
+            }
+        }
+        if (lblRefAmtWords != null)
+            lblRefAmtWords.setValue(nvl(amountInWords(c.getAmount())));
+        if (lblRefAmount != null)
+            lblRefAmount.setValue(c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
+
+        // Right form — pre-fill with existing values
+        if (txtPayeeName != null)    txtPayeeName.setValue(nvlEmpty(c.getPayeeName()));
+        if (txtAccNo != null)        txtAccNo.setValue(nvlEmpty(c.getDraweeAccountNumber()));
+        if (txtEntryRemarks != null) txtEntryRemarks.setValue(nvlEmpty(c.getRemarks()));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // DETAIL ACTIONS
+    // ══════════════════════════════════════════════════════════════════════
 
     private void doSaveEntry() {
-        if (selectedCheque == null) return;
+        if (allCheques.isEmpty()) return;
+        InwardCheque c = allCheques.get(detailIdx);
 
-        String payee = txtPayeeName.getValue() != null
-                ? txtPayeeName.getValue().trim() : "";
-        String accNo = txtAccNo.getValue() != null
-                ? txtAccNo.getValue().trim() : "";
+        String payee  = txtPayeeName != null  ? txtPayeeName.getValue().trim()  : "";
+        String accNo  = txtAccNo     != null  ? txtAccNo.getValue().trim()      : "";
+        String remark = txtEntryRemarks != null ? txtEntryRemarks.getValue()    : "";
 
         if (payee.isEmpty()) {
             Messagebox.show("Payee Name is required.", "Validation",
@@ -216,71 +343,141 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
             return;
         }
 
-        selectedCheque.setPayeeName(payee);
-        selectedCheque.setDraweeAccountNumber(accNo);
-        selectedCheque.setRemarks(txtEntryRemarks.getValue());
-        service.saveStep3Entry(selectedCheque);   // sets ENTRY_DONE inside
+        c.setPayeeName(payee);
+        c.setDraweeAccountNumber(accNo);
+        c.setRemarks(remark);
+        service.saveEntry(c);
 
-        entryPopup.setVisible(false);
-        Messagebox.show("Entry saved for cheque " + selectedCheque.getChequeNo() + " ✓",
+        Messagebox.show("Entry saved for cheque " + c.getChequeNo() + " ✓",
                 "Success", Messagebox.OK, Messagebox.INFORMATION);
-        renderTable();
+
+        // Auto-advance to next pending cheque if available
+        advanceToNextPending();
     }
 
     private void doReferEntry() {
-        if (selectedCheque == null) return;
-        selectedCheque.setRepairStatus("REFERRED_BACK");
-        service.saveStep3Entry(selectedCheque);
-        entryPopup.setVisible(false);
-        Messagebox.show("Cheque " + selectedCheque.getChequeNo() + " referred back.",
-                "Info", Messagebox.OK, Messagebox.INFORMATION);
-        renderTable();
-    }
+        if (allCheques.isEmpty()) return;
+        InwardCheque c = allCheques.get(detailIdx);
+        String remark = txtEntryRemarks != null ? txtEntryRemarks.getValue() : "";
 
-    // ── Navigation ────────────────────────────────────────────────────────
-
-    @Listen("onClick = #btnBackToStep2")
-    public void onBackToStep2() {
-        Executions.getCurrent().sendRedirect(
-                "/inward/inwardMicr/DateAmount.zul?batchId=" + currentBatchId);
-    }
-
-    @Listen("onClick = #btnProceedChecker")
-    public void onProceedToChecker() {
         Messagebox.show(
-            "Proceed to Inward Checker with batch " + currentBatchId + "?",
-            "Confirm", Messagebox.YES | Messagebox.NO, Messagebox.QUESTION,
+            "Refer cheque " + c.getChequeNo() + " back for investigation?",
+            "Confirm Refer Back",
+            Messagebox.YES | Messagebox.NO,
+            Messagebox.QUESTION,
             evt -> {
                 if (Messagebox.ON_YES.equals(evt.getName())) {
-                    service.proceedToInwardChecker(currentBatchId);
-                    Executions.getCurrent().sendRedirect(
-                            "/inward/inwardChecker/InwardChecker.zul"
-                            + "?batchId=" + currentBatchId);
+                    service.referBack(c, remark);
+                    Messagebox.show("Cheque " + c.getChequeNo() + " referred back.",
+                            "Info", Messagebox.OK, Messagebox.INFORMATION);
+                    advanceToNextPending();
                 }
             });
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    /**
+     * After saving or referring, jump to the next cheque that still
+     * needs entry. If none remain, go back to the list.
+     */
+    private void advanceToNextPending() {
+        // Refresh in-memory list from DB
+        allCheques = service.getChequesByBatchId(currentBatchId);
+        if (allCheques == null) allCheques = Collections.emptyList();
+
+        // Look for next pending after current index
+        for (int i = detailIdx + 1; i < allCheques.size(); i++) {
+            InwardCheque c = allCheques.get(i);
+            if (isPending(c)) {
+                detailIdx = i;
+                loadDetailRecord();
+                return;
+            }
+        }
+        // No more pending — return to list
+        showListPanel();
+    }
+
+    private boolean isPending(InwardCheque c) {
+        String status = c.getRepairStatus();
+        if ("REFERRED_BACK".equalsIgnoreCase(status)) return false;
+        if ("ENTRY_DONE".equalsIgnoreCase(status))    return false;
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // @Listen — wizard bar & nav buttons
+    // ══════════════════════════════════════════════════════════════════════
+
+    @Listen("onClick = #btnStep1")
+    public void onStep1() {
+        Executions.getCurrent().sendRedirect(
+                "/inward/inwardMicr/RejectRepair.zul?batchId=" + currentBatchId);
+    }
+
+    @Listen("onClick = #btnStep2")
+    public void onStep2() {
+        Executions.getCurrent().sendRedirect(PAGE_STEP2 + "?batchId=" + currentBatchId);
+    }
+
+    @Listen("onClick = #btnStep3")
+    public void onStep3() { /* already on Step 3 */ }
+
+    @Listen("onClick = #btnBackToStep2")
+    public void onBackToStep2() {
+        Executions.getCurrent().sendRedirect(PAGE_STEP2 + "?batchId=" + currentBatchId);
+    }
+
+    @Listen("onClick = #btnProceedChecker")
+    public void onProceedChecker() {
+        long pending = service.countPending(allCheques);
+        String msg = pending > 0
+                ? pending + " cheque(s) still pending. Proceed to Inward Checker anyway?"
+                : "All entries complete. Proceed to Inward Checker?";
+
+        Messagebox.show(msg, "Confirm",
+                Messagebox.YES | Messagebox.NO, Messagebox.QUESTION,
+                evt -> {
+                    if (Messagebox.ON_YES.equals(evt.getName())) {
+                        boolean ok = service.proceedToInwardChecker(currentBatchId);
+                        if (ok) {
+                            Executions.getCurrent().sendRedirect(
+                                    PAGE_CHECKER + "?batchId=" + currentBatchId);
+                        } else {
+                            Messagebox.show("Failed to advance batch. Please try again.",
+                                    "Error", Messagebox.OK, Messagebox.ERROR);
+                        }
+                    }
+                });
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ══════════════════════════════════════════════════════════════════════
 
     private List<InwardCheque> getFilteredList() {
         if (allCheques == null) return Collections.emptyList();
-
-        final String filterVal =
-                (cmbFilter != null && cmbFilter.getSelectedItem() != null
-                 && cmbFilter.getSelectedItem().getValue() != null)
-                        ? cmbFilter.getSelectedItem().getValue().toString()
-                        : "";
-
+        final String filterVal = selectedFilterValue();
+        if (filterVal.isEmpty()) return allCheques;
         return allCheques.stream()
                 .filter(c -> {
-                    if (!filterVal.isEmpty()) {
-                        String rs = c.getRepairStatus() != null
-                                ? c.getRepairStatus() : "NEEDS_ENTRY";
-                        return rs.equalsIgnoreCase(filterVal);
+                    String rs = c.getRepairStatus() != null ? c.getRepairStatus() : "";
+                    // "NEEDS_ENTRY" filter matches blank / null / unrecognised status
+                    if ("NEEDS_ENTRY".equalsIgnoreCase(filterVal)) {
+                        return rs.isEmpty()
+                            || (!rs.equalsIgnoreCase("ENTRY_DONE")
+                                && !rs.equalsIgnoreCase("REFERRED_BACK"));
                     }
-                    return true;
+                    return rs.equalsIgnoreCase(filterVal);
                 })
                 .collect(Collectors.toList());
+    }
+
+    private String selectedFilterValue() {
+        if (cmbFilter == null) return "";
+        Comboitem sel = cmbFilter.getSelectedItem();
+        if (sel == null) return "";
+        Object v = sel.getValue();
+        return v != null ? v.toString() : "";
     }
 
     private int totalPages() { return totalPages(getFilteredList()); }
@@ -292,13 +489,56 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
         row.appendChild(new Listcell(text != null ? text : "—"));
     }
 
-    private String nvl(String v)     { return (v != null && !v.isEmpty()) ? v : "—";  }
-    private String nvlDash(String v) { return (v != null && !v.isEmpty()) ? v : "—"; }
-    private String nvl2(String v)    { return v != null ? v : "";                      }
-    private String fmt(BigDecimal v) { return String.format("%,.2f", v);               }
+    private void setVis(Component c, boolean visible) {
+        if (c != null) c.setVisible(visible);
+    }
+
+    private String nvl(String v)       { return (v != null && !v.isBlank()) ? v : "—"; }
+    private String nvlDash(String v)   { return (v != null && !v.isBlank()) ? v : "—"; }
+    private String nvlEmpty(String v)  { return v != null ? v : ""; }
+
+    private String fmt(BigDecimal v) { return String.format("%,.2f", v); }
+
+    /**
+     * Very simple amount-in-words (English, Indian numbering).
+     * Replace with a proper library (e.g. ICU4J) if needed.
+     */
+    private String amountInWords(BigDecimal amount) {
+        if (amount == null) return "";
+        long units = amount.longValue();
+        // Basic lookup for common amounts — good enough for UI reference card
+        String[] ones = {"","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
+                         "Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen",
+                         "Seventeen","Eighteen","Nineteen"};
+        String[] tens = {"","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"};
+
+        if (units == 0) return "Zero Only";
+        StringBuilder sb = new StringBuilder();
+        if (units >= 100000) {
+            sb.append(ones[(int)(units / 100000)]).append(" Lakh ");
+            units %= 100000;
+        }
+        if (units >= 1000) {
+            int t = (int)(units / 1000);
+            if (t >= 20) sb.append(tens[t / 10]).append(" ").append(ones[t % 10]).append(" ");
+            else sb.append(ones[t]).append(" ");
+            sb.append("Thousand ");
+            units %= 1000;
+        }
+        if (units >= 100) {
+            sb.append(ones[(int)(units / 100)]).append(" Hundred ");
+            units %= 100;
+        }
+        if (units >= 20) {
+            sb.append(tens[(int)(units / 10)]).append(" ").append(ones[(int)(units % 10)]).append(" ");
+        } else if (units > 0) {
+            sb.append(ones[(int)units]).append(" ");
+        }
+        return sb.toString().trim() + " Only";
+    }
 
     private String resolveStatusLabel(String s) {
-        if (s == null || s.isEmpty()) return "NEEDS ENTRY";
+        if (s == null || s.isBlank()) return "NEEDS ENTRY";
         return switch (s.toUpperCase()) {
             case "ENTRY_DONE"    -> "COMPLETED";
             case "REFERRED_BACK" -> "REFERRED BACK";
@@ -307,7 +547,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
     }
 
     private String resolveStatusSclass(String s) {
-        if (s == null || s.isEmpty()) return "badge-needs-repair";
+        if (s == null || s.isBlank()) return "badge-needs-repair";
         return switch (s.toUpperCase()) {
             case "ENTRY_DONE"    -> "badge-repaired";
             case "REFERRED_BACK" -> "badge-referred";

@@ -33,8 +33,10 @@
                                 sclass="step-circle-btn active"
                                 tooltiptext="Step 1 — Micr Repair" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num active"  value="Step 1" />
-                            <label sclass="step-desc active" value="Micr Repair" />
+
+                            <label sclass="step-num active"  value="Step" />
+                            <label sclass="step-desc active" value="Reject &amp; Repair" />
+
                         </div>
                     </div>
 
@@ -45,7 +47,7 @@
                                 sclass="step-circle-btn disabled-step"
                                 tooltiptext="Step 2 — Date &amp; Amount" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num"  id="lblStep2Num"  value="Step 2" />
+                            <label sclass="step-num"  id="lblStep2Num"  value="Step" />
                             <label sclass="step-desc" id="lblStep2Desc" value="Date &amp; Amount" />
                         </div>
                     </div>
@@ -57,7 +59,7 @@
                                 sclass="step-circle-btn disabled-step"
                                 tooltiptext="Step 3 — Payee &amp; Account" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num"  id="lblStep3Num"  value="Step 3" />
+                            <label sclass="step-num"  id="lblStep3Num"  value="Step" />
                             <label sclass="step-desc" id="lblStep3Desc" value="Payee &amp; Account" />
                         </div>
                     </div>
