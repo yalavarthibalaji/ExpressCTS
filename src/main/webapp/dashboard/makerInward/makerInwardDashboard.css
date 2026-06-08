@@ -480,3 +480,15 @@
 .dash-footer .z-label {
     color: #9ca3af;
 }
+
+/* Force datebox width */
+#dateBatchFilter.z-datebox {
+    width: 180px !important;
+    min-width: 180px !important;
+    box-sizing: border-box !important;
+}
+
+#dateBatchFilter.z-datebox input.z-datebox-inp {
+    width: 100% !important;
+    min-width: 130px !important;
+}
