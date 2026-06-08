@@ -1,13 +1,6 @@
 package com.iispl.daoImpl;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -23,38 +16,44 @@ import com.iispl.util.HibernateUtil;
 
 /**
  * DateAmountDaoImpl
- * Hibernate-based DAO for Step 2 (Date & Amount Repair) and
- * Step 3 (Payee Name & Account Entry).
- * Uses InwardCheque entity fields as defined.
+ *
+ * Hibernate-based DAO for:
+ *   - Step 2 : Date & Amount Repair (updateDateAndAmount, rejectCheque, referChequeBack)
+ *   - Step 3 : Payee Name & Account Entry (updatePayeeAndAccount)
+ *   - Batch submission (submitBatchToChecker)
+ *
+ * All sessions are opened and closed per method (no long-lived sessions).
+ * Each write operation uses an explicit Transaction with rollback on failure.
  */
 public class DateAmountDaoImpl implements DateAmountDao {
 
-    private static final Logger LOG = Logger.getLogger(DateAmountDaoImpl.class.getName());
+    private static final Logger LOG =
+            Logger.getLogger(DateAmountDaoImpl.class.getName());
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Step 2 + Step 3 : Find cheques by batch
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  READ — findChequesByBatchId
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
     public List<InwardCheque> findChequesByBatchId(String batchId) {
         Session session = null;
-        Transaction tx = null;
+        Transaction tx  = null;
         List<InwardCheque> list = new ArrayList<>();
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
 
-            // batch is a ManyToOne → join fetch to avoid N+1
+            // LEFT JOIN FETCH avoids N+1 on batch association
             String hql = "FROM InwardCheque ic "
                        + "LEFT JOIN FETCH ic.batch b "
                        + "WHERE b.batchId = :batchId "
                        + "ORDER BY ic.chequeNo ASC";
 
-            Query<InwardCheque> query = session.createQuery(hql, InwardCheque.class);
-            query.setParameter("batchId", batchId);
-            list = query.getResultList();
-
+            Query<InwardCheque> q = session.createQuery(hql, InwardCheque.class);
+            q.setParameter("batchId", batchId);
+            list = q.getResultList();
             tx.commit();
+
         } catch (Exception e) {
             if (tx != null) tx.rollback();
             LOG.log(Level.SEVERE, "findChequesByBatchId failed, batchId=" + batchId, e);
@@ -65,20 +64,18 @@ public class DateAmountDaoImpl implements DateAmountDao {
         return list;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Find single cheque by PK  (Chequeid field → getChequeId())
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  READ — findChequeById
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
     public InwardCheque findChequeById(Long chequeId) {
         Session session = null;
-        Transaction tx = null;
+        Transaction tx  = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-
             InwardCheque cheque = session.get(InwardCheque.class, chequeId);
-
             tx.commit();
             return cheque;
         } catch (Exception e) {
@@ -90,168 +87,107 @@ public class DateAmountDaoImpl implements DateAmountDao {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Step 2 : Update Date & Amount
-    //  Entity fields: chequeDateOcr, amountOcr, repairStatus
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  READ — findChequesByBatchAndStatus
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
-    public int updateDateAndAmount(InwardCheque cheque) {
+    public List<InwardCheque> findChequesByBatchAndStatus(String batchId, String repairStatus) {
         Session session = null;
-        Transaction tx = null;
+        Transaction tx  = null;
+        List<InwardCheque> list = new ArrayList<>();
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
 
-            // cheque.getChequeId() → PK (field name: Chequeid in entity)
+            StringBuilder hql = new StringBuilder(
+                "FROM InwardCheque ic "
+              + "LEFT JOIN FETCH ic.batch b "
+              + "WHERE b.batchId = :batchId "
+            );
+            if (repairStatus != null && !repairStatus.isEmpty())
+                hql.append("AND ic.repairStatus = :repairStatus ");
+            hql.append("ORDER BY ic.chequeNo ASC");
+
+            Query<InwardCheque> q = session.createQuery(hql.toString(), InwardCheque.class);
+            q.setParameter("batchId", batchId);
+            if (repairStatus != null && !repairStatus.isEmpty())
+                q.setParameter("repairStatus", repairStatus);
+
+            list = q.getResultList();
+            tx.commit();
+
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            LOG.log(Level.SEVERE, "findChequesByBatchAndStatus failed", e);
+            throw new RuntimeException("Hibernate error in findChequesByBatchAndStatus", e);
+        } finally {
+            if (session != null) session.close();
+        }
+        return list;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  WRITE — Step 2: updateDateAndAmount
+    //  Fields: chequeDateOcr, amountOcr, repairStatus → 'DATE_AMT_REPAIRED'
+    // ─────────────────────────────────────────────────────────────────────
+
+    @Override
+    public int updateDateAndAmount(InwardCheque cheque) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
             String hql = "UPDATE InwardCheque ic "
                        + "SET ic.chequeDateOcr = :rcvdDate, "
                        + "    ic.amountOcr     = :rcvdAmount, "
-                       + "    ic.repairStatus  = 'DATE_AMT_REPAIRED', "
+                       + "    ic.repairStatus  = :repairStatus, "
+                       + "    ic.remarks       = :remarks, "
                        + "    ic.updatedAt     = CURRENT_TIMESTAMP "
                        + "WHERE ic.Chequeid = :chequeId";
 
-            Query<?> query = session.createQuery(hql);
-            query.setParameter("rcvdDate",
+            Query<?> q = session.createQuery(hql);
+            q.setParameter("rcvdDate",
                     cheque.getChequeDateOcr() != null ? cheque.getChequeDateOcr() : null);
-            query.setParameter("rcvdAmount",
+            q.setParameter("rcvdAmount",
                     cheque.getAmountOcr() != null ? cheque.getAmountOcr() : BigDecimal.ZERO);
-            query.setParameter("chequeId", cheque.getId());
+            q.setParameter("repairStatus",
+                    cheque.getRepairStatus() != null ? cheque.getRepairStatus() : "REPAIRED");
+            q.setParameter("remarks",
+                    cheque.getRemarks() != null ? cheque.getRemarks() : "");
+            q.setParameter("chequeId", cheque.getId());
 
-            int rows = query.executeUpdate();
+            int rows = q.executeUpdate();
             tx.commit();
             return rows;
 
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "updateDateAndAmount failed, chequeId=" + cheque.getId(), e);
+            LOG.log(Level.SEVERE,
+                    "updateDateAndAmount failed, chequeId=" + cheque.getId(), e);
             throw new RuntimeException("Hibernate error in updateDateAndAmount", e);
         } finally {
             if (session != null) session.close();
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Step 3 : Update Payee Name & Account Number
-    //  Entity fields: payeeName, draweeAccountNumber, repairStatus
-    // ──────────────────────────────────────────────────────────────────────────
-
-    @Override
-    public int updatePayeeAndAccount(InwardCheque cheque) {
-        Session session = null;
-        Transaction tx = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            tx = session.beginTransaction();
-
-            String hql = "UPDATE InwardCheque ic "
-                       + "SET ic.payeeName           = :payeeName, "
-                       + "    ic.draweeAccountNumber = :accountNo, "
-                       + "    ic.repairStatus        = 'ENTRY_DONE', "
-                       + "    ic.updatedAt           = CURRENT_TIMESTAMP "
-                       + "WHERE ic.Chequeid = :chequeId";
-
-            Query<?> query = session.createQuery(hql);
-            query.setParameter("payeeName",  cheque.getPayeeName());
-            query.setParameter("accountNo",  cheque.getDraweeAccountNumber());   // ← correct field from entity
-            query.setParameter("chequeId",   cheque.getId());
-
-            int rows = query.executeUpdate();
-            tx.commit();
-            return rows;
-
-        } catch (Exception e) {
-            if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "updatePayeeAndAccount failed, chequeId=" + cheque.getId(), e);
-            throw new RuntimeException("Hibernate error in updatePayeeAndAccount", e);
-        } finally {
-            if (session != null) session.close();
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Submit entire batch to Checker
-    //  Sets repairStatus = 'SUBMITTED_TO_CHECKER' on all cheques in batch
-    // ──────────────────────────────────────────────────────────────────────────
-
-    @Override
-    public int submitBatchToChecker(String batchId) {
-        Session session = null;
-        Transaction tx = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            tx = session.beginTransaction();
-
-            String hql = "UPDATE InwardCheque ic "
-                       + "SET ic.repairStatus = 'SUBMITTED_TO_CHECKER', "
-                       + "    ic.status       = 'SUBMITTED', "
-                       + "    ic.updatedAt    = CURRENT_TIMESTAMP "
-                       + "WHERE ic.batch.batchId = :batchId";
-
-            Query<?> query = session.createQuery(hql);
-            query.setParameter("batchId", batchId);
-
-            int rows = query.executeUpdate();
-            tx.commit();
-            return rows;
-
-        } catch (Exception e) {
-            if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "submitBatchToChecker failed, batchId=" + batchId, e);
-            throw new RuntimeException("Hibernate error in submitBatchToChecker", e);
-        } finally {
-            if (session != null) session.close();
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Refer cheque back to a specific module (Step 2 / Step 3 refer action)
-    //  Sets repairStatus = 'REFERRED_BACK', remarks updated
-    // ──────────────────────────────────────────────────────────────────────────
-
-    @Override
-    public int referChequeBack(Long chequeId, String referReason, String remarks) {
-        Session session = null;
-        Transaction tx = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            tx = session.beginTransaction();
-
-            String hql = "UPDATE InwardCheque ic "
-                       + "SET ic.repairStatus = 'REFERRED_BACK', "
-                       + "    ic.remarks      = :remarks, "
-                       + "    ic.updatedAt    = CURRENT_TIMESTAMP "
-                       + "WHERE ic.Chequeid = :chequeId";
-
-            Query<?> query = session.createQuery(hql);
-            query.setParameter("chequeId", chequeId);
-            query.setParameter("remarks",  referReason + (remarks != null ? " | " + remarks : ""));
-
-            int rows = query.executeUpdate();
-            tx.commit();
-            return rows;
-
-        } catch (Exception e) {
-            if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "referChequeBack failed, chequeId=" + chequeId, e);
-            throw new RuntimeException("Hibernate error in referChequeBack", e);
-        } finally {
-            if (session != null) session.close();
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Reject cheque (Step 2 reject)
-    //  Sets repairStatus = 'REJECTED', status = 'RETURNED'
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  WRITE — Step 2: rejectCheque
+    //  Sets repairStatus = 'REJECTED', status = 'RETURNED', remarks
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
     public int rejectCheque(Long chequeId, String rejectReason, String remarks) {
         Session session = null;
-        Transaction tx = null;
+        Transaction tx  = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
+
+            String combinedRemarks = rejectReason
+                    + (remarks != null && !remarks.isBlank() ? " | " + remarks : "");
 
             String hql = "UPDATE InwardCheque ic "
                        + "SET ic.repairStatus = 'REJECTED', "
@@ -260,11 +196,11 @@ public class DateAmountDaoImpl implements DateAmountDao {
                        + "    ic.updatedAt    = CURRENT_TIMESTAMP "
                        + "WHERE ic.Chequeid = :chequeId";
 
-            Query<?> query = session.createQuery(hql);
-            query.setParameter("chequeId", chequeId);
-            query.setParameter("remarks",  rejectReason + (remarks != null ? " | " + remarks : ""));
+            Query<?> q = session.createQuery(hql);
+            q.setParameter("chequeId", chequeId);
+            q.setParameter("remarks",  combinedRemarks);
 
-            int rows = query.executeUpdate();
+            int rows = q.executeUpdate();
             tx.commit();
             return rows;
 
@@ -277,46 +213,116 @@ public class DateAmountDaoImpl implements DateAmountDao {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Find cheques by batch + repairStatus filter  (for filtered list views)
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  WRITE — Step 2: referChequeBack
+    //  Sets repairStatus = 'REFERRED_BACK', remarks
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
-    public List<InwardCheque> findChequesByBatchAndStatus(String batchId, String repairStatus) {
+    public int referChequeBack(Long chequeId, String referReason, String remarks) {
         Session session = null;
-        Transaction tx = null;
-        List<InwardCheque> list = new ArrayList<>();
+        Transaction tx  = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
 
-            StringBuilder hql = new StringBuilder(
-                "FROM InwardCheque ic "
-              + "LEFT JOIN FETCH ic.batch b "
-              + "WHERE b.batchId = :batchId "
-            );
+            String combinedRemarks = referReason
+                    + (remarks != null && !remarks.isBlank() ? " | " + remarks : "");
 
-            if (repairStatus != null && !repairStatus.isEmpty()) {
-                hql.append("AND ic.repairStatus = :repairStatus ");
-            }
-            hql.append("ORDER BY ic.chequeNo ASC");
+            String hql = "UPDATE InwardCheque ic "
+                       + "SET ic.repairStatus = 'REFERRED_BACK', "
+                       + "    ic.remarks      = :remarks, "
+                       + "    ic.updatedAt    = CURRENT_TIMESTAMP "
+                       + "WHERE ic.Chequeid = :chequeId";
 
-            Query<InwardCheque> query = session.createQuery(hql.toString(), InwardCheque.class);
-            query.setParameter("batchId", batchId);
-            if (repairStatus != null && !repairStatus.isEmpty()) {
-                query.setParameter("repairStatus", repairStatus);
-            }
+            Query<?> q = session.createQuery(hql);
+            q.setParameter("chequeId", chequeId);
+            q.setParameter("remarks",  combinedRemarks);
 
-            list = query.getResultList();
+            int rows = q.executeUpdate();
             tx.commit();
+            return rows;
 
         } catch (Exception e) {
             if (tx != null) tx.rollback();
-            LOG.log(Level.SEVERE, "findChequesByBatchAndStatus failed", e);
-            throw new RuntimeException("Hibernate error in findChequesByBatchAndStatus", e);
+            LOG.log(Level.SEVERE, "referChequeBack failed, chequeId=" + chequeId, e);
+            throw new RuntimeException("Hibernate error in referChequeBack", e);
         } finally {
             if (session != null) session.close();
         }
-        return list;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  WRITE — Step 3: updatePayeeAndAccount
+    //  Fields: payeeName, draweeAccountNumber, repairStatus → 'ENTRY_DONE'
+    // ─────────────────────────────────────────────────────────────────────
+
+    @Override
+    public int updatePayeeAndAccount(InwardCheque cheque) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            String hql = "UPDATE InwardCheque ic "
+                       + "SET ic.payeeName           = :payeeName, "
+                       + "    ic.draweeAccountNumber = :accountNo, "
+                       + "    ic.repairStatus        = 'ENTRY_DONE', "
+                       + "    ic.updatedAt           = CURRENT_TIMESTAMP "
+                       + "WHERE ic.Chequeid = :chequeId";
+
+            Query<?> q = session.createQuery(hql);
+            q.setParameter("payeeName",  cheque.getPayeeName());
+            q.setParameter("accountNo",  cheque.getDraweeAccountNumber());
+            q.setParameter("chequeId",   cheque.getId());
+
+            int rows = q.executeUpdate();
+            tx.commit();
+            return rows;
+
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            LOG.log(Level.SEVERE,
+                    "updatePayeeAndAccount failed, chequeId=" + cheque.getId(), e);
+            throw new RuntimeException("Hibernate error in updatePayeeAndAccount", e);
+        } finally {
+            if (session != null) session.close();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  WRITE — submitBatchToChecker
+    //  Sets repairStatus = 'SUBMITTED_TO_CHECKER', status = 'SUBMITTED'
+    // ─────────────────────────────────────────────────────────────────────
+
+    @Override
+    public int submitBatchToChecker(String batchId) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            String hql = "UPDATE InwardCheque ic "
+                       + "SET ic.repairStatus = 'SUBMITTED_TO_CHECKER', "
+                       + "    ic.status       = 'SUBMITTED', "
+                       + "    ic.updatedAt    = CURRENT_TIMESTAMP "
+                       + "WHERE ic.batch.batchId = :batchId";
+
+            Query<?> q = session.createQuery(hql);
+            q.setParameter("batchId", batchId);
+
+            int rows = q.executeUpdate();
+            tx.commit();
+            return rows;
+
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            LOG.log(Level.SEVERE, "submitBatchToChecker failed, batchId=" + batchId, e);
+            throw new RuntimeException("Hibernate error in submitBatchToChecker", e);
+        } finally {
+            if (session != null) session.close();
+        }
     }
 }

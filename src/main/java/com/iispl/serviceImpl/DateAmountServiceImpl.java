@@ -11,12 +11,18 @@ import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.DateAmountService;
 
 /**
- * DateAmountRepairServiceImpl
+ * DateAmountServiceImpl
  *
- * Business layer for Step 2 (Date & Amount Repair) and
- * Step 3 (Payee Name & Account Entry).
+ * Business layer for:
+ *   - Step 2 : Date & Amount Repair (accept / reject / refer)
+ *   - Step 3 : Payee Name & Account Entry
+ *   - Batch submission to Checker
  *
- * Delegates to DAO, guarantees non-null returns, handles exceptions.
+ * Guarantees:
+ *   - Non-null list returns (never returns null — always empty list on error)
+ *   - Boolean returns indicate single-row success (rows == 1)
+ *   - All exceptions are caught, logged, and translated to safe return values
+ *     so the composer never sees an uncaught RuntimeException from the service.
  */
 public class DateAmountServiceImpl implements DateAmountService {
 
@@ -27,92 +33,176 @@ public class DateAmountServiceImpl implements DateAmountService {
 
     // ── Constructors ──────────────────────────────────────────────────────
 
-    /** Default — creates its own DAO (non-Spring). */
+    /** Default constructor — creates its own DAO (non-Spring). */
     public DateAmountServiceImpl() {
         this.dao = new DateAmountDaoImpl();
     }
 
-    /** Spring / test constructor. */
+    /** Injectable constructor for Spring / testing. */
     public DateAmountServiceImpl(DateAmountDao dao) {
         this.dao = dao;
     }
 
-    // ── Interface implementation ──────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+    //  STEP 2 & 3 — QUERIES
+    // ═════════════════════════════════════════════════════════════════════
 
     @Override
     public List<InwardCheque> getChequesByBatchId(String batchId) {
-        if (batchId == null || batchId.trim().isEmpty()) {
-            LOG.warning("getChequesByBatchId called with blank batchId");
+        if (isBlank(batchId)) {
+            LOG.warning("getChequesByBatchId: blank batchId");
             return new ArrayList<>();
         }
         try {
             List<InwardCheque> list = dao.findChequesByBatchId(batchId.trim());
             return list != null ? list : new ArrayList<>();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error fetching cheques for batch: " + batchId, e);
+            LOG.log(Level.SEVERE, "getChequesByBatchId failed for batch: " + batchId, e);
             return new ArrayList<>();
         }
     }
 
     @Override
     public InwardCheque getChequeById(String chequeId) {
-        if (chequeId == null || chequeId.trim().isEmpty()) {
-            LOG.warning("getChequeById called with blank chequeId");
+        if (isBlank(chequeId)) {
+            LOG.warning("getChequeById: blank chequeId");
             return null;
         }
         try {
-            Long id = Long.parseLong(chequeId.trim());
+            long id = Long.parseLong(chequeId.trim());
             return dao.findChequeById(id);
         } catch (NumberFormatException e) {
-            LOG.log(Level.WARNING, "getChequeById: invalid numeric id: " + chequeId, e);
+            LOG.log(Level.WARNING, "getChequeById: non-numeric id=" + chequeId, e);
             return null;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error fetching cheque by id: " + chequeId, e);
+            LOG.log(Level.SEVERE, "getChequeById failed for id=" + chequeId, e);
             return null;
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════════
+    //  STEP 2 — DATE & AMOUNT REPAIR
+    // ═════════════════════════════════════════════════════════════════════
+
+    /**
+     * Accept repair — persists corrected OCR date and amount.
+     * The caller (composer) sets repairStatus on the entity before calling.
+     */
     @Override
     public boolean saveRepairDateAndAmount(InwardCheque cheque) {
         if (cheque == null || cheque.getId() == null) {
-            LOG.warning("saveRepairDateAndAmount: null cheque or chequeId");
+            LOG.warning("saveRepairDateAndAmount: null cheque or id");
             return false;
         }
         try {
             int rows = dao.updateDateAndAmount(cheque);
+            if (rows != 1)
+                LOG.warning("saveRepairDateAndAmount: expected 1 row, got " + rows
+                        + " for chequeId=" + cheque.getId());
             return rows == 1;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error saving date/amount for chequeId: " + cheque.getId(), e);
+            LOG.log(Level.SEVERE,
+                    "saveRepairDateAndAmount failed for chequeId=" + cheque.getId(), e);
             return false;
         }
     }
+
+    /**
+     * Reject — delegates to DAO with reason + remarks.
+     * DAO sets repairStatus = 'REJECTED', status = 'RETURNED'.
+     */
+    @Override
+    public boolean rejectCheque(Long chequeId, String rejectReason, String remarks) {
+        if (chequeId == null) {
+            LOG.warning("rejectCheque: null chequeId");
+            return false;
+        }
+        if (isBlank(rejectReason)) {
+            LOG.warning("rejectCheque: blank rejectReason for chequeId=" + chequeId);
+            return false;
+        }
+        try {
+            int rows = dao.rejectCheque(chequeId, rejectReason.trim(),
+                    remarks != null ? remarks.trim() : "");
+            return rows == 1;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE,
+                    "rejectCheque failed for chequeId=" + chequeId, e);
+            return false;
+        }
+    }
+
+    /**
+     * Refer back — delegates to DAO with reason + remarks.
+     * DAO sets repairStatus = 'REFERRED_BACK'.
+     */
+    @Override
+    public boolean referChequeBack(Long chequeId, String referReason, String remarks) {
+        if (chequeId == null) {
+            LOG.warning("referChequeBack: null chequeId");
+            return false;
+        }
+        try {
+            int rows = dao.referChequeBack(chequeId,
+                    referReason != null ? referReason.trim() : "REFER",
+                    remarks    != null ? remarks.trim()    : "");
+            return rows == 1;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE,
+                    "referChequeBack failed for chequeId=" + chequeId, e);
+            return false;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  STEP 3 — PAYEE NAME & ACCOUNT ENTRY
+    // ═════════════════════════════════════════════════════════════════════
 
     @Override
     public boolean savePayeeAndAccount(InwardCheque cheque) {
         if (cheque == null || cheque.getId() == null) {
-            LOG.warning("savePayeeAndAccount: null cheque or chequeId");
+            LOG.warning("savePayeeAndAccount: null cheque or id");
             return false;
         }
         try {
             int rows = dao.updatePayeeAndAccount(cheque);
+            if (rows != 1)
+                LOG.warning("savePayeeAndAccount: expected 1 row, got " + rows
+                        + " for chequeId=" + cheque.getId());
             return rows == 1;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error saving payee/account for chequeId: " + cheque.getId(), e);
+            LOG.log(Level.SEVERE,
+                    "savePayeeAndAccount failed for chequeId=" + cheque.getId(), e);
             return false;
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════════
+    //  BATCH SUBMISSION
+    // ═════════════════════════════════════════════════════════════════════
+
     @Override
     public int submitBatchToChecker(String batchId) {
-        if (batchId == null || batchId.trim().isEmpty()) {
-            LOG.warning("submitBatchToChecker called with blank batchId");
+        if (isBlank(batchId)) {
+            LOG.warning("submitBatchToChecker: blank batchId");
             return 0;
         }
         try {
-            return dao.submitBatchToChecker(batchId.trim());
+            int rows = dao.submitBatchToChecker(batchId.trim());
+            LOG.info("submitBatchToChecker: " + rows + " cheques submitted for batch=" + batchId);
+            return rows;
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Error submitting batch to checker: " + batchId, e);
+            LOG.log(Level.SEVERE,
+                    "submitBatchToChecker failed for batchId=" + batchId, e);
             return 0;
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  Private helpers
+    // ─────────────────────────────────────────────────────────────────────
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 }
