@@ -79,12 +79,12 @@
                                          emptyMessage="No pending batches found."
                                          width="100%">
                                     <listhead sizable="true">
-                                        <listheader label="BATCH ID"         width="160px" />
-                                        <listheader label="COUNT"            width="80px"  />
-                                        <listheader label="MICR ERRORS"      width="110px" />
-                                        <listheader label="PRESENTING BANKS" hflex="1"    />
-                                        <listheader label="STATUS"           width="110px" />
-                                        <listheader label="ACTION"           width="100px" />
+                                        <listheader label="BATCH ID"         hflex="2" />
+                                        <listheader label="COUNT"            hflex="1" />
+                                        <listheader label="MICR ERRORS"      hflex="1" />
+                                        <listheader label="PRESENTING BANKS" hflex="4" />
+                                        <listheader label="STATUS"           hflex="2" />
+                                        <listheader label="ACTION"           hflex="2" />
                                     </listhead>
                                 </listbox>
 
@@ -120,12 +120,12 @@
                                          emptyMessage="No cleared batches found."
                                          width="100%">
                                     <listhead sizable="true">
-                                        <listheader label="BATCH ID"   width="160px" />
-                                        <listheader label="TOTAL"      width="80px"  />
-                                        <listheader label="ACCEPTED"   width="100px" />
-                                        <listheader label="RETURNED"   width="100px" />
-                                        <listheader label="CLEARED BY" width="160px" />
-                                        <listheader label="CLEARED AT" hflex="1"    />
+                                        <listheader label="BATCH ID"   hflex="2" />
+                                        <listheader label="TOTAL"      hflex="1" />
+                                        <listheader label="ACCEPTED"   hflex="1" />
+                                        <listheader label="RETURNED"   hflex="1" />
+                                        <listheader label="CLEARED BY" hflex="2" />
+                                        <listheader label="CLEARED AT" hflex="3" />
                                     </listhead>
                                 </listbox>
 
@@ -166,13 +166,13 @@
                                          emptyMessage="No returned cheques found."
                                          width="100%">
                                     <listhead sizable="true">
-                                        <listheader label="BATCH ID"        width="120px" />
-                                        <listheader label="CHEQUE NO"       width="110px" />
-                                        <listheader label="AMOUNT"          width="100px" />
-                                        <listheader label="PRESENTING BANK" hflex="1"    />
-                                        <listheader label="RETURN REASON"   width="150px" />
-                                        <listheader label="RETURNED BY"     width="120px" />
-                                        <listheader label="TIME"            width="130px" />
+                                        <listheader label="BATCH ID"        hflex="2" />
+                                        <listheader label="CHEQUE NO"       hflex="2" />
+                                        <listheader label="AMOUNT"          hflex="2" />
+                                        <listheader label="PRESENTING BANK" hflex="3" />
+                                        <listheader label="RETURN REASON"   hflex="3" />
+                                        <listheader label="RETURNED BY"     hflex="2" />
+                                        <listheader label="DATE"            hflex="3" />
                                     </listhead>
                                 </listbox>
 

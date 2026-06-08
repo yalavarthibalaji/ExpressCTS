@@ -70,7 +70,7 @@
 
                     <button id="btnSearch"
                             label="Search"
-                            sclass="btn bp rpt-btn-generate" />
+                            sclass="btn bp" />
                 </div>
 
                 <listbox id="lstReports"

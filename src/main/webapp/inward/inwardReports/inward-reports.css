@@ -4,12 +4,11 @@
  *
  * CHANGES IN THIS VERSION
  * ───────────────────────
- * - Removed: .btn.bg (green export button styles for ACK/RRF download buttons)
- * - Removed: .rpt-btn-export styles
- * - Removed: .rpt-cibf-row / .rpt-cibf-btn (CIBF image download row)
- * - Updated: info note text colour to neutral (no longer ACK/RRF specific)
- * - Added  : .rpt-btn-debit — "Generate to Debit" per-row action button
- * - Updated: status badge classes — Pending | Processing | Completed | Failed
+ * - Removed: .rpt-btn-debit custom button block (now uses shared btn bp from components.css)
+ * - Removed: local .badge / .b-* duplicate block (now uses shared .badge from components.css)
+ * - Removed: .rpt-btn-generate unused class from Search button in ZUL
+ * - Added  : .z-button.btn shim block to apply components.css design tokens through ZK's renderer
+ * - All action buttons now use: sclass="btn bp" (active) / sclass="btn bp disabled" (ineligible)
  *
  * FIXES RETAINED
  * ──────────────
@@ -231,74 +230,57 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   "Generate to Debit" per-row action button
+   ZK button shim — bridges ZK's .z-button reset to components.css
+   All action buttons (Search, Generate to Debit) use:
+     sclass="btn bp"           → primary (active)
+     sclass="btn bp disabled"  → primary (ineligible/disabled)
+   Styles are sourced from components.css; !important overrides
+   are required to beat ZK's native .z-button default stylesheet.
    ═══════════════════════════════════════════════════════════════ */
-.rpt-btn-debit.z-button {
-    background: #1a5276 !important;
-    color: #fff !important;
-    border: 1px solid #154360 !important;
-    border-radius: 5px !important;
+.z-button.btn {
+    height: 32px !important;
+    padding: 0 14px !important;
+    border-radius: var(--r4) !important;
     font-size: 12px !important;
     font-weight: 600 !important;
-    padding: 5px 11px !important;
-    height: 30px !important;
-    line-height: 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
     cursor: pointer !important;
-    white-space: nowrap;
-    transition: background 0.15s ease;
+    border: none !important;
+    line-height: 1 !important;
 }
-.rpt-btn-debit.z-button:hover {
-    background: #154360 !important;
-}
-.rpt-btn-debit.disabled.z-button,
-.rpt-btn-debit.z-button[disabled] {
-    background: #aab4be !important;
-    border-color: #9aa4af !important;
-    color: #fff !important;
+
+.z-button.bp { background: var(--primary) !important;   color: #fff !important; border: none !important; }
+.z-button.bp:hover { background: var(--primary-light) !important; }
+
+.z-button.bs { background: var(--success) !important;   color: #fff !important; border: none !important; }
+.z-button.bs:hover { background: #156a3e !important; }
+
+.z-button.bd { background: var(--danger) !important;    color: #fff !important; border: none !important; }
+.z-button.bd:hover { background: #a93226 !important; }
+
+.z-button.bw { background: var(--warning) !important;   color: #fff !important; border: none !important; }
+.z-button.bw:hover { background: #9a5e00 !important; }
+
+.z-button.bo { background: transparent !important; color: var(--t2) !important; border: 1px solid var(--border) !important; }
+.z-button.bo:hover { background: var(--alt) !important; }
+
+/* Disabled state — applied when setDisabled(true) OR .disabled class is set */
+.z-button.btn.disabled,
+.z-button.btn[disabled],
+.z-button.btn:disabled {
+    background: #E0E0E0 !important;
+    color: #9E9E9E !important;
+    border: 1px solid #BDBDBD !important;
     cursor: not-allowed !important;
-    opacity: 0.7;
+    pointer-events: none !important;
+    opacity: 1 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Status badges
-   Pending    → amber/yellow  (.b-pend)
-   Processing → blue          (.b-info)
-   Completed  → green         (.b-pass)
-   Failed     → red           (.b-fail)
+   Status badges — defined in components.css (.badge, .b-pend, etc.)
+   No local override needed; this comment is retained for reference.
    ═══════════════════════════════════════════════════════════════ */
-.badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: .03em;
-    white-space: nowrap;
-}
-
-.badge.b-pend {
-    background: #fef9c3;
-    color: #854d0e;
-    border: 1px solid #fde68a;
-}
-.badge.b-info {
-    background: #dbeafe;
-    color: #1e40af;
-    border: 1px solid #bfdbfe;
-}
-.badge.b-pass {
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
-}
-.badge.b-fail {
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-}
-.badge.b-grey {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-}
