@@ -97,34 +97,30 @@ public class RejectRepairServiceImpl implements RejectRepairService {
      *         batch is eagerly available.
      */
     @Override
-    public void saveRepair(InwardCheque cheque) {
+    public void saveRepair(InwardCheque cheque, String batchId) {
         if (cheque == null) return;
         try {
-            // Rebuild corrected MICR only if composer did not already set it
             if (cheque.getMicrCodeCorrected() == null
                     || cheque.getMicrCodeCorrected().isBlank()) {
-                String corrected = buildMicr(
+                cheque.setMicrCodeCorrected(buildMicr(
                         cheque.getCityCode(),
                         cheque.getBankCode(),
                         cheque.getBranchCode(),
-                        cheque.getChequeNo());
-                cheque.setMicrCodeCorrected(corrected);
+                        cheque.getChequeNo()));
             }
-
-            // FIX: Do NOT re-resolve image paths here.
-            // BpxfUploadServiceImpl already stored the correct absolute paths.
-            // Calling buildImagePath() again would double-resolve and corrupt them.
 
             cheque.setMicrError(false);
             cheque.setRepairStatus(STATUS_REPAIRED);
 
             rejectRepairDao.updateCheque(cheque);
 
-            // Update batch MICR error count — safe version that avoids lazy load
-            updateBatchMicrCountSafe(cheque);
+            // Use explicit batchId — no lazy association access
+            if (batchId != null && !batchId.isBlank()) {
+                updateBatchMicrCountByBatchId(batchId);
+            }
 
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "saveRepair failed, id=" + cheque.getId(), e);
+            LOG.log(Level.SEVERE, "saveRepair(batchId) failed, id=" + cheque.getId(), e);
             throw new RuntimeException("Save repair failed", e);
         }
     }

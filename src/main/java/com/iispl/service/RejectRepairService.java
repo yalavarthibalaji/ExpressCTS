@@ -14,7 +14,7 @@ public interface RejectRepairService {
     // ── Step 1 ──
     List<InwardCheque> getChequesByBatchId(String batchId);
 
-    void saveRepair(InwardCheque cheque);
+    void saveRepair(InwardCheque cheque,String batchId);
 
     void referBack(Long chequeId, String remarks);
 
