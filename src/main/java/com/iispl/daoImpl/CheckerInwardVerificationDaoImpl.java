@@ -16,17 +16,6 @@ import java.util.List;
 
 public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificationDao {
 
-    // ── 1. Pending Batches ────────────────────────────────────────────────────
-    // FIX: Removed ORDER BY from HQL — it causes Hibernate to return empty
-    //      results when combined with SELECT DISTINCT + LEFT JOIN FETCH.
-    //      Sorting is done in Java after fetch (safer and always works).
-    //
-    // FIX: Split into TWO separate queries.
-    //      Query 1 — fetch batches with their cheques (for presenting banks).
-    //      Query 2 — fetch batches with their checkerActions (for counts).
-    //      Doing both in one JOIN FETCH causes a MultipleBagFetchException
-    //      or duplicate rows in some Hibernate versions.
-
     @Override
     public List<InwardBatch> findPendingBatches() {
 
@@ -36,17 +25,15 @@ public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificati
         try {
             session = HibernateUtil.getSessionFactory().openSession();
 
-            // Step 1: Fetch batches + cheques (for presenting bank names)
             String hql = "SELECT DISTINCT b FROM InwardBatch b "
                        + "LEFT JOIN FETCH b.cheques "
                        + "WHERE b.status = :status";
 
             Query<InwardBatch> query = session.createQuery(hql, InwardBatch.class);
-            query.setParameter("status", "RECEIVED");
+            query.setParameter("status", "MakerVerified"); // ← FIXED (was "RECEIVED")
 
             result = query.getResultList();
 
-            // Step 2: Sort in Java — newest first
             result.sort((a, b) -> {
                 if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
                 if (a.getCreatedAt() == null) return 1;
@@ -56,20 +43,14 @@ public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificati
 
         } catch (Exception e) {
             System.err.println("[CheckerInwardVerificationDaoImpl] "
-                + "Error fetching pending batches: " + e.getMessage());
+                + "findPendingBatches error: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
+            if (session != null && session.isOpen()) session.close();
         }
 
         return result;
     }
-
-    // ── 2. Cleared Batches ────────────────────────────────────────────────────
-    // Same fix applied: removed ORDER BY from HQL, sort in Java.
-    // Kept only ONE JOIN FETCH (checkerActions) — enough for this tab's columns.
 
     @Override
     public List<InwardBatch> findClearedBatches(Date fromDate, Date toDate) {
@@ -87,20 +68,18 @@ public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificati
                 "SELECT DISTINCT b FROM InwardBatch b "
               + "LEFT JOIN FETCH b.checkerActions ca "
               + "LEFT JOIN FETCH ca.checker "
-              + "WHERE b.status = :status");
+              + "WHERE b.status IN ('Verified', 'CBS_Processed')"); // ← FIXED (was "CLEARED")
 
             if (from != null) hql.append(" AND b.batchDate >= :fromDate");
             if (to   != null) hql.append(" AND b.batchDate <= :toDate");
 
             Query<InwardBatch> query = session.createQuery(hql.toString(), InwardBatch.class);
-            query.setParameter("status", "CLEARED");
 
             if (from != null) query.setParameter("fromDate", from);
             if (to   != null) query.setParameter("toDate",   to);
 
             result = query.getResultList();
 
-            // Sort newest batch date first
             result.sort((a, b) -> {
                 if (a.getBatchDate() == null && b.getBatchDate() == null) return 0;
                 if (a.getBatchDate() == null) return 1;
@@ -110,19 +89,14 @@ public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificati
 
         } catch (Exception e) {
             System.err.println("[CheckerInwardVerificationDaoImpl] "
-                + "Error fetching cleared batches: " + e.getMessage());
+                + "findClearedBatches error: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
+            if (session != null && session.isOpen()) session.close();
         }
 
         return result;
     }
-
-    // ── 3. Returned Cheques ───────────────────────────────────────────────────
-    // updatedAt can be null for newly returned cheques — sort on actionedAt instead.
 
     @Override
     public List<InwardCheque> findReturnedCheques(Date fromDate, Date toDate, String batchId) {
@@ -158,18 +132,14 @@ public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificati
 
         } catch (Exception e) {
             System.err.println("[CheckerInwardVerificationDaoImpl] "
-                + "Error fetching returned cheques: " + e.getMessage());
+                + "findReturnedCheques error: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
+            if (session != null && session.isOpen()) session.close();
         }
 
         return result;
     }
-
-    // ── Helper ────────────────────────────────────────────────────────────────
 
     private LocalDate toLocalDate(Date date) {
         if (date == null) return null;
