@@ -163,7 +163,7 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
             // Cell 6 — Process button
             Listcell cellAction = new Listcell();
             Button btnProcess = new Button("Process");
-            btnProcess.setSclass("ci-btn-process");
+            btnProcess.setSclass("btn bp");
             btnProcess.addEventListener("onClick",
                 event -> onProcessBatch(batch.getBatchId())
             );

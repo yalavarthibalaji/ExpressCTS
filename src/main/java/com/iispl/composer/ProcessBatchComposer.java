@@ -76,15 +76,17 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Wire private Label  lblProgressText;
     @Wire private Div    divProgressFill;
 
-    // ── LEFT — Image tabs (NEW — wired from ZUL) ──────────────────────────────
+    // ── LEFT — Image viewer tabs + panels ────────────────────────────────────
     @Wire private Div    pvImgSection;
     @Wire private Div    pvFrontPanel;
     @Wire private Div    pvBackPanel;
+    @Wire private Div    pvGreyscalePanel;
     @Wire private Image  pvFrontImg;
     @Wire private Image  pvBackImg;
-    @Wire private Button pvFrontTab;
-    @Wire private Button pvBackTab;
-    @Wire private Button pvGreyscaleBtn;   // greyscale toggle
+    @Wire private Image  pvGreyscaleImg;
+    @Wire private Div    pvFrontTab;       // tab div (not a button)
+    @Wire private Div    pvBackTab;        // tab div (not a button)
+    @Wire private Div    pvGreyscaleTab;   // tab div (not a button)
     @Wire private Label  pvNoImgMsg;
 
     // ── LEFT — Cheque card labels ─────────────────────────────────────────────
@@ -133,7 +135,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     private int                currentIndex = 0;
     private Map<Long, String>  actionMap    = new HashMap<>();
     private Map<Long, String>  reasonMap    = new HashMap<>();
-    private boolean            greyscaleOn  = false;  // greyscale toggle state
+    private String             activeTab    = "FRONT"; // FRONT | BACK | GREY
 
     // ── Services ──────────────────────────────────────────────────────────────
     private final CheckerBatchProcessService batchService =
@@ -232,11 +234,9 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     // ══════════════════════════════════════════════════════════════════════════
 
     private void loadImages(InwardCheque c) {
-        // Reset greyscale state for each new cheque
-        greyscaleOn = false;
-        if (pvGreyscaleBtn != null) pvGreyscaleBtn.setSclass("pv-view-chk");
-        if (pvFrontImg     != null) pvFrontImg.setSclass("pb-img-actual");
-        if (pvBackImg      != null) pvBackImg.setSclass("pb-img-actual");
+        // Reset tab state for each new cheque
+        activeTab = "FRONT";
+
         String front = c.getFrontImagePath();
         String back  = c.getBackImagePath();
 
@@ -252,12 +252,16 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         if (pvImgSection != null) pvImgSection.setVisible(true);
         if (pvNoImgMsg   != null) pvNoImgMsg.setVisible(false);
 
-        if (pvFrontImg != null)
-            pvFrontImg.setSrc(hasFront ? imgUrl(front.trim()) : "");
-        if (pvBackImg  != null)
-            pvBackImg.setSrc(hasBack ? imgUrl(back.trim()) : "");
+        // Load front + back into their panels; greyscale reuses front image src
+        String frontSrc = hasFront ? imgUrl(front.trim()) : "";
+        String backSrc  = hasBack  ? imgUrl(back.trim())  : "";
 
-        showFrontTab();
+        if (pvFrontImg     != null) pvFrontImg.setSrc(frontSrc);
+        if (pvBackImg      != null) pvBackImg.setSrc(backSrc);
+        // Greyscale tab shows the front image with a CSS grayscale filter
+        if (pvGreyscaleImg != null) pvGreyscaleImg.setSrc(frontSrc);
+
+        showTab("FRONT");
     }
 
     private String imgUrl(String path) {
@@ -265,44 +269,27 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         catch (UnsupportedEncodingException e) { return "/imageServlet?path=" + path; }
     }
 
-    @Listen("onClick = #pvFrontTab")
-    public void onFrontTab() { showFrontTab(); }
-
-    @Listen("onClick = #pvBackTab")
-    public void onBackTab() {
-        if (pvFrontPanel != null) pvFrontPanel.setVisible(false);
-        if (pvBackPanel  != null) pvBackPanel.setVisible(true);
-        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-view-btn");
-        if (pvBackTab    != null) pvBackTab.setSclass("pv-view-btn active");
-        applyGreyscale();
-    }
-
-    @Listen("onClick = #pvGreyscaleBtn")
-    public void onGreyscale() {
-        greyscaleOn = !greyscaleOn;
-        if (pvGreyscaleBtn != null)
-            pvGreyscaleBtn.setSclass(greyscaleOn ? "pv-view-chk active" : "pv-view-chk");
-        applyGreyscale();
-    }
+    public void onFrontTab()      { showTab("FRONT"); }
+    public void onBackTab()       { showTab("BACK");  }
+    public void onGreyscaleTab()  { showTab("GREY");  }
 
     /**
-     * Applies or removes the greyscale CSS class on both image elements.
-     * ZK <image> renders as <img> — we toggle the sclass "greyscale"
-     * which maps to: filter: grayscale(100%) in processBatch.css
+     * Central tab-switching method.
+     * Shows the requested image panel and highlights the matching tab div.
+     * Greyscale tab shows the front image with a CSS filter — no extra DB field needed.
      */
-    private void applyGreyscale() {
-        String baseSclass = "pb-img-actual";
-        String sclass     = greyscaleOn ? baseSclass + " greyscale" : baseSclass;
-        if (pvFrontImg != null) pvFrontImg.setSclass(sclass);
-        if (pvBackImg  != null) pvBackImg.setSclass(sclass);
-    }
+    private void showTab(String tab) {
+        activeTab = tab;
 
-    private void showFrontTab() {
-        if (pvFrontPanel != null) pvFrontPanel.setVisible(true);
-        if (pvBackPanel  != null) pvBackPanel.setVisible(false);
-        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-view-btn active");
-        if (pvBackTab    != null) pvBackTab.setSclass("pv-view-btn");
-        applyGreyscale();
+        // Show / hide image panels
+        if (pvFrontPanel     != null) pvFrontPanel.setVisible("FRONT".equals(tab));
+        if (pvBackPanel      != null) pvBackPanel.setVisible("BACK".equals(tab));
+        if (pvGreyscalePanel != null) pvGreyscalePanel.setVisible("GREY".equals(tab));
+
+        // Highlight the active tab div; deactivate the others
+        if (pvFrontTab     != null) pvFrontTab.setSclass("FRONT".equals(tab) ? "tab active" : "tab");
+        if (pvBackTab      != null) pvBackTab.setSclass("BACK".equals(tab)  ? "tab active" : "tab");
+        if (pvGreyscaleTab != null) pvGreyscaleTab.setSclass("GREY".equals(tab)  ? "tab active" : "tab");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -627,11 +614,11 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 
     private void highlightActionButtons(String action) {
         if (btnAccept   != null) btnAccept.setSclass(
-            "ACCEPTED".equals(action)  ? "pv-btn-accept-on"   : "pv-btn-accept");
+            "ACCEPTED".equals(action)  ? "btn bs btn-on"   : "btn bs");
         if (btnReturn   != null) btnReturn.setSclass(
-            "RETURNED".equals(action)  ? "pv-btn-return-on"   : "pv-btn-return");
+            "RETURNED".equals(action)  ? "btn bd btn-on"   : "btn bd");
         if (btnSendBack != null) btnSendBack.setSclass(
-            "SEND_BACK".equals(action) ? "pv-btn-sendback-on" : "pv-btn-sendback");
+            "SEND_BACK".equals(action) ? "btn bo btn-on" : "btn bo");
     }
 
     private void toggleReturnReasonBox(Long id) {
