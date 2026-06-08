@@ -13,7 +13,9 @@ import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.*;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,13 +41,46 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
     // ── Session / URL constants ────────────────────────────────────────────
     private static final String SESSION_BATCH_ID  = "cts_inward_batch_id";
     private static final String PAGE_STEP2        = "/inward/inwardMicr/DateAmount.zul";
-    private static final String PAGE_CHECKER      = "/inward/inwardChecker/InwardChecker.zul";
+    private static final String PAGE_CHECKER      = "/dashboard/checkerInward/checkerInwardDashboard.zul";
     private static final int    PAGE_SIZE         = 10;
 
     // ══════════════════════════════════════════════════════════════════════
     // @Wire — top-nav / breadcrumb labels
     // ══════════════════════════════════════════════════════════════════════
     @Wire("#lblUserRole")   private Label lblUserRole;
+    
+ // Image viewer
+ 	@Wire("#btnViewFront")
+ 	private Button btnViewFront;
+ 	@Wire("#btnViewBack")
+ 	private Button btnViewBack;
+ 	@Wire("#btnViewGray")
+ 	private Button btnViewGray;
+ 	@Wire("#btnZoomIn")
+ 	private Button btnZoomIn;
+ 	@Wire("#btnZoomOut")
+ 	private Button btnZoomOut;
+ 	@Wire("#btnZoomFit")
+ 	private Button btnZoomFit;
+ 	@Wire("#lblZoomLevel")
+ 	private Label lblZoomLevel;
+ 	@Wire("#divFrontImage")
+ 	private Div divFrontImage;
+ 	@Wire("#divBackImage")
+ 	private Div divBackImage;
+ 	@Wire("#divGrayImage")
+ 	private Div divGrayImage;
+ 	@Wire("#imgFront")
+ 	private Image imgFront;
+ 	@Wire("#imgBack")
+ 	private Image imgBack;
+ 	@Wire("#imgGray")
+ 	private Image imgGray;
+ 	@Wire("#lblMicrBandStrip")
+ 	private Label lblMicrBandStrip;
+ 	@Wire("#ocrWarningBar")
+ 	private Div ocrWarningBar;
+
 
     // ══════════════════════════════════════════════════════════════════════
     // @Wire — LIST panel
@@ -181,6 +216,29 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
             btnBackToList.addEventListener(Events.ON_CLICK, e -> showListPanel());
         }
     }
+    
+    private void loadChequeImages(InwardCheque c) {
+		setImageViaServlet(imgFront, c.getFrontImagePath());
+		setImageViaServlet(imgBack, c.getBackImagePath());
+		setImageViaServlet(imgGray, c.getFrontImagePath());
+		if (imgGray != null)
+			imgGray.setStyle("filter:grayscale(100%);max-width:100%;display:block;");
+	}
+
+	private void setImageViaServlet(Image img, String path) {
+		if (img == null)
+			return;
+		if (path == null || path.trim().isEmpty()) {
+			img.setSrc("");
+			return;
+		}
+		try {
+			String encoded = URLEncoder.encode(path.trim(), "UTF-8");
+			img.setSrc("/imageServlet?path=" + encoded);
+		} catch (UnsupportedEncodingException e) {
+			img.setSrc("/imageServlet?path=" + path.trim());
+		}
+	}
 
     // ══════════════════════════════════════════════════════════════════════
     // PANEL SWITCHING
@@ -318,6 +376,9 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
         if (txtPayeeName != null)    txtPayeeName.setValue(nvlEmpty(c.getPayeeName()));
         if (txtAccNo != null)        txtAccNo.setValue(nvlEmpty(c.getDraweeAccountNumber()));
         if (txtEntryRemarks != null) txtEntryRemarks.setValue(nvlEmpty(c.getRemarks()));
+        
+        
+        loadChequeImages(c);
     }
 
     // ══════════════════════════════════════════════════════════════════════

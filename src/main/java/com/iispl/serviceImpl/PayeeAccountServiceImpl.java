@@ -28,7 +28,7 @@ public class PayeeAccountServiceImpl implements PayeeAccountService {
     private static final String STATUS_REFERRED_BACK     = "REFERRED_BACK";
 
     /** Batch status written when all cheques are processed and handed to checker. */
-    private static final String BATCH_STATUS_CHECKER     = "SUBMITTED_TO_CHECKER";
+    private static final String BATCH_STATUS_CHECKER     = "MakerVerified";
     private static final String BATCH_REPAIR_STEP3_DONE  = "STEP3_COMPLETE";
 
     // ── DAO ────────────────────────────────────────────────────────────────
