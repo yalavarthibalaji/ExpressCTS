@@ -1,6 +1,8 @@
 package com.iispl.composer;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,10 +14,10 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
-import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Combobox;
 import org.zkoss.zul.Div;
+import org.zkoss.zul.Image;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listcell;
@@ -28,590 +30,1011 @@ import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.RejectRepairService;
 import com.iispl.serviceImpl.RejectRepairServiceImpl;
 
-/**
- * Merged Composer — MICR Repair (Step 1)
- *
- * Sources:
- *  - Wizard bar + step navigation + step validation  → Code 1
- *  - Service integration + table rendering + pagination + filter/search → Code 2
- *  - maxAllowedStep persisted in ZK Session (replaces local variable)
- */
 public class RejectRepairComposer extends SelectorComposer<Component> {
 
-    private static final long serialVersionUID = 1L;
-
-    // ── Step Constants ────────────────────────────────────────────────────
-
-    private static final int    CURRENT_STEP       = 1;
-    private static final String SESSION_MAX_STEP   = "cts_inward_max_step";
-    private static final String SESSION_BATCH_ID   = "cts_inward_batch_id";
-
-    private static final String PAGE_STEP1 = "/inward/inwardMicr/RejectRepair.zul";
-    private static final String PAGE_STEP2 = "/inward/inwardMicr/DateAmount.zul";
-    private static final String PAGE_STEP3 = "/inward/inwardMicr/PayeeAccount.zul";
-    private static final String PAGE_FILE   = "/inward/bpxfUpload/bpxfUpload.zul";
-    private static final String PAGE_BATCH  = "/inward/inwardMicr/batchSelect.zul";
-
-    // ── Pagination ────────────────────────────────────────────────────────
-
-    private static final int PAGE_SIZE = 10;
-    private int currentPage = 1;
-
-    // ── Wired Components ──────────────────────────────────────────────────
-
- // ── Wire new detail panel components ─────────────────────────────────
-
-    @Wire("#chequeDetailPanel")      private Div   chequeDetailPanel;
-    @Wire("#btnCloseDetail")         private Button btnCloseDetail;
-
-    @Wire("#lblDetailChequeNo")      private Label lblDetailChequeNo;
-    @Wire("#lblMicrCodeRaw")         private Label lblMicrCodeRaw;
-    @Wire("#lblMicrCodeProcessed")   private Label lblMicrCodeProcessed;
-    @Wire("#lblBankCode")            private Label lblBankCode;
-    @Wire("#lblBranchCode")          private Label lblBranchCode;
-    @Wire("#lblTransactionCode")     private Label lblTransactionCode;
-    @Wire("#lblAmountFigures")       private Label lblAmountFigures;
-    @Wire("#lblAmountWords")         private Label lblAmountWords;
-    @Wire("#lblChequeDate")          private Label lblChequeDate;
-    @Wire("#lblPresentingBank")      private Label lblPresentingBank;
-    @Wire("#lblInstrumentType")      private Label lblInstrumentType;
-    @Wire("#lblAccountNo")           private Label lblAccountNo;
-    @Wire("#lblPayeeName")           private Label lblPayeeName;
-    @Wire("#lblDraweeBank")          private Label lblDraweeBank;
-    @Wire("#lblDetailBatchId")       private Label lblDetailBatchId;
-    @Wire("#lblDetailRepairStatus")  private Label lblDetailRepairStatus;
-    // Panels
-    @Wire("#emptyStatePanel")  private Div      emptyStatePanel;
-    @Wire("#batchListPanel")   private Div      batchListPanel;
-
-    // Wizard step buttons
-    @Wire("#btnStep1")         private Button   btnStep1;
-    @Wire("#btnStep2")         private Button   btnStep2;
-    @Wire("#btnStep3")         private Button   btnStep3;
-
-    // Wizard connectors
-    @Wire("#conn1")            private Div      conn1;
-    @Wire("#conn2")            private Div      conn2;
-
-    // Wizard step labels
-    @Wire("#lblStep2Num")      private Label    lblStep2Num;
-    @Wire("#lblStep2Desc")     private Label    lblStep2Desc;
-    @Wire("#lblStep3Num")      private Label    lblStep3Num;
-    @Wire("#lblStep3Desc")     private Label    lblStep3Desc;
-
-    // Table
-    @Wire("#chequeListbox")    private Listbox  chequeListbox;
-
-    // Badges / Info
-    @Wire("#lblBatchBadge")    private Label    lblBatchBadge;
-    @Wire("#lblPendingBadge")  private Label    lblPendingBadge;
-    @Wire("#lblPageInfo")      private Label    lblPageInfo;
-
-    // Filter / Search
-    @Wire("#cmbFilter")        private Combobox cmbFilter;
-    @Wire("#txtSearch")        private Textbox  txtSearch;
-
-    // Navigation buttons
-    @Wire("#btnGoToFileProcessing") private Button btnGoToFileProcessing;
-    @Wire("#btnBackToBatches")      private Button btnBackToBatches;
-    @Wire("#btnNextStep2")          private Button btnNextStep2;
-    @Wire("#btnPrevPage")           private Button btnPrevPage;
-    @Wire("#btnNextPage")           private Button btnNextPage;
-
-    // ── Service ───────────────────────────────────────────────────────────
-
-    private final RejectRepairService rejectRepairService =
-            new RejectRepairServiceImpl();
-
-    // ── State ─────────────────────────────────────────────────────────────
-
-    private String             currentBatchId;
-    private List<InwardCheque> allCheques;
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────
-
-    @Override
-    public void doAfterCompose(Component comp) throws Exception {
-        super.doAfterCompose(comp);
-        initWizardBar();   // Step 1: draw wizard (from Code 1)
-        loadPage();        // Step 2: load data   (from Code 2)
-        wireEvents();      // Step 3: bind runtime events
-    }
-
-    // =====================================================================
-    // WIZARD BAR  (from Code 1, uses session for maxAllowedStep)
-    // =====================================================================
-
-    private void initWizardBar() {
-        int maxStep = getSessionMaxStep();
-
-        applyStepStyle(btnStep1, 1, maxStep);
-        applyStepStyle(btnStep2, 2, maxStep);
-        applyStepStyle(btnStep3, 3, maxStep);
-
-        if (conn1 != null) {
-            conn1.setSclass(CURRENT_STEP >= 2 ? "step-connector filled" : "step-connector");
-        }
-        if (conn2 != null) {
-            conn2.setSclass(CURRENT_STEP >= 3 ? "step-connector filled" : "step-connector");
-        }
-
-        applyLabelStyle(lblStep2Num, lblStep2Desc, 2);
-        applyLabelStyle(lblStep3Num, lblStep3Desc, 3);
-    }
-
-    private void applyStepStyle(Button button, int stepNo, int maxStep) {
-        if (button == null) return;
-        if (stepNo == CURRENT_STEP) {
-            button.setSclass("step-circle-btn active");
-        } else if (stepNo < CURRENT_STEP) {
-            button.setSclass("step-circle-btn completed");
-        } else if (stepNo <= maxStep) {
-            button.setSclass("step-circle-btn active");
-        } else {
-            button.setSclass("step-circle-btn disabled-step");
-        }
-    }
-
-    private void applyLabelStyle(Label numLabel, Label descLabel, int stepNo) {
-        if (numLabel == null) return;
-        if (stepNo == CURRENT_STEP) {
-            numLabel.setSclass("step-num active");
-            if (descLabel != null) descLabel.setSclass("step-desc active");
-        } else if (stepNo < CURRENT_STEP) {
-            numLabel.setSclass("step-num completed");
-            if (descLabel != null) descLabel.setSclass("step-desc completed");
-        } else {
-            numLabel.setSclass("step-num");
-            if (descLabel != null) descLabel.setSclass("step-desc");
-        }
-    }
-
-    // =====================================================================
-    // STEP NAVIGATION  (from Code 1, guard uses session maxAllowedStep)
-    // =====================================================================
-
-    @Listen("onClick=#btnStep1")
-    public void onStep1() { navigateToStep(1); }
-
-    @Listen("onClick=#btnStep2")
-    public void onStep2() { navigateToStep(2); }
-
-    @Listen("onClick=#btnStep3")
-    public void onStep3() { navigateToStep(3); }
-
-    private void navigateToStep(int targetStep) {
-        if (targetStep == CURRENT_STEP) return;
-        if (targetStep > getSessionMaxStep())  return;  // not yet unlocked
-
-        switch (targetStep) {
-            case 1 -> Executions.getCurrent().sendRedirect(PAGE_STEP1);
-            case 2 -> Executions.getCurrent().sendRedirect(
-                          PAGE_STEP2 + buildBatchParam());
-            case 3 -> Executions.getCurrent().sendRedirect(
-                          PAGE_STEP3 + buildBatchParam());
-        }
-    }
-
-    // =====================================================================
-    // DATA LOAD  (from Code 2)
-    // =====================================================================
-
-    private void loadPage() {
-        // Prefer URL param, fall back to session, fall back to first eligible batch
-        String paramBatch = Executions.getCurrent().getParameter("batchId");
-
-        if (paramBatch != null && !paramBatch.trim().isEmpty()) {
-            currentBatchId = paramBatch.trim();
-            Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
-        } else {
-            Object sessionBatch = Sessions.getCurrent().getAttribute(SESSION_BATCH_ID);
-            if (sessionBatch != null) {
-                currentBatchId = sessionBatch.toString();
-            } else {
-                List<InwardBatch> batches = rejectRepairService.getRepairEligibleBatches();
-                if (batches == null || batches.isEmpty()) {
-                    showEmptyState();
-                    return;
-                }
-                currentBatchId = batches.get(0).getBatchId();
-                Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
-            }
-        }
-
-        allCheques = rejectRepairService.getChequesByBatchId(currentBatchId);
-
-        if (allCheques == null || allCheques.isEmpty()) {
-            showEmptyState();
-            return;
-        }
-
-        showChequeList();
-    }
-
-    // =====================================================================
-    // RUNTIME EVENT WIRING  (from Code 2)
-    // =====================================================================
-
-    private void wireEvents() {
-        if (cmbFilter != null) {
-            cmbFilter.addEventListener(Events.ON_SELECT, e -> {
-                currentPage = 1;
-                renderTable();
-            });
-        }
-        if (txtSearch != null) {
-            txtSearch.addEventListener(Events.ON_CHANGING, e -> {
-                currentPage = 1;
-                renderTable();
-            });
-        }
-        if (btnPrevPage != null) {
-            btnPrevPage.addEventListener(Events.ON_CLICK, e -> {
-                if (currentPage > 1) { currentPage--; renderTable(); }
-            });
-        }
-        if (btnNextPage != null) {
-            btnNextPage.addEventListener(Events.ON_CLICK, e -> {
-                int totalPages = totalPages();
-                if (currentPage < totalPages) { currentPage++; renderTable(); }
-            });
-        }
-    }
-
-    // =====================================================================
-    // FILTER  (from Code 2)
-    // =====================================================================
-
-    private List<InwardCheque> getFilteredList() {
-        if (allCheques == null) return Collections.emptyList();
-
-        final String filterVal;
-        if (cmbFilter != null && cmbFilter.getSelectedItem() != null) {
-            Object v = cmbFilter.getSelectedItem().getValue();
-            filterVal = (v != null) ? v.toString() : "";
-        } else {
-            filterVal = "";
-        }
-
-        final String searchTerm =
-                (txtSearch != null && txtSearch.getValue() != null)
-                        ? txtSearch.getValue().trim().toLowerCase() : "";
-
-        return allCheques.stream()
-                .filter(c -> {
-                    if (!filterVal.isEmpty()) {
-                        String rs = c.getRepairStatus() != null ? c.getRepairStatus() : "";
-                        if (!rs.equalsIgnoreCase(filterVal)) return false;
-                    }
-                    if (!searchTerm.isEmpty()) {
-                        String chqNo = c.getChequeNo() != null
-                                ? c.getChequeNo().toLowerCase() : "";
-                        String bank  = c.getPresentingBankName() != null
-                                ? c.getPresentingBankName().toLowerCase() : "";
-                        return chqNo.contains(searchTerm) || bank.contains(searchTerm);
-                    }
-                    return true;
-                })
-                .collect(Collectors.toList());
-    }
-
-    // =====================================================================
-    // TABLE RENDERING  (from Code 2)
-    // =====================================================================
-
-    private void renderTable() {
-        if (chequeListbox == null) return;
-
-        List<InwardCheque> filtered = getFilteredList();
-        int total      = filtered.size();
-        int totalPages = totalPages(total);
-        currentPage    = Math.min(currentPage, Math.max(1, totalPages));
-
-        int fromIdx = (currentPage - 1) * PAGE_SIZE;
-        int toIdx   = Math.min(fromIdx + PAGE_SIZE, total);
-        List<InwardCheque> pageData = filtered.subList(fromIdx, toIdx);
-
-        chequeListbox.getItems().clear();
-
-        int rowNum = fromIdx + 1;
-
-        for (InwardCheque c : pageData) {
-            Listitem row = new Listitem();
-            row.setSclass("clickable-row");
-
-            final InwardCheque cheque = c;
-            row.addEventListener(Events.ON_CLICK, ev -> showChequeDetail(cheque));
-
-            // 1  #
-            addCell(row, String.valueOf(rowNum++));
-
-            // 2  Cheque No.
-            addCell(row, nvl(c.getChequeNo()));
-
-            // 3  Presenting Bank
-            addCell(row, nvl(c.getPresentingBankName()));
-
-            // 4  MICR Code (raw)
-            addCell(row, nvl(c.getMicrCodeRaw()));
-
-            // 5  Amount — right aligned
-            Listcell amtCell = new Listcell(
-                    c.getAmount() != null ? "₹ " + formatAmt(c.getAmount()) : "—");
-            amtCell.setStyle("text-align:right");
-            row.appendChild(amtCell);
-
-            // 6  Repair Status badge
-            Listcell statusCell = new Listcell();
-            statusCell.setStyle("text-align:center");
-            Label badge = new Label(resolveStatusLabel(c.getRepairStatus()));
-            badge.setSclass(resolveStatusSclass(c.getRepairStatus()));
-            statusCell.appendChild(badge);
-            row.appendChild(statusCell);
-
-            // 7  Action — stop-propagation prevents row-click opening detail panel
-            Listcell actionCell = new Listcell();
-            actionCell.setStyle("text-align:center");
-            if (c.isMicrError()) {
-                Button repairBtn = new Button("Repair");
-                repairBtn.setSclass("btn-repair-row");
-                final Long   chequeId = c.getId();        // ← FIXED: was getChequeId()
-                final String batchId  = currentBatchId;
-                repairBtn.addEventListener(Events.ON_CLICK, ev -> {
-                    ev.stopPropagation();
-                    openRepairPage(chequeId, batchId);
-                });
-                actionCell.appendChild(repairBtn);
-            } else {
-                Label noErr = new Label("No Error");
-                noErr.setSclass("action-no-error");
-                actionCell.appendChild(noErr);
-            }
-            row.appendChild(actionCell);
-
-            chequeListbox.appendChild(row);
-        }
-
-        // Update pagination info
-        if (lblPageInfo != null) {
-            lblPageInfo.setValue(
-                    "Page " + currentPage + " of " + totalPages
-                    + " | " + total + " records");
-        }
-        if (btnPrevPage != null) btnPrevPage.setDisabled(currentPage <= 1);
-        if (btnNextPage != null) btnNextPage.setDisabled(currentPage >= totalPages);
-
-        // Update pending badge
-        long pending = allCheques.stream()
-                .filter(c -> "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
-                          || (c.getRepairStatus() == null && c.isMicrError()))
-                .count();
-        if (lblPendingBadge != null) {
-            lblPendingBadge.setValue(pending + " PENDING");
-        }
-    }
-    
- // ── Close detail panel button ─────────────────────────────────────────
-
-    @Listen("onClick=#btnCloseDetail")
-    public void onCloseDetail() {
-        if (chequeDetailPanel != null) {
-            chequeDetailPanel.setVisible(false);
-        }
-    }
-    
- // ── Row click handler — call this inside renderTable() on each row ────
- // Add this line when building each Listitem row inside renderTable():
- //
- //   final InwardCheque cheque = c;
- //   row.addEventListener(Events.ON_CLICK, ev -> showChequeDetail(cheque));
-
-    
-    // ── UPDATED showChequeDetail() — add the three extra fields ──
-    private void showChequeDetail(InwardCheque c) {
-        if (chequeDetailPanel == null) return;
-     
-        // Header
-        setLbl(lblDetailChequeNo, "CHQ: " + nvl(c.getChequeNo()));
-     
-        // MICR
-        setLbl(lblMicrCodeRaw,      nvl(c.getMicrCodeRaw()));
-        setLbl(lblMicrCodeProcessed,nvl(c.getMicrCodeCorrected()));   // corrected MICR
-        setLbl(lblBankCode,         nvl(c.getBankCode()));
-        setLbl(lblBranchCode,       nvl(c.getBranchCode()));
-        setLbl(lblTransactionCode,  nvl(c.getCityCode()));             // city = transaction code zone
-     
-        // Amount & Date
-        setLbl(lblAmountFigures,
-               c.getAmount() != null ? "₹ " + formatAmt(c.getAmount()) : "—");
-        setLbl(lblAmountWords,  nvl(c.getAmountInWords()));
-        setLbl(lblChequeDate,
-               c.getChequeDate() != null ? c.getChequeDate().toString() : "—");
-     
-        // Bank & Account
-        setLbl(lblPresentingBank,  nvl(c.getPresentingBankName()));
-        setLbl(lblInstrumentType,  nvl(c.getIqaStatus()));             // closest field available
-        setLbl(lblAccountNo,       nvl(c.getDraweeAccountNumber()));
-        setLbl(lblDraweeBank,      nvl(c.getDraweeAccountHolder()));   // holder name fallback
-     
-        // Payee & Status
-        setLbl(lblPayeeName,           nvl(c.getPayeeName()));
-        setLbl(lblDetailBatchId,       nvl(currentBatchId));
-        setLbl(lblDetailRepairStatus,  resolveStatusLabel(c.getRepairStatus()));
-     
-        chequeDetailPanel.setVisible(true);
-        Clients.scrollIntoView(chequeDetailPanel);
-    }
- private void setLbl(Label lbl, String value) {
-     if (lbl != null) lbl.setValue(value != null ? value : "—");
- }
- 
- 
-
-    // =====================================================================
-    // NAVIGATION BUTTONS  (merged)
-    // =====================================================================
-
-    @Listen("onClick=#btnGoToFileProcessing")
-    public void onGoToFileProcessing() {
-        Executions.getCurrent().sendRedirect(PAGE_FILE);
-    }
-
-    @Listen("onClick=#btnBackToBatches")
-    public void onBackToBatches() {
-        Sessions.getCurrent().removeAttribute(SESSION_BATCH_ID);
-        Executions.getCurrent().sendRedirect(PAGE_BATCH);
-    }
-
-    /**
-     * Next Step 2 — validates all repairs done before unlocking step 2.
-     * On success, persists maxAllowedStep=2 in session and redirects.
-     */
-    @Listen("onClick=#btnNextStep2")
-    public void onNextStep2() {
-        if (currentBatchId == null) return;
-
-        if (!allRepairsDone()) {
-            Messagebox.show(
-                    "Please complete all MICR repairs before proceeding to Step 2.",
-                    "Validation",
-                    Messagebox.OK,
-                    Messagebox.EXCLAMATION);
-            return;
-        }
-
-        // Unlock step 2 in session
-        setSessionMaxStep(2);
-
-        Executions.getCurrent().sendRedirect(PAGE_STEP2 + buildBatchParam());
-    }
-
-    // =====================================================================
-    // REPAIR DETAIL PAGE
-    // =====================================================================
-
-    private void openRepairPage(Long chequeId, String batchId) {
-        Executions.getCurrent().sendRedirect(
-                "/inward/inwardMicr/MicrRepairDetail.zul"
-                + "?chequeId=" + chequeId
-                + "&batchId=" + batchId);
-    }
-
-    // =====================================================================
-    // VISIBILITY HELPERS
-    // =====================================================================
-
-    private void showEmptyState() {
-        if (emptyStatePanel != null) emptyStatePanel.setVisible(true);
-        if (batchListPanel  != null) batchListPanel.setVisible(false);
-    }
-
-    private void showChequeList() {
-        if (emptyStatePanel != null) emptyStatePanel.setVisible(false);
-        if (batchListPanel  != null) batchListPanel.setVisible(true);
-        if (lblBatchBadge   != null) lblBatchBadge.setValue("BATCH: " + currentBatchId);
-        currentPage = 1;
-        renderTable();
-    }
-
-    // =====================================================================
-    // SESSION HELPERS  (replaces local maxAllowedStep)
-    // =====================================================================
-
-    private int getSessionMaxStep() {
-        Object val = Sessions.getCurrent().getAttribute(SESSION_MAX_STEP);
-        if (val instanceof Integer) return (Integer) val;
-        return CURRENT_STEP;   // default: only step 1 unlocked
-    }
-
-    private void setSessionMaxStep(int step) {
-        int current = getSessionMaxStep();
-        if (step > current) {
-            Sessions.getCurrent().setAttribute(SESSION_MAX_STEP, step);
-        }
-    }
-
-    // =====================================================================
-    // VALIDATION
-    // =====================================================================
-
-    /**
-     * Returns true only when every cheque in the batch has been repaired
-     * (no remaining NEEDS_REPAIR entries).
-     */
-    private boolean allRepairsDone() {
-        if (allCheques == null || allCheques.isEmpty()) return false;
-        return allCheques.stream()
-                .noneMatch(c -> "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
-                             || (c.getRepairStatus() == null && c.isMicrError()));
-    }
-    
-    
-
-    // =====================================================================
-    // UTILITIES
-    // =====================================================================
-
-    private String buildBatchParam() {
-        return currentBatchId != null ? "?batchId=" + currentBatchId : "";
-    }
-
-    private int totalPages() {
-        return totalPages(getFilteredList().size());
-    }
-
-    private int totalPages(int total) {
-        return Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
-    }
-
-    private void addCell(Listitem row, String text) {
-        row.appendChild(new Listcell(text != null ? text : "—"));
-    }
-
-    private String nvl(String val) {
-        return (val != null && !val.isEmpty()) ? val : "—";
-    }
-
-    private String formatAmt(BigDecimal amt) {
-        return String.format("%,.2f", amt);
-    }
-
-    private String resolveStatusLabel(String status) {
-        if (status == null || status.isEmpty()) return "NEEDS REPAIR";
-        return switch (status.toUpperCase()) {
-            case "REPAIRED"      -> "REPAIRED";
-            case "REFERRED_BACK" -> "REFERRED BACK";
-            case "NEEDS_REPAIR"  -> "NEEDS REPAIR";
-            default              -> status;
-        };
-    }
-
-    private String resolveStatusSclass(String status) {
-        if (status == null || status.isEmpty()) return "badge-needs-repair";
-        return switch (status.toUpperCase()) {
-            case "REPAIRED"      -> "badge-repaired";
-            case "REFERRED_BACK" -> "badge-referred";
-            default              -> "badge-needs-repair";
-        };
-    }
+
+	private static final long serialVersionUID = 1L;
+
+	// ── Constants ──────────────────────────────────────────────────────────
+	private static final int CURRENT_STEP = 1;
+	private static final String SESSION_MAX_STEP = "cts_inward_max_step";
+	private static final String SESSION_BATCH_ID = "cts_inward_batch_id";
+
+	private static final String PAGE_STEP2 = "/inward/inwardMicr/DateAmount.zul";
+	private static final String PAGE_STEP3 = "/inward/inwardMicr/PayeeAccount.zul";
+	private static final String PAGE_FILE = "/inward/bpxfUpload/bpxfUpload.zul";
+	private static final String PAGE_BATCH = "/inward/inwardMicr/batchSelect.zul";
+
+	private static final int PAGE_SIZE = 10;
+
+	// Zoom boundaries
+	private static final int ZOOM_MIN = 25;
+	private static final int ZOOM_MAX = 300;
+	private static final int ZOOM_STEP = 25;
+
+	// ── Wired: Panels ──────────────────────────────────────────────────────
+	@Wire("#emptyStatePanel")
+	private Div emptyStatePanel;
+	@Wire("#batchListPanel")
+	private Div batchListPanel;
+	@Wire("#repairPanel")
+	private Div repairPanel;
+
+	// ── Wired: Wizard Bar ──────────────────────────────────────────────────
+	@Wire("#btnStep1")
+	private Button btnStep1;
+	@Wire("#btnStep2")
+	private Button btnStep2;
+	@Wire("#btnStep3")
+	private Button btnStep3;
+	@Wire("#conn1")
+	private Div conn1;
+	@Wire("#conn2")
+	private Div conn2;
+	@Wire("#lblStep2Num")
+	private Label lblStep2Num;
+	@Wire("#lblStep2Desc")
+	private Label lblStep2Desc;
+	@Wire("#lblStep3Num")
+	private Label lblStep3Num;
+	@Wire("#lblStep3Desc")
+	private Label lblStep3Desc;
+
+	// ── Wired: List Panel ──────────────────────────────────────────────────
+	@Wire("#chequeListbox")
+	private Listbox chequeListbox;
+	@Wire("#lblBatchBadge")
+	private Label lblBatchBadge;
+	@Wire("#lblPendingBadge")
+	private Label lblPendingBadge;
+	@Wire("#lblPageInfo")
+	private Label lblPageInfo;
+	@Wire("#cmbFilter")
+	private Combobox cmbFilter;
+	@Wire("#txtSearch")
+	private Textbox txtSearch;
+	@Wire("#btnGoToFileProcessing")
+	private Button btnGoToFileProcessing;
+	@Wire("#btnBackToBatches")
+	private Button btnBackToBatches;
+	@Wire("#btnNextStep2")
+	private Button btnNextStep2;
+	@Wire("#btnPrevPage")
+	private Button btnPrevPage;
+	@Wire("#btnNextPage")
+	private Button btnNextPage;
+
+	// ── Wired: Repair Panel ────────────────────────────────────────────────
+	@Wire("#btnBackToList")
+	private Button btnBackToList;
+	@Wire("#lblRepairBatchBadge")
+	private Label lblRepairBatchBadge;
+	@Wire("#lblRepairErrorBadge")
+	private Label lblRepairErrorBadge;
+
+	// Image viewer
+	@Wire("#btnViewFront")
+	private Button btnViewFront;
+	@Wire("#btnViewBack")
+	private Button btnViewBack;
+	@Wire("#btnViewGray")
+	private Button btnViewGray;
+	@Wire("#btnZoomIn")
+	private Button btnZoomIn;
+	@Wire("#btnZoomOut")
+	private Button btnZoomOut;
+	@Wire("#btnZoomFit")
+	private Button btnZoomFit;
+	@Wire("#lblZoomLevel")
+	private Label lblZoomLevel;
+	@Wire("#divFrontImage")
+	private Div divFrontImage;
+	@Wire("#divBackImage")
+	private Div divBackImage;
+	@Wire("#divGrayImage")
+	private Div divGrayImage;
+	@Wire("#imgFront")
+	private Image imgFront;
+	@Wire("#imgBack")
+	private Image imgBack;
+	@Wire("#imgGray")
+	private Image imgGray;
+	@Wire("#lblMicrBandStrip")
+	private Label lblMicrBandStrip;
+	@Wire("#ocrWarningBar")
+	private Div ocrWarningBar;
+
+	// Navigation
+	@Wire("#btnPrevCheque")
+	private Button btnPrevCheque;
+	@Wire("#btnNextCheque")
+	private Button btnNextCheque;
+	@Wire("#lblNavIndicator")
+	private Label lblNavIndicator;
+
+	// MICR comparison
+	@Wire("#lblProcessedMicr")
+	private Label lblProcessedMicr;
+	@Wire("#lblReceivedMicr")
+	private Label lblReceivedMicr;
+	@Wire("#lblOcrErrorBadge")
+	private Label lblOcrErrorBadge;
+
+	// Form fields
+	@Wire("#txtChequeNo")
+	private Textbox txtChequeNo;
+	@Wire("#txtCityCode")
+	private Textbox txtCityCode;
+	@Wire("#txtBankCode")
+	private Textbox txtBankCode;
+	@Wire("#txtBranchCode")
+	private Textbox txtBranchCode;
+	@Wire("#txtPresentingBank")
+	private Textbox txtPresentingBank;
+	@Wire("#txtRemarks")
+	private Textbox txtRemarks;
+
+	// Progress + actions
+	@Wire("#divProgressFill")
+	private Div divProgressFill;
+	@Wire("#lblProgressText")
+	private Label lblProgressText;
+	@Wire("#btnRepairSave")
+	private Button btnRepairSave;
+
+	// ── Service ────────────────────────────────────────────────────────────
+	private final RejectRepairService service = new RejectRepairServiceImpl();
+
+	// ── State ──────────────────────────────────────────────────────────────
+	private String currentBatchId;
+	private List<InwardCheque> allCheques;
+	private List<InwardCheque> repairList;
+	private int currentPage = 1;
+	private int repairIdx = 0;
+	private int currentZoomPct = 100;
+	private String activeImageView = "front";
+
+	// ── Lifecycle ──────────────────────────────────────────────────────────
+	@Override
+	public void doAfterCompose(Component comp) throws Exception {
+		super.doAfterCompose(comp);
+		initWizardBar();
+		loadPage();
+		wireRepairPanelEvents();
+	}
+
+	// ======================================================================
+	// WIZARD BAR
+	// ======================================================================
+	private void initWizardBar() {
+		int maxStep = getSessionMaxStep();
+		applyStepStyle(btnStep1, 1, maxStep);
+		applyStepStyle(btnStep2, 2, maxStep);
+		applyStepStyle(btnStep3, 3, maxStep);
+		if (conn1 != null)
+			conn1.setSclass(maxStep >= 2 ? "step-connector filled" : "step-connector");
+		if (conn2 != null)
+			conn2.setSclass(maxStep >= 3 ? "step-connector filled" : "step-connector");
+		applyLabelStyle(lblStep2Num, lblStep2Desc, 2);
+		applyLabelStyle(lblStep3Num, lblStep3Desc, 3);
+	}
+
+	private void applyStepStyle(Button btn, int step, int maxStep) {
+		if (btn == null)
+			return;
+		if (step == CURRENT_STEP)
+			btn.setSclass("step-circle-btn active");
+		else if (step < CURRENT_STEP)
+			btn.setSclass("step-circle-btn completed");
+		else if (step <= maxStep)
+			btn.setSclass("step-circle-btn active");
+		else
+			btn.setSclass("step-circle-btn disabled-step");
+	}
+
+	private void applyLabelStyle(Label num, Label desc, int step) {
+		if (num == null)
+			return;
+		if (step == CURRENT_STEP) {
+			num.setSclass("step-num active");
+			if (desc != null)
+				desc.setSclass("step-desc active");
+		} else if (step < CURRENT_STEP) {
+			num.setSclass("step-num completed");
+			if (desc != null)
+				desc.setSclass("step-desc completed");
+		} else {
+			num.setSclass("step-num");
+			if (desc != null)
+				desc.setSclass("step-desc");
+		}
+	}
+
+	// ======================================================================
+	// STEP NAVIGATION
+	// ======================================================================
+	@Listen("onClick=#btnStep1")
+	public void onStep1() {
+		/* already on Step 1 */ }
+
+	@Listen("onClick=#btnStep2")
+	public void onStep2() {
+		if (getSessionMaxStep() >= 2)
+			Executions.getCurrent().sendRedirect(PAGE_STEP2 + batchParam());
+	}
+
+	@Listen("onClick=#btnStep3")
+	public void onStep3() {
+		if (getSessionMaxStep() >= 3)
+			Executions.getCurrent().sendRedirect(PAGE_STEP3 + batchParam());
+	}
+
+	// ======================================================================
+	// DATA LOAD
+	// ======================================================================
+	private void loadPage() {
+		String paramBatch = Executions.getCurrent().getParameter("batchId");
+		if (paramBatch != null && !paramBatch.isBlank()) {
+			currentBatchId = paramBatch.trim();
+			Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
+		} else {
+			Object sess = Sessions.getCurrent().getAttribute(SESSION_BATCH_ID);
+			if (sess != null) {
+				currentBatchId = sess.toString();
+			} else {
+				List<InwardBatch> batches = service.getRepairEligibleBatches();
+				if (batches == null || batches.isEmpty()) {
+					showEmpty();
+					return;
+				}
+				currentBatchId = batches.get(0).getBatchId();
+				Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
+			}
+		}
+
+		List<InwardCheque> fetched = service.getChequesByBatchId(currentBatchId);
+		if (fetched == null || fetched.isEmpty()) {
+			showEmpty();
+			return;
+		}
+
+		allCheques = fetched;
+
+		repairList = allCheques.stream()
+				.filter(c -> c.isMicrError() || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
+						|| "REFERRED_BACK".equalsIgnoreCase(c.getRepairStatus()))
+				.collect(Collectors.toList());
+
+		showList();
+	}
+
+	// ======================================================================
+	// PANEL SWITCHING
+	// ======================================================================
+	private void showEmpty() {
+		setVisible(emptyStatePanel, true);
+		setVisible(batchListPanel, false);
+		setVisible(repairPanel, false);
+	}
+
+	private void showList() {
+		setVisible(emptyStatePanel, false);
+		setVisible(batchListPanel, true);
+		setVisible(repairPanel, false);
+		if (lblBatchBadge != null)
+			lblBatchBadge.setValue("BATCH: " + currentBatchId);
+		currentPage = 1;
+		renderTable();
+	}
+
+	private void showRepairPanel(int idx) {
+		repairIdx = idx;
+		setVisible(emptyStatePanel, false);
+		setVisible(batchListPanel, false);
+		setVisible(repairPanel, true);
+		if (lblRepairBatchBadge != null)
+			lblRepairBatchBadge.setValue("BATCH: " + currentBatchId);
+		loadRepairRecord();
+	}
+
+	private static void setVisible(Div div, boolean visible) {
+		if (div != null)
+			div.setVisible(visible);
+	}
+
+	// ======================================================================
+	// LIST TABLE
+	// ======================================================================
+	private void renderTable() {
+		if (chequeListbox == null)
+			return;
+		chequeListbox.getItems().clear();
+
+		List<InwardCheque> filtered = getFilteredList();
+		int total = filtered.size();
+		int totalPages = Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
+		currentPage = Math.min(currentPage, totalPages);
+
+		int from = (currentPage - 1) * PAGE_SIZE;
+		int to = Math.min(from + PAGE_SIZE, total);
+
+		int rowNum = from + 1;
+		for (InwardCheque c : filtered.subList(from, to))
+			appendChequeRow(c, rowNum++);
+
+		if (lblPageInfo != null)
+			lblPageInfo.setValue("Page " + currentPage + " of " + totalPages + " | " + total + " records");
+		if (btnPrevPage != null)
+			btnPrevPage.setDisabled(currentPage <= 1);
+		if (btnNextPage != null)
+			btnNextPage.setDisabled(currentPage >= totalPages);
+
+		long pending = repairList.stream()
+				.filter(c -> c.isMicrError() || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())).count();
+		if (lblPendingBadge != null)
+			lblPendingBadge.setValue(pending + " PENDING");
+	}
+
+	private void appendChequeRow(InwardCheque c, int sno) {
+		Listitem row = new Listitem();
+		row.setValue(c);
+		row.setSclass("clickable-row");
+
+		addCell(row, String.valueOf(sno));
+		addMonoCell(row, nvl(c.getChequeNo()));
+		addCell(row, nvl(c.getPresentingBankName()));
+
+		Listcell micrCell = new Listcell(nvl(c.getMicrCodeRaw()));
+		micrCell.setSclass("z-listcell mono txt-danger");
+		row.appendChild(micrCell);
+
+		Listcell amtCell = new Listcell(c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
+		amtCell.setStyle("text-align:right");
+		row.appendChild(amtCell);
+
+		Listcell statusCell = new Listcell();
+		statusCell.setStyle("text-align:center");
+		Label badge = new Label(statusLabel(c.getRepairStatus()));
+		badge.setSclass(statusSclass(c.getRepairStatus()));
+		statusCell.appendChild(badge);
+		row.appendChild(statusCell);
+
+		Listcell actionCell = new Listcell();
+		actionCell.setStyle("text-align:center");
+		Button repairBtn = new Button("Repair");
+		repairBtn.setSclass("btn-repair-row");
+
+		int idx = repairList.indexOf(c);
+		repairBtn.addEventListener(Events.ON_CLICK, e -> {
+			e.stopPropagation();
+			showRepairPanel(Math.max(0, idx));
+		});
+		actionCell.appendChild(repairBtn);
+		row.appendChild(actionCell);
+
+		row.addEventListener(Events.ON_CLICK, e -> {
+			int idx1 = repairList.indexOf(c);
+			if (idx1 >= 0)
+				showRepairPanel(idx1);
+		});
+		chequeListbox.appendChild(row);
+	}
+
+	// ======================================================================
+	// FILTER
+	// ======================================================================
+	private List<InwardCheque> getFilteredList() {
+		if (repairList == null)
+			return Collections.emptyList();
+
+		String filterVal = "";
+		if (cmbFilter != null && cmbFilter.getSelectedItem() != null) {
+			Object v = cmbFilter.getSelectedItem().getValue();
+			if (v != null)
+				filterVal = v.toString();
+		}
+		String search = (txtSearch != null && txtSearch.getValue() != null) ? txtSearch.getValue().trim().toLowerCase()
+				: "";
+
+		final String fv = filterVal;
+		return repairList.stream().filter(c -> {
+			if (!fv.isEmpty()) {
+				String rs = c.getRepairStatus() != null ? c.getRepairStatus() : "";
+				if (!rs.equalsIgnoreCase(fv))
+					return false;
+			}
+			if (!search.isEmpty()) {
+				String no = c.getChequeNo() != null ? c.getChequeNo().toLowerCase() : "";
+				String bank = c.getPresentingBankName() != null ? c.getPresentingBankName().toLowerCase() : "";
+				return no.contains(search) || bank.contains(search);
+			}
+			return true;
+		}).collect(Collectors.toList());
+	}
+
+	// ======================================================================
+	// REPAIR PANEL — LOAD RECORD
+	// ======================================================================
+	private void loadRepairRecord() {
+		if (repairList == null || repairList.isEmpty()) {
+			showList();
+			return;
+		}
+		repairIdx = Math.max(0, Math.min(repairList.size() - 1, repairIdx));
+		InwardCheque c = repairList.get(repairIdx);
+
+		if (lblNavIndicator != null)
+			lblNavIndicator.setValue((repairIdx + 1) + " of " + repairList.size());
+		if (btnPrevCheque != null)
+			btnPrevCheque.setDisabled(repairIdx <= 0);
+		if (btnNextCheque != null)
+			btnNextCheque.setDisabled(repairIdx >= repairList.size() - 1);
+
+		long done = repairList.stream().filter(ch -> "REPAIRED".equalsIgnoreCase(ch.getRepairStatus())).count();
+		int total = repairList.size();
+		int pct = total > 0 ? (int) ((done * 100) / total) : 0;
+		if (divProgressFill != null)
+			divProgressFill.setStyle("width:" + pct + "%");
+		if (lblProgressText != null)
+			lblProgressText.setValue(done + "/" + total);
+
+		String errorType = deriveMicrErrorType(c);
+		if (lblRepairErrorBadge != null)
+			lblRepairErrorBadge.setValue(errorType);
+		if (lblOcrErrorBadge != null)
+			lblOcrErrorBadge.setValue("OCR ERROR");
+
+		loadChequeImages(c);
+
+		activeImageView = "front";
+		showImagePanel("front");
+		resetZoom();
+
+		if (lblMicrBandStrip != null)
+			lblMicrBandStrip.setValue("⑆ " + nvl(c.getChequeNo()) + " ⑆  " + nvl(c.getMicrCodeRaw()) + " ⑈  ⑉29⑉");
+
+		if (ocrWarningBar != null)
+			ocrWarningBar.setVisible(true);
+
+		String processedMicr = (c.getMicrCodeCorrected() != null && !c.getMicrCodeCorrected().isBlank())
+				? c.getMicrCodeCorrected()
+				: sanitizeMicr(c.getMicrCodeRaw());
+		if (lblProcessedMicr != null)
+			lblProcessedMicr.setValue(processedMicr);
+		if (lblReceivedMicr != null)
+			lblReceivedMicr.setValue(nvl(c.getMicrCodeRaw()));
+
+		setTbValue(txtChequeNo, c.getChequeNo());
+		setTbValue(txtCityCode, c.getCityCode());
+		setTbValue(txtBankCode, c.getBankCode());
+		setTbValue(txtBranchCode, c.getBranchCode());
+		setTbValue(txtPresentingBank, c.getPresentingBankName());
+		setTbValue(txtRemarks, "");
+
+		highlightErrorFields(c);
+	}
+
+	// ======================================================================
+	// IMAGE LOADING
+	// ======================================================================
+	private void loadChequeImages(InwardCheque c) {
+		setImageViaServlet(imgFront, c.getFrontImagePath());
+		setImageViaServlet(imgBack, c.getBackImagePath());
+		setImageViaServlet(imgGray, c.getFrontImagePath());
+		if (imgGray != null)
+			imgGray.setStyle("filter:grayscale(100%);max-width:100%;display:block;");
+	}
+
+	private void setImageViaServlet(Image img, String path) {
+		if (img == null)
+			return;
+		if (path == null || path.trim().isEmpty()) {
+			img.setSrc("");
+			return;
+		}
+		try {
+			String encoded = URLEncoder.encode(path.trim(), "UTF-8");
+			img.setSrc("/imageServlet?path=" + encoded);
+		} catch (UnsupportedEncodingException e) {
+			img.setSrc("/imageServlet?path=" + path.trim());
+		}
+	}
+
+	// ======================================================================
+	// MICR ERROR TYPE
+	// ======================================================================
+	private String deriveMicrErrorType(InwardCheque c) {
+		if (!c.isMicrError())
+			return "MANUAL REVIEW";
+
+		boolean cityBad = containsNonNumeric(c.getCityCode());
+		boolean bankBad = containsNonNumeric(c.getBankCode());
+		boolean branchBad = containsNonNumeric(c.getBranchCode());
+		boolean chqBad = containsNonNumeric(c.getChequeNo());
+
+		int badCount = (cityBad ? 1 : 0) + (bankBad ? 1 : 0) + (branchBad ? 1 : 0) + (chqBad ? 1 : 0);
+		if (badCount > 1)
+			return "MICR ERROR";
+
+		if (chqBad)
+			return "CHEQUE NO ERROR";
+		if (bankBad)
+			return "BANK CODE ERROR";
+		if (branchBad)
+			return "BRANCH CODE ERROR";
+		if (cityBad)
+			return "CITY CODE ERROR";
+		return "MICR ERROR";
+	}
+
+	private void highlightErrorFields(InwardCheque c) {
+		applyFieldStyle(txtChequeNo, "form-input mono");
+		applyFieldStyle(txtCityCode, "form-input mono ocr-filled");
+		applyFieldStyle(txtBankCode, "form-input mono");
+		applyFieldStyle(txtBranchCode, "form-input mono ocr-filled");
+
+		if (!c.isMicrError())
+			return;
+
+		if (containsNonNumeric(c.getChequeNo()))
+			applyFieldStyle(txtChequeNo, "form-input mono field-mismatch");
+		if (containsNonNumeric(c.getCityCode()))
+			applyFieldStyle(txtCityCode, "form-input mono field-mismatch");
+		if (containsNonNumeric(c.getBankCode()))
+			applyFieldStyle(txtBankCode, "form-input mono field-mismatch");
+		if (containsNonNumeric(c.getBranchCode()))
+			applyFieldStyle(txtBranchCode, "form-input mono field-mismatch");
+
+		boolean anyBad = containsNonNumeric(c.getChequeNo()) || containsNonNumeric(c.getCityCode())
+				|| containsNonNumeric(c.getBankCode()) || containsNonNumeric(c.getBranchCode());
+		if (!anyBad)
+			applyFieldStyle(txtBankCode, "form-input mono field-mismatch");
+	}
+
+	// ======================================================================
+	// REPAIR PANEL — EVENT WIRING
+	// ======================================================================
+	private void wireRepairPanelEvents() {
+		addClickListener(btnPrevPage, e -> {
+			if (currentPage > 1) {
+				currentPage--;
+				renderTable();
+			}
+		});
+		addClickListener(btnNextPage, e -> {
+			if (currentPage < totalPages()) {
+				currentPage++;
+				renderTable();
+			}
+		});
+		if (cmbFilter != null)
+			cmbFilter.addEventListener(Events.ON_SELECT, e -> {
+				currentPage = 1;
+				renderTable();
+			});
+		if (txtSearch != null)
+			txtSearch.addEventListener(Events.ON_CHANGING, e -> {
+				currentPage = 1;
+				renderTable();
+			});
+
+		addClickListener(btnPrevCheque, e -> {
+			if (repairIdx > 0) {
+				repairIdx--;
+				loadRepairRecord();
+			}
+		});
+		addClickListener(btnNextCheque, e -> {
+			if (repairList != null && repairIdx < repairList.size() - 1) {
+				repairIdx++;
+				loadRepairRecord();
+			}
+		});
+
+		addClickListener(btnViewFront, e -> switchImagePanel("front"));
+		addClickListener(btnViewBack, e -> switchImagePanel("back"));
+		addClickListener(btnViewGray, e -> switchImagePanel("gray"));
+
+		addClickListener(btnZoomIn, e -> adjustZoom(+ZOOM_STEP));
+		addClickListener(btnZoomOut, e -> adjustZoom(-ZOOM_STEP));
+		addClickListener(btnZoomFit, e -> resetZoom());
+
+		addClickListener(btnBackToList, e -> showList());
+		addClickListener(btnRepairSave, e -> doRepairSave());
+	}
+
+	private void switchImagePanel(String view) {
+		activeImageView = view;
+		showImagePanel(view);
+		currentZoomPct = 100;
+		applyZoomToActivePanel();
+		if (lblZoomLevel != null)
+			lblZoomLevel.setValue("100%");
+	}
+
+	private void showImagePanel(String view) {
+		if (divFrontImage != null)
+			divFrontImage.setVisible("front".equals(view));
+		if (divBackImage != null)
+			divBackImage.setVisible("back".equals(view));
+		if (divGrayImage != null)
+			divGrayImage.setVisible("gray".equals(view));
+		setToggleActive(btnViewFront, "front".equals(view));
+		setToggleActive(btnViewBack, "back".equals(view));
+		setToggleActive(btnViewGray, "gray".equals(view));
+	}
+
+	private void setToggleActive(Button btn, boolean active) {
+		if (btn == null)
+			return;
+		btn.setSclass(active ? "view-toggle-btn active" : "view-toggle-btn");
+	}
+
+	private void adjustZoom(int delta) {
+		currentZoomPct = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, currentZoomPct + delta));
+		applyZoomToActivePanel();
+	}
+
+	private void resetZoom() {
+		currentZoomPct = 100;
+		applyZoomToActivePanel();
+	}
+
+	private void applyZoomToActivePanel() {
+		if (lblZoomLevel != null)
+			lblZoomLevel.setValue(currentZoomPct + "%");
+
+		String baseStyle = "overflow:hidden;transform-origin:top left;transition:transform 0.15s ease;";
+		String scaleStyle = baseStyle + "transform:scale(" + (currentZoomPct / 100.0) + ");";
+		String neutralStyle = "transform:scale(1);" + baseStyle;
+
+		switch (activeImageView) {
+		case "front" -> {
+			applyDivStyle(divFrontImage, scaleStyle);
+			applyDivStyle(divBackImage, neutralStyle);
+			applyDivStyle(divGrayImage, neutralStyle);
+		}
+		case "back" -> {
+			applyDivStyle(divFrontImage, neutralStyle);
+			applyDivStyle(divBackImage, scaleStyle);
+			applyDivStyle(divGrayImage, neutralStyle);
+		}
+		case "gray" -> {
+			applyDivStyle(divFrontImage, neutralStyle);
+			applyDivStyle(divBackImage, neutralStyle);
+			applyDivStyle(divGrayImage, scaleStyle + "filter:grayscale(100%);");
+		}
+		default -> {
+			applyDivStyle(divFrontImage, scaleStyle);
+			applyDivStyle(divBackImage, neutralStyle);
+			applyDivStyle(divGrayImage, neutralStyle);
+		}
+		}
+	}
+
+	// ======================================================================
+	// SAVE — FIX: Replaced Messagebox.EXCLAMATION with Messagebox.QUESTION
+	// which is the correct ZK constant for YES/NO dialogs.
+	// Messagebox.EXCLAMATION does not exist in ZK Framework.
+	// ======================================================================
+	private void doRepairSave() {
+		if (repairList == null || repairList.isEmpty())
+			return;
+		InwardCheque c = repairList.get(repairIdx);
+
+		// ── FIX: Use getRawValue() as fallback and strip ALL non-visible chars ──
+		String chequeNo = sanitizeInput(txtChequeNo);
+		String cityCode = sanitizeInput(txtCityCode);
+		String bankCode = sanitizeInput(txtBankCode);
+		String branchCode = sanitizeInput(txtBranchCode);
+		String remarks = tbVal(txtRemarks);
+
+		// ── DEBUG: Log actual values to server log ─────────────────────────────
+		java.util.logging.Logger.getLogger(getClass().getName()).info("[MICR-SAVE] chequeNo='" + chequeNo
+				+ "' cityCode='" + cityCode + "' bankCode='" + bankCode + "' branchCode='" + branchCode + "'");
+
+		// ── Validation ─────────────────────────────────────────────────────────
+		if (chequeNo.isEmpty()) {
+			showError("Cheque Number is required.");
+			return;
+		}
+		if (cityCode.isEmpty()) {
+			showError("City Code is required.");
+			return;
+		}
+		if (bankCode.isEmpty()) {
+			showError("Bank Code is required.");
+			return;
+		}
+		if (branchCode.isEmpty()) {
+			showError("Branch Code is required.");
+			return;
+		}
+
+		// ── FIX: Changed regex from \\d{1,3} to \\d+ with length check ─────────
+		// \\d{1,3} can fail if getValue() returns with hidden chars.
+		// Explicit digit-only + length check is more robust.
+		if (!chequeNo.matches("\\d+") || chequeNo.length() > 6) {
+			showError("Cheque Number must contain digits only (max 6 digits).");
+			return;
+		}
+		if (!cityCode.matches("\\d+") || cityCode.length() > 3) {
+			showError("City Code must contain digits only (max 3 digits).");
+			return;
+		}
+		if (!bankCode.matches("\\d+") || bankCode.length() > 3) {
+			showError("Bank Code must contain digits only (max 3 digits).");
+			return;
+		}
+		if (!branchCode.matches("\\d+") || branchCode.length() > 3) {
+			showError("Branch Code must contain digits only (max 3 digits).");
+			return;
+		}
+
+		// ── Build corrected MICR ───────────────────────────────────────────────
+		String correctedMicr = cityCode + bankCode + branchCode;
+
+		String processedMicr = (c.getMicrCodeCorrected() != null && !c.getMicrCodeCorrected().isBlank())
+				? c.getMicrCodeCorrected().trim()
+				: sanitizeMicr(c.getMicrCodeRaw());
+
+		String processedMicrBase = processedMicr.length() >= 9 ? processedMicr.substring(0, 9) : processedMicr;
+
+		boolean micrMatched = correctedMicr.equals(processedMicrBase);
+
+		if (micrMatched) {
+			persistRepair(c, chequeNo, cityCode, bankCode, branchCode, correctedMicr, remarks, true);
+			showSuccess("Cheque " + chequeNo + " repaired and saved successfully.");
+			moveToNextPending();
+		} else {
+			String msg = "The MICR you entered (" + correctedMicr + ") differs from " + "the processed data ("
+					+ processedMicrBase + ").\n\n" + "Do you still want to save this repair?\n"
+					+ "(Select YES only if you verified the physical cheque.)";
+
+			Messagebox.show(msg, "MICR Mismatch — Confirm Override", Messagebox.YES | Messagebox.NO,
+					Messagebox.QUESTION, event -> {
+						if (Messagebox.ON_YES.equals(event.getName())) {
+							persistRepair(c, chequeNo, cityCode, bankCode, branchCode, correctedMicr, remarks, false);
+							moveToNextPending();
+						}
+					});
+		}
+	}
+
+	/**
+	 * FIX: Reads textbox value and strips ALL invisible/non-printable characters.
+	 * ZK sometimes appends \u00A0 (non-breaking space) or \r\n to programmatically
+	 * set values, causing regex matches to fail even when the visible text looks
+	 * correct.
+	 */
+	private String sanitizeInput(Textbox tb) {
+		if (tb == null)
+			return "";
+		String val = tb.getValue();
+		if (val == null)
+			return "";
+		// Remove ALL non-ASCII-printable and non-breaking spaces
+		return val.replaceAll("[\\s\\u00A0\\u200B\\u200C\\u200D\\uFEFF]", "").trim();
+	}
+
+	private void persistRepair(InwardCheque c, String chequeNo, String cityCode, String bankCode, String branchCode,
+			String correctedMicr, String remarks, boolean matched) {
+		c.setChequeNo(chequeNo);
+		c.setCityCode(cityCode);
+		c.setBankCode(bankCode);
+		c.setBranchCode(branchCode);
+		c.setMicrCodeCorrected(correctedMicr);
+		c.setMicrError(false);
+		c.setRepairStatus("REPAIRED");
+		if (remarks != null && !remarks.isBlank())
+			c.setRemarks(remarks);
+
+// FIX: Pass currentBatchId explicitly so the service does NOT need to
+// access cheque.getBatch() (which is LAZY and throws on detached entity).
+		((RejectRepairServiceImpl) service).saveRepair(c, currentBatchId);
+
+		int pos = allCheques.indexOf(c);
+		if (pos >= 0)
+			allCheques.set(pos, c);
+	}
+
+	// ======================================================================
+	// MOVE TO NEXT PENDING
+	// ======================================================================
+	private void moveToNextPending() {
+		repairList = allCheques.stream()
+				.filter(c -> c.isMicrError() || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus()))
+				.collect(Collectors.toList());
+
+		int nextIdx = -1;
+		for (int i = repairIdx; i < repairList.size(); i++) {
+			if (isStillPending(repairList.get(i))) {
+				nextIdx = i;
+				break;
+			}
+		}
+		if (nextIdx < 0) {
+			for (int i = 0; i < repairIdx; i++) {
+				if (isStillPending(repairList.get(i))) {
+					nextIdx = i;
+					break;
+				}
+			}
+		}
+
+		if (nextIdx >= 0) {
+			repairIdx = nextIdx;
+			loadRepairRecord();
+		} else {
+			if (divProgressFill != null)
+				divProgressFill.setStyle("width:100%");
+			if (lblProgressText != null)
+				lblProgressText.setValue(repairList.size() + "/" + repairList.size());
+
+			// ── FIX: Use Messagebox.QUESTION for YES/NO dialog ────────────
+			Messagebox.show("All MICR repairs completed.\nProceed to Step 2: Date & Amount Repair?", "Repairs Complete",
+					Messagebox.YES | Messagebox.NO, Messagebox.QUESTION, // ← FIXED (was EXCLAMATION)
+					event -> {
+						if (Messagebox.ON_YES.equals(event.getName())) {
+							setSessionMaxStep(2);
+							Executions.getCurrent().sendRedirect(PAGE_STEP2 + batchParam());
+						} else {
+							showList();
+						}
+					});
+		}
+	}
+
+	private boolean isStillPending(InwardCheque c) {
+		return c.isMicrError() || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus());
+	}
+
+	// ======================================================================
+	// NAVIGATION BUTTON LISTENERS
+	// ======================================================================
+	@Listen("onClick=#btnGoToFileProcessing")
+	public void onGoToFileProcessing() {
+		Executions.getCurrent().sendRedirect(PAGE_FILE);
+	}
+
+	@Listen("onClick=#btnBackToBatches")
+	public void onBackToBatches() {
+		Sessions.getCurrent().removeAttribute(SESSION_BATCH_ID);
+		Executions.getCurrent().sendRedirect(PAGE_BATCH);
+	}
+
+	@Listen("onClick=#btnNextStep2")
+	public void onNextStep2() {
+		if (currentBatchId == null)
+			return;
+		if (!allRepairsDone()) {
+			// ── FIX: Use Messagebox.NONE for single OK button ─────────────
+			Messagebox.show("Please complete all MICR repairs before proceeding to Step 2.", "Validation",
+					Messagebox.OK, Messagebox.NONE); // ← FIXED (was EXCLAMATION)
+			return;
+		}
+		setSessionMaxStep(2);
+		Executions.getCurrent().sendRedirect(PAGE_STEP2 + batchParam());
+	}
+
+	// ======================================================================
+	// UTILITIES
+	// ======================================================================
+	private boolean containsNonNumeric(String value) {
+		if (value == null || value.isBlank())
+			return false;
+		return !value.matches("\\d+");
+	}
+
+	private String sanitizeMicr(String raw) {
+		if (raw == null)
+			return "—";
+		return raw.replace("?", "0");
+	}
+
+	private void addClickListener(Button btn, org.zkoss.zk.ui.event.EventListener<?> l) {
+		if (btn != null)
+			btn.addEventListener(Events.ON_CLICK, l);
+	}
+
+	private void applyDivStyle(Div div, String style) {
+		if (div != null)
+			div.setStyle(style);
+	}
+
+	private void applyFieldStyle(Textbox tb, String sclass) {
+		if (tb != null)
+			tb.setSclass(sclass);
+	}
+
+	private void setTbValue(Textbox tb, String val) {
+		if (tb != null)
+			tb.setValue(val != null ? val : "");
+	}
+
+	private String tbVal(Textbox tb) {
+		return (tb != null && tb.getValue() != null) ? tb.getValue().trim() : "";
+	}
+
+	private boolean allRepairsDone() {
+		if (repairList == null)
+			return true;
+		return repairList.stream().noneMatch(this::isStillPending);
+	}
+
+	private int totalPages() {
+		return Math.max(1, (int) Math.ceil((double) getFilteredList().size() / PAGE_SIZE));
+	}
+
+	private String batchParam() {
+		return currentBatchId != null ? "?batchId=" + currentBatchId : "";
+	}
+
+	private int getSessionMaxStep() {
+		Object v = Sessions.getCurrent().getAttribute(SESSION_MAX_STEP);
+		return (v instanceof Integer i) ? i : CURRENT_STEP;
+	}
+
+	private void setSessionMaxStep(int step) {
+		if (step > getSessionMaxStep())
+			Sessions.getCurrent().setAttribute(SESSION_MAX_STEP, step);
+	}
+
+	private void addCell(Listitem row, String text) {
+		row.appendChild(new Listcell(text != null ? text : "—"));
+	}
+
+	private void addMonoCell(Listitem row, String text) {
+		Listcell cell = new Listcell(text != null ? text : "—");
+		cell.setSclass("z-listcell mono");
+		row.appendChild(cell);
+	}
+
+	private String nvl(String v) {
+		return (v != null && !v.isBlank()) ? v : "—";
+	}
+
+	private String fmt(BigDecimal amt) {
+		return String.format("%,.2f", amt);
+	}
+
+	private String statusLabel(String status) {
+		if (status == null || status.isBlank())
+			return "NEEDS REPAIR";
+		return switch (status.toUpperCase()) {
+		case "REPAIRED" -> "REPAIRED";
+		case "REFERRED_BACK" -> "REFERRED BACK";
+		case "NEEDS_REPAIR" -> "NEEDS REPAIR";
+		case "NOT_REQUIRED" -> "NOT REQUIRED";
+		default -> status;
+		};
+	}
+
+	private String statusSclass(String status) {
+		if (status == null || status.isBlank())
+			return "badge-needs-repair";
+		return switch (status.toUpperCase()) {
+		case "REPAIRED" -> "badge-repaired";
+		case "REFERRED_BACK" -> "badge-referred";
+		case "NOT_REQUIRED" -> "badge-ok";
+		default -> "badge-needs-repair";
+		};
+	}
+
+	/**
+	 * Shows a non-blocking error notification. Uses Messagebox.ERROR icon with
+	 * single OK button.
+	 */
+	private void showError(String msg) {
+		Messagebox.show(msg, "Validation Error", Messagebox.OK, Messagebox.ERROR);
+	}
+
+	/**
+	 * Shows a non-blocking success notification. Uses Messagebox.INFORMATION icon
+	 * with single OK button.
+	 */
+	private void showSuccess(String msg) {
+		Messagebox.show(msg, "Success", Messagebox.OK, Messagebox.INFORMATION);
+	}
+
 }

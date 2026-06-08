@@ -130,8 +130,10 @@ public class InwardCheque {
 	@OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<InwardMicrRepair> micrRepairs;
 
+
 	@OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<InwardCheckerAction> checkerActions;
+
 
 	@PrePersist
 	public void prePersist() {

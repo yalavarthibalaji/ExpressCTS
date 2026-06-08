@@ -280,3 +280,19 @@ img.z-image.chq-img-actual,
 .items-c { align-items: center; }
 .mb12 { margin-bottom: 12px; }
 .mb16 { margin-bottom: 16px; }
+
+.batch-list-header{
+	background:#1a2340;
+}
+
+/* Force datebox width — ZK ignores width attribute in some layouts */
+#batchDateFilter.z-datebox {
+    width: 180px !important;
+    min-width: 180px !important;
+    box-sizing: border-box !important;
+}
+
+#batchDateFilter.z-datebox input.z-datebox-inp {
+    width: 100% !important;
+    min-width: 130px !important;
+}

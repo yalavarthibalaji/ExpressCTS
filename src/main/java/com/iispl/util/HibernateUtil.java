@@ -33,6 +33,7 @@ public class HibernateUtil {
             cfg.setProperty("hibernate.connection.password", "iispl660");
 
 
+
             // Hibernate settings
             cfg.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
             cfg.setProperty("hibernate.show_sql", "true");

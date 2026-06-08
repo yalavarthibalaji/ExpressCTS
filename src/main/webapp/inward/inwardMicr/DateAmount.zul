@@ -46,7 +46,7 @@
                         <button id="btnStep1"
                                 sclass="step-circle-btn completed"
                                 onClick="goToStep(1)"
-                                title="Step 1 — Reject &amp; Repair (completed)">
+                                tooltiptext="Step 1 — Reject &amp; Repair (completed)">
                             <span sclass="step-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      width="22" height="22"
@@ -74,7 +74,7 @@
                         <button id="btnStep2"
                                 sclass="step-circle-btn active"
                                 onClick="goToStep(2)"
-                                title="Step 2 — Date &amp; Amount (current)">
+                                tooltiptext="Step 2 — Date &amp; Amount (current)">
                             <span sclass="step-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      width="22" height="22"
@@ -105,7 +105,7 @@
                         <button id="btnStep3"
                                 sclass="step-circle-btn disabled-step"
                                 onClick="goToStep(3)"
-                                title="Step 3 — Payee &amp; Account (not yet available)">
+                                tooltiptext="Step 3 — Payee &amp; Account (not yet available)">
                             <span sclass="step-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      width="22" height="22"
