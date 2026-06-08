@@ -1,5 +1,8 @@
 package com.iispl.composer;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.zkoss.zk.ui.Component;
+import org.zkoss.zk.ui.Desktop;
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.Sessions;
 import org.zkoss.zk.ui.select.SelectorComposer;
@@ -17,39 +21,39 @@ import org.zkoss.zul.Button;
 import org.zkoss.zul.Combobox;
 import org.zkoss.zul.Comboitem;
 import org.zkoss.zul.Div;
+import org.zkoss.zul.Image;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Messagebox;
 
+import com.iispl.dto.CbsValidationResult;
 import com.iispl.dto.LoginDTO;
 import com.iispl.entity.User;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheckerAction;
 import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.CheckerBatchProcessService;
+import com.iispl.service.CbsFirebaseService;
 import com.iispl.serviceImpl.CheckerBatchProcessServiceImpl;
 import com.iispl.util.InwardReturnReason;
 import com.iispl.util.SessionUtil;
 
 /**
  * File    : com/iispl/composer/ProcessBatchComposer.java
- * Purpose : Drives the split-panel Process Batch page.
  *
- *   LEFT PANEL  — Inward Cheque Image
- *                 Renders cheque fields from DB:
- *                 bank name, presenting bank, date, payee, amount, MICR line.
+ * CBS FIREBASE VALIDATION — where it happens:
+ *   renderCheque(index)
+ *     → renderTechnicalPanel(cheque)
+ *         → fillCbsFromFirebase(cheque)            ← background thread
+ *             → CbsFirebaseService.validate(acctNo)
+ *                 → Firebase: cbs_accounts/<acct_no>
+ *                     → updates: lblAcctHolder, lblAcctBalance,
+ *                                lblCbsAcctValid, lblCbsBankMatch
  *
- *   RIGHT PANEL — Technical Verification
- *                 CBS Validation: MICR code, bank code, our bank code (from DB).
- *                 Presenting Details: bank, cheque no, amount (from DB).
- *                 Our Account (CBS): draweeAccountNumber, draweeAccountHolder,
- *                                    accountBalance (from DB — populated by Maker).
- *                 ACTION: Accept → ACK | Return → RRF | Send Back.
- *
- *   Navigation  — ← Prev / Next → through cheques.
- *   Progress    — live count + progress bar, Submit enabled when all actioned.
- *
- * NOTE: All data comes from the DB via CheckerBatchProcessService.
- *       No hardcoded / simulated data anywhere.
+ * Flow:
+ *   1. Page loads — shows "Checking CBS..." immediately
+ *   2. Background thread queries Firebase (max 5 sec timeout)
+ *   3. ZK Desktop activate/deactivate pushes result back to UI
+ *   4. Labels update with real CBS data
  */
 public class ProcessBatchComposer extends SelectorComposer<Component> {
 
@@ -66,66 +70,75 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Wire private Button btnPrev;
     @Wire private Label  lblRecordNav;
     @Wire private Button btnNext;
-    @Wire private Label  lblProgressCounter;   // "4/4" top-right
+    @Wire private Label  lblProgressCounter;
 
     // ── Progress Bar ──────────────────────────────────────────────────────────
     @Wire private Label  lblProgressText;
     @Wire private Div    divProgressFill;
 
-    // ── LEFT PANEL — Cheque Image ─────────────────────────────────────────────
-    @Wire private Label  lblChequeBankName;      // "CSB Bank Limited"
-    @Wire private Label  lblChequePresenting;    // "Presenting: Canara Thrissur"
-    @Wire private Label  lblChequeDate;          // "15/01/2024"
-    @Wire private Label  lblChequePayee;         // "Pay: Suresh Menon"
-    @Wire private Label  lblChequeAmountWords;   // "Thirty Thousand Only"
-    @Wire private Label  lblChequeAmountBox;     // "₹ 30,000.00"
-    @Wire private Label  lblMicrLine;            // MICR strip at bottom
+    // ── LEFT — Image tabs (NEW — wired from ZUL) ──────────────────────────────
+    @Wire private Div    pvImgSection;
+    @Wire private Div    pvFrontPanel;
+    @Wire private Div    pvBackPanel;
+    @Wire private Image  pvFrontImg;
+    @Wire private Image  pvBackImg;
+    @Wire private Button pvFrontTab;
+    @Wire private Button pvBackTab;
+    @Wire private Label  pvNoImgMsg;
 
-    // ── RIGHT PANEL — Status Badge ────────────────────────────────────────────
-    @Wire private Label  lblTechStatus;          // PENDING / VERIFIED
+    // ── LEFT — Cheque card labels ─────────────────────────────────────────────
+    @Wire private Label  lblChequeBankName;
+    @Wire private Label  lblChequePresenting;
+    @Wire private Label  lblChequeDate;
+    @Wire private Label  lblChequePayee;
+    @Wire private Label  lblChequeAmountWords;
+    @Wire private Label  lblChequeAmountBox;
+    @Wire private Label  lblMicrLine;
 
-    // ── RIGHT PANEL — CBS Validation Section ─────────────────────────────────
-    @Wire private Label  lblCbsMicrCode;         // MICR code from DB
-    @Wire private Label  lblCbsBankCode;         // bank_code from DB
-    @Wire private Label  lblCbsOurBankCode;      // hardcoded: 700 (CSB Bank)
+    // ── RIGHT — Status badge ──────────────────────────────────────────────────
+    @Wire private Label  lblTechStatus;
 
-    // ── RIGHT PANEL — Presenting Details ─────────────────────────────────────
+    // ── RIGHT — CBS Validation ────────────────────────────────────────────────
+    @Wire private Label  lblCbsMicrCode;
+    @Wire private Label  lblCbsBankCode;
+    @Wire private Label  lblCbsOurBankCode;
+
+    // ── RIGHT — Presenting Details ────────────────────────────────────────────
     @Wire private Label  lblPresBank;
     @Wire private Label  lblPresChequeNo;
     @Wire private Label  lblPresAmount;
 
-    // ── RIGHT PANEL — Our Account (CBS) ──────────────────────────────────────
+    // ── RIGHT — Our Account (CBS — loaded from Firebase) ─────────────────────
     @Wire private Label  lblAcctNo;
-    @Wire private Label  lblAcctHolder;
-    @Wire private Label  lblAcctBalance;
+    @Wire private Label  lblAcctHolder;    // ← updated from Firebase
+    @Wire private Label  lblAcctBalance;   // ← updated from Firebase
+    @Wire private Label  lblCbsAcctValid;  // ← badge: Valid / Not Found
+    @Wire private Label  lblCbsBankMatch;  // ← badge: Matched / Mismatch
 
-    // ── RIGHT PANEL — Action Buttons ─────────────────────────────────────────
-    @Wire private Button btnAccept;
-    @Wire private Button btnReturn;
-    @Wire private Button btnSendBack;
-
-    // ── RIGHT PANEL — Return Reason ───────────────────────────────────────────
-    @Wire private Div      divReturnReasonBox;   // hidden until Return is clicked
+    // ── RIGHT — Action ────────────────────────────────────────────────────────
+    @Wire private Button   btnAccept;
+    @Wire private Button   btnReturn;
+    @Wire private Button   btnSendBack;
+    @Wire private Div      divReturnReasonBox;
     @Wire private Combobox comboReturnReason;
 
     // ── Footer ────────────────────────────────────────────────────────────────
     @Wire private Label  lblFooterProgress;
     @Wire private Button btnSubmit;
 
-    // ── Internal State ────────────────────────────────────────────────────────
+    // ── State ─────────────────────────────────────────────────────────────────
     private InwardBatch        currentBatch;
     private List<InwardCheque> cheques;
     private int                currentIndex = 0;
+    private Map<Long, String>  actionMap    = new HashMap<>();
+    private Map<Long, String>  reasonMap    = new HashMap<>();
 
-    // cheque DB id → action string ("ACCEPTED" / "RETURNED" / "SEND_BACK")
-    private Map<Long, String> actionMap = new HashMap<>();
+    // ── Services ──────────────────────────────────────────────────────────────
+    private final CheckerBatchProcessService batchService =
+            new CheckerBatchProcessServiceImpl();
 
-    // cheque DB id → NPCI reason code e.g. "01"
-    private Map<Long, String> reasonMap = new HashMap<>();
-
-    // ── Service ───────────────────────────────────────────────────────────────
-    private CheckerBatchProcessService batchProcessService
-            = new CheckerBatchProcessServiceImpl();
+    // Firebase CBS service — initialised once, reused for every cheque
+    private final CbsFirebaseService cbsService = new CbsFirebaseService();
 
     // ══════════════════════════════════════════════════════════════════════════
     //  Lifecycle
@@ -135,38 +148,32 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
 
-        // Batch ID stored in session by CheckerInwardVerificationComposer
-        // when user clicks Process on a pending batch row.
-        String batchId = (String) Sessions.getCurrent().getAttribute("selectedBatchId");
+        // ── Enable Server Push — MUST be before any background thread UI update ──
+        getSelf().getDesktop().enableServerPush(true);
+
+        String batchId = (String) Sessions.getCurrent()
+                .getAttribute("selectedBatchId");
 
         if (batchId == null || batchId.trim().isEmpty()) {
             Messagebox.show(
                 "No batch selected. Please go back and select a batch.",
-                "Error", Messagebox.OK, Messagebox.ERROR
-            );
+                "Error", Messagebox.OK, Messagebox.ERROR);
             return;
         }
 
         try {
-            // Loads batch + all cheques via LEFT JOIN FETCH from DB.
-            // draweeAccountNumber, draweeAccountHolder, accountBalance
-            // are already in inward_cheque table — filled by Maker Inward.
-            currentBatch = batchProcessService.loadBatchForProcessing(batchId);
+            currentBatch = batchService.loadBatchForProcessing(batchId.trim());
         } catch (Exception e) {
-            Messagebox.show(
-                "Failed to load batch: " + e.getMessage(),
-                "Error", Messagebox.OK, Messagebox.ERROR
-            );
+            Messagebox.show("Failed to load batch: " + e.getMessage(),
+                "Error", Messagebox.OK, Messagebox.ERROR);
             return;
         }
 
         cheques = currentBatch.getCheques();
 
         if (cheques == null || cheques.isEmpty()) {
-            Messagebox.show(
-                "This batch has no cheques.",
-                "Info", Messagebox.OK, Messagebox.INFORMATION
-            );
+            Messagebox.show("This batch has no cheques.",
+                "Info", Messagebox.OK, Messagebox.INFORMATION);
             return;
         }
 
@@ -186,14 +193,13 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         set(lblBatchDate,    currentBatch.getBatchDate() != null
                              ? currentBatch.getBatchDate().toString() : "—");
         set(lblTotalCheques, String.valueOf(currentBatch.getTotalCheques()));
-        set(lblTotalAmount,  "₹ " + formatAmount(currentBatch.getTotalAmount().toPlainString()));
+        set(lblTotalAmount,  "₹ " + fmtAmt(currentBatch.getTotalAmount()));
         set(lblMicrErrors,   String.valueOf(currentBatch.getMicrErrorCount()));
-        set(lblSourceFile,   currentBatch.getSourceFileName() != null
-                             ? currentBatch.getSourceFileName() : "—");
+        set(lblSourceFile,   nvl(currentBatch.getSourceFileName()));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Render one cheque (called on page load and Prev/Next)
+    //  Render one cheque
     // ══════════════════════════════════════════════════════════════════════════
 
     private void renderCheque(int index) {
@@ -201,110 +207,226 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         currentIndex = index;
 
         InwardCheque c = cheques.get(index);
-        int total      = cheques.size();
-        int record     = index + 1;
+        int total  = cheques.size();
+        int record = index + 1;
 
-        // Navigation labels
         set(lblRecordNav,       "Record " + record + " of " + total);
         set(lblProgressCounter, record + "/" + total);
 
-        // Prev / Next button state
         if (btnPrev != null) btnPrev.setDisabled(index == 0);
         if (btnNext != null) btnNext.setDisabled(index == total - 1);
 
-        // LEFT panel
-        renderChequeImagePanel(c);
-
-        // RIGHT panel
+        loadImages(c);
+        renderChequeCard(c);
         renderTechnicalPanel(c);
-
-        // Restore any previously selected action for this cheque
         restoreActionState(c.getId());
     }
 
-    // ── LEFT PANEL ────────────────────────────────────────────────────────────
-    // All values read directly from the InwardCheque entity (from DB).
-    // "Our bank name" = the drawee bank = CSB Bank (constant for this system).
-    // Presenting bank = the bank that submitted the cheque to us.
+    // ══════════════════════════════════════════════════════════════════════════
+    //  LEFT — Image Loading
+    //  Reads front_image_path / back_image_path from inward_cheque (DB).
+    //  Paths stored by BpxfParser at upload time.
+    //  Served by InwardImageServlet at /imageServlet?path=<encoded>
+    // ══════════════════════════════════════════════════════════════════════════
 
-    private void renderChequeImagePanel(InwardCheque c) {
+    private void loadImages(InwardCheque c) {
+        String front = c.getFrontImagePath();
+        String back  = c.getBackImagePath();
 
-        // Bank name header of cheque — our bank (drawee bank)
-        // In real CTS this comes from a config table; for now it is CSB Bank.
-        set(lblChequeBankName,   "CSB Bank Limited");
+        boolean hasFront = front != null && !front.trim().isEmpty();
+        boolean hasBack  = back  != null && !back.trim().isEmpty();
 
-        // Presenting bank below bank name
-        set(lblChequePresenting, "Presenting: "
-                + (c.getPresentingBankName() != null ? c.getPresentingBankName() : "—"));
+        if (!hasFront && !hasBack) {
+            if (pvImgSection != null) pvImgSection.setVisible(false);
+            if (pvNoImgMsg   != null) pvNoImgMsg.setVisible(true);
+            return;
+        }
 
-        // Date (top-right of cheque)
-        set(lblChequeDate, c.getChequeDate() != null
-                ? formatDate(c.getChequeDate().toString()) : "—");
+        if (pvImgSection != null) pvImgSection.setVisible(true);
+        if (pvNoImgMsg   != null) pvNoImgMsg.setVisible(false);
 
-        // Payee line — payee_name field from DB
-        String payee = c.getPayeeName() != null ? c.getPayeeName()
-                     : (c.getDraweeAccountHolder() != null ? c.getDraweeAccountHolder() : "—");
-        set(lblChequePayee, "Pay: " + payee);
+        if (pvFrontImg != null)
+            pvFrontImg.setSrc(hasFront ? imgUrl(front.trim()) : "");
+        if (pvBackImg  != null)
+            pvBackImg.setSrc(hasBack ? imgUrl(back.trim()) : "");
 
-        // Amount in words — amount_in_words field from DB
-        set(lblChequeAmountWords,
-                c.getAmountInWords() != null ? c.getAmountInWords() : "—");
-
-        // Amount box — amount field from DB
-        set(lblChequeAmountBox,
-                "₹ " + formatAmount(c.getAmount() != null ? c.getAmount().toPlainString() : "0"));
-
-        // MICR line — compose from micr_code_corrected (after Maker repair)
-        // or fall back to micr_code_raw if no repair was done.
-        String micrDisplay = buildMicrLine(c);
-        set(lblMicrLine, micrDisplay);
+        showFrontTab();
     }
 
-    // ── RIGHT PANEL ───────────────────────────────────────────────────────────
-    // Data comes 100% from DB via InwardCheque entity.
-    // draweeAccountNumber, draweeAccountHolder, accountBalance are fields
-    // that Maker Inward filled when the cheque was entered into the system.
+    private String imgUrl(String path) {
+        try { return "/imageServlet?path=" + URLEncoder.encode(path, "UTF-8"); }
+        catch (UnsupportedEncodingException e) { return "/imageServlet?path=" + path; }
+    }
 
-    private void renderTechnicalPanel(InwardCheque c) {
+    @Listen("onClick = #pvFrontTab")
+    public void onFrontTab() { showFrontTab(); }
 
-        // Status badge — PENDING until all actions submitted
-        set(lblTechStatus, "PENDING");
-        if (lblTechStatus != null) lblTechStatus.setSclass("pv-badge-pending");
+    @Listen("onClick = #pvBackTab")
+    public void onBackTab() {
+        if (pvFrontPanel != null) pvFrontPanel.setVisible(false);
+        if (pvBackPanel  != null) pvBackPanel.setVisible(true);
+        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-img-tab");
+        if (pvBackTab    != null) pvBackTab.setSclass("pv-img-tab active");
+    }
 
-        // ── CBS Validation block
-        // MICR code — use corrected version if Maker repaired it, else raw
-        String micrCode = c.getMicrCodeCorrected() != null
-                        ? c.getMicrCodeCorrected()
-                        : (c.getMicrCodeRaw() != null ? c.getMicrCodeRaw() : "—");
-        set(lblCbsMicrCode,    micrCode);
-        set(lblCbsBankCode,    c.getBankCode() != null ? c.getBankCode() : "—");
-
-        // Our bank code is fixed for this CTS instance (CSB Bank = 700).
-        // Replace with a config lookup if you go multi-bank later.
-        set(lblCbsOurBankCode, "700  (CSB Bank)");
-
-        // ── Presenting Details
-        set(lblPresBank,      c.getPresentingBankName() != null ? c.getPresentingBankName() : "—");
-        set(lblPresChequeNo,  c.getChequeNo() != null ? c.getChequeNo() : "—");
-        set(lblPresAmount,    "₹ " + formatAmount(
-                              c.getAmount() != null ? c.getAmount().toPlainString() : "0"));
-
-        // ── Our Account (CBS)
-        // These fields are populated by Maker Inward during data entry.
-        // Checker sees what Maker filled — no re-lookup needed here.
-        set(lblAcctNo,      c.getDraweeAccountNumber() != null ? c.getDraweeAccountNumber() : "—");
-        set(lblAcctHolder,  c.getDraweeAccountHolder() != null ? c.getDraweeAccountHolder() : "Not found in CBS");
-        if (lblAcctBalance != null) {
-            if (c.getAccountBalance() != null) {
-                set(lblAcctBalance, "₹ " + formatAmount(c.getAccountBalance().toPlainString()));
-            } else {
-                set(lblAcctBalance, "—");
-            }
-        }
+    private void showFrontTab() {
+        if (pvFrontPanel != null) pvFrontPanel.setVisible(true);
+        if (pvBackPanel  != null) pvBackPanel.setVisible(false);
+        if (pvFrontTab   != null) pvFrontTab.setSclass("pv-img-tab active");
+        if (pvBackTab    != null) pvBackTab.setSclass("pv-img-tab");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Navigation Buttons
+    //  LEFT — Cheque Card
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private void renderChequeCard(InwardCheque c) {
+        set(lblChequeBankName,   "CSB Bank Limited");
+        set(lblChequePresenting, "Presenting: " + nvl(c.getPresentingBankName()));
+        set(lblChequeDate,       c.getChequeDate() != null
+                                 ? fmtDate(c.getChequeDate().toString()) : "—");
+
+        String payee = c.getPayeeName() != null ? c.getPayeeName()
+                     : nvl(c.getDraweeAccountHolder());
+        set(lblChequePayee,       "Pay: " + payee);
+        set(lblChequeAmountWords, nvl(c.getAmountInWords()));
+        set(lblChequeAmountBox,   "₹ " + fmtAmt(c.getAmount()));
+        set(lblMicrLine,          buildMicrLine(c));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  RIGHT — Technical Panel
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private void renderTechnicalPanel(InwardCheque c) {
+        set(lblTechStatus, "PENDING");
+        if (lblTechStatus != null) lblTechStatus.setSclass("pv-badge-pending");
+
+        // CBS Validation block — from DB
+        String micr = c.getMicrCodeCorrected() != null
+                    ? c.getMicrCodeCorrected() : nvl(c.getMicrCodeRaw());
+        set(lblCbsMicrCode,    micr);
+        set(lblCbsBankCode,    nvl(c.getBankCode()));
+        set(lblCbsOurBankCode, "700  (CSB Bank)");
+
+        // Presenting Details — from DB
+        set(lblPresBank,     nvl(c.getPresentingBankName()));
+        set(lblPresChequeNo, nvl(c.getChequeNo()));
+        set(lblPresAmount,   "₹ " + fmtAmt(c.getAmount()));
+
+        // Our Account — account number from DB immediately
+        set(lblAcctNo, nvl(c.getDraweeAccountNumber()));
+
+        // ── CBS FIREBASE VALIDATION ────────────────────────────────────────
+        // Show "Checking CBS..." while Firebase responds in background.
+        // This is the ONLY place Firebase is called in this composer.
+        // ──────────────────────────────────────────────────────────────────
+        set(lblAcctHolder,  "Checking CBS...");
+        set(lblAcctBalance, "—");
+
+        if (lblCbsAcctValid != null) {
+            lblCbsAcctValid.setValue("—");
+            lblCbsAcctValid.setSclass("badge b-grey");
+        }
+        if (lblCbsBankMatch != null) {
+            lblCbsBankMatch.setValue("—");
+            lblCbsBankMatch.setSclass("badge b-grey");
+        }
+
+        // Fire background thread so UI doesn't freeze during Firebase call
+        fillCbsFromFirebase(c);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  CBS FIREBASE VALIDATION — background thread
+    //
+    //  WHAT HAPPENS HERE:
+    //  1. Reads cheque.draweeAccountNumber from DB (already loaded)
+    //  2. Calls CbsFirebaseService.validate(accountNumber)
+    //     → queries Firebase Realtime DB: cbs_accounts/<account_number>
+    //     → waits max 5 seconds
+    //  3. Compares cheque.bankCode with "700" (our bank) → bankMatched
+    //  4. Uses ZK Executions.activate/deactivate to push result back to UI
+    //     (ZK requires this for any UI update from a non-ZK thread)
+    //
+    //  WHAT FIREBASE RETURNS (from cbs_accounts node):
+    //  {
+    //    account_holder: "Rajesh Kumar",
+    //    bank_code: "700",
+    //    balance: 125000.00,
+    //    is_active: true
+    //  }
+    //
+    //  VALIDATION RESULT:
+    //  - Account Valid  = Firebase found the account AND is_active = true
+    //  - Bank Matched   = cheque.bankCode equals "700" (CSB Bank code)
+    //  - Not Found      = account number not in Firebase at all
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private void fillCbsFromFirebase(InwardCheque cheque) {
+
+        String accountNumber = cheque.getDraweeAccountNumber();
+        String bankCode      = cheque.getBankCode();
+        Desktop desktop      = getSelf().getDesktop();
+
+        if (desktop == null) {
+            System.err.println("fillCbsFromFirebase → desktop is null, skipping.");
+            return;
+        }
+
+        new Thread(() -> {
+
+            // ── Step 1: Query Firebase ──────────────────────────────────────
+            CbsValidationResult cbs     = cbsService.validate(accountNumber, bankCode);
+            boolean             bankMatched = cbsService.isBankMatched(bankCode);
+
+            // ── Step 2: Check desktop still alive ───────────────────────────
+            if (!desktop.isAlive()) {
+                System.err.println("fillCbsFromFirebase → desktop no longer alive.");
+                return;
+            }
+
+            // ── Step 3: Push result back to ZK UI ───────────────────────────
+            try {
+                Executions.activate(desktop);
+                try {
+                    if (cbs.isFound()) {
+                        set(lblAcctHolder,  cbs.getAccountHolder());
+                        set(lblAcctBalance, "₹ " + fmtBigDecimal(cbs.getBalance()));
+
+                        boolean active = cbs.isActive();
+                        if (lblCbsAcctValid != null) {
+                            lblCbsAcctValid.setValue(active ? "Valid" : "Inactive");
+                            lblCbsAcctValid.setSclass(active ? "badge b-pass" : "badge b-fail");
+                        }
+                    } else {
+                        set(lblAcctHolder,  "Not found in CBS");
+                        set(lblAcctBalance, "—");
+                        if (lblCbsAcctValid != null) {
+                            lblCbsAcctValid.setValue("Not Found");
+                            lblCbsAcctValid.setSclass("badge b-fail");
+                        }
+                    }
+
+                    if (lblCbsBankMatch != null) {
+                        lblCbsBankMatch.setValue(bankMatched ? "Matched" : "Mismatch");
+                        lblCbsBankMatch.setSclass(bankMatched ? "badge b-pass" : "badge b-fail");
+                    }
+
+                } finally {
+                    Executions.deactivate(desktop);
+                }
+
+            } catch (Exception e) {
+                System.err.println("fillCbsFromFirebase → UI update failed: "
+                    + e.getClass().getSimpleName() + " — " + e.getMessage());
+            }
+
+        }).start();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  Navigation
     // ══════════════════════════════════════════════════════════════════════════
 
     @Listen("onClick = #btnPrev")
@@ -319,33 +441,25 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Action Buttons  (Accept → ACK | Return → RRF | Send Back)
+    //  Action Buttons
     // ══════════════════════════════════════════════════════════════════════════
 
     @Listen("onClick = #btnAccept")
-    public void onAccept() {
-        applyAction("ACCEPTED");
-    }
+    public void onAccept()   { applyAction("ACCEPTED");  }
 
     @Listen("onClick = #btnReturn")
-    public void onReturn() {
-        applyAction("RETURNED");
-    }
+    public void onReturn()   { applyAction("RETURNED");  }
 
     @Listen("onClick = #btnSendBack")
-    public void onSendBack() {
-        applyAction("SEND_BACK");
-    }
+    public void onSendBack() { applyAction("SEND_BACK"); }
 
     private void applyAction(String action) {
         if (cheques == null || currentIndex >= cheques.size()) return;
+        Long id = cheques.get(currentIndex).getId();
+        actionMap.put(id, action);
 
-        Long chequeId = cheques.get(currentIndex).getId();
-        actionMap.put(chequeId, action);
-
-        // Clear reason if switching away from RETURNED
         if (!"RETURNED".equals(action)) {
-            reasonMap.remove(chequeId);
+            reasonMap.remove(id);
             if (comboReturnReason != null) {
                 comboReturnReason.setValue("");
                 comboReturnReason.setSelectedItem(null);
@@ -353,14 +467,11 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         }
 
         highlightActionButtons(action);
-        toggleReturnReasonBox(chequeId);
+        toggleReturnReasonBox(id);
         refreshProgress();
 
-        // Auto-advance to next cheque for Accept and Send Back (not Return —
-        // checker still needs to select a reason code before moving on).
-        if (!"RETURNED".equals(action) && currentIndex < cheques.size() - 1) {
+        if (!"RETURNED".equals(action) && currentIndex < cheques.size() - 1)
             renderCheque(currentIndex + 1);
-        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -371,152 +482,109 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         if (comboReturnReason == null) return;
         comboReturnReason.getItems().clear();
 
-        // Loads all NPCI return reason codes from InwardReturnReason utility.
         Map<String, String> reasons = InwardReturnReason.getReasonDropdownMap();
         for (Map.Entry<String, String> entry : reasons.entrySet()) {
             Comboitem item = comboReturnReason.appendItem(entry.getValue());
             item.setValue(entry.getKey());
         }
 
-        comboReturnReason.addEventListener("onSelect", event -> {
-            Comboitem selected = comboReturnReason.getSelectedItem();
-            if (selected != null && cheques != null && currentIndex < cheques.size()) {
-                reasonMap.put(cheques.get(currentIndex).getId(), (String) selected.getValue());
-            }
+        comboReturnReason.addEventListener("onSelect", ev -> {
+            Comboitem sel = comboReturnReason.getSelectedItem();
+            if (sel != null && cheques != null && currentIndex < cheques.size())
+                reasonMap.put(cheques.get(currentIndex).getId(), (String) sel.getValue());
         });
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Progress Bar
+    //  Progress
     // ══════════════════════════════════════════════════════════════════════════
 
     private void refreshProgress() {
         if (cheques == null) return;
-
         int total    = cheques.size();
         int actioned = actionMap.size();
-        int percent  = total > 0 ? (actioned * 100 / total) : 0;
+        int pct      = total > 0 ? actioned * 100 / total : 0;
 
         String text = actioned + " of " + total + " cheques actioned";
         set(lblProgressText,   text);
         set(lblFooterProgress, text);
 
-        if (divProgressFill != null) {
-            divProgressFill.setStyle("width: " + percent + "%");
-        }
-
-        // Submit is enabled only when every cheque has an action
-        if (btnSubmit != null) {
+        if (divProgressFill != null)
+            divProgressFill.setStyle("width:" + pct + "%");
+        if (btnSubmit != null)
             btnSubmit.setDisabled(actioned < total);
-        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Submit Batch
+    //  Submit
     // ══════════════════════════════════════════════════════════════════════════
 
     @Listen("onClick = #btnSubmit")
     public void onSubmitBatch() {
-
-        LoginDTO loggedInUser = (LoginDTO) Sessions.getCurrent()
+        LoginDTO user = (LoginDTO) Sessions.getCurrent()
                 .getAttribute(SessionUtil.SESSION_KEY);
 
-        if (loggedInUser == null) {
+        if (user == null) {
             Messagebox.show("Session expired. Please log in again.",
                 "Session Error", Messagebox.OK, Messagebox.ERROR);
             return;
         }
 
         User checker = new User();
-        try {
-            checker.setId(loggedInUser.getUserId());
-        } catch (NumberFormatException e) {
-            Messagebox.show("Invalid session data. Please log in again.",
-                "Session Error", Messagebox.OK, Messagebox.ERROR);
-            return;
-        }
+        checker.setId(user.getUserId());
 
-        // Build checker action list from actionMap + reasonMap
         List<InwardCheckerAction> actions = new ArrayList<>();
-
-        for (InwardCheque cheque : cheques) {
-            Long   chequeId = cheque.getId();
-            String action   = actionMap.get(chequeId);
-
-            InwardCheckerAction checkerAction = new InwardCheckerAction();
-            checkerAction.setInwardCheque(cheque);
-            checkerAction.setAction(action);
-
-            if ("RETURNED".equals(action)) {
-                checkerAction.setReasonCode(reasonMap.get(chequeId));
-                // reasonText is auto-filled by CheckerBatchProcessServiceImpl
-                // using InwardReturnReason.getReasonText(code)
-            }
-
-            actions.add(checkerAction);
+        for (InwardCheque c : cheques) {
+            InwardCheckerAction ca = new InwardCheckerAction();
+            ca.setInwardCheque(c);
+            ca.setAction(actionMap.get(c.getId()));
+            if ("RETURNED".equals(ca.getAction()))
+                ca.setReasonCode(reasonMap.get(c.getId()));
+            actions.add(ca);
         }
 
         try {
-            // Service validates: all cheques actioned, reason codes present,
-            // then calls DAO: saveCheckerActions + updateBatchStatus (→ CLEARED).
-            batchProcessService.submitBatch(currentBatch, actions, checker);
-
+            batchService.submitBatch(currentBatch, actions, checker);
             Messagebox.show(
                 "Batch " + currentBatch.getBatchId() + " submitted successfully.",
                 "Success", Messagebox.OK, Messagebox.INFORMATION,
-                event -> navigateBackToList()
+                ev -> navigateBack()
             );
-
         } catch (IllegalArgumentException e) {
-            // Validation errors from service (missing reason, incomplete actions, etc.)
             Messagebox.show(e.getMessage(),
                 "Validation Error", Messagebox.OK, Messagebox.EXCLAMATION);
-
         } catch (Exception e) {
-            Messagebox.show("An error occurred while submitting. Please try again.",
+            Messagebox.show("Submit failed: " + e.getMessage(),
                 "Error", Messagebox.OK, Messagebox.ERROR);
             e.printStackTrace();
         }
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Back / Cancel
+    //  Navigation back
     // ══════════════════════════════════════════════════════════════════════════
 
     @Listen("onClick = #btnBackToList")
-    public void onBackToList() {
-        navigateBackToList();
-    }
-    
-    @Listen("onClick = #lnkBreadcrumbBack")
-    public void onBreadcrumbBack() {
-        navigateBackToList();
-    }
+    public void onBackToList() { navigateBack(); }
 
     @Listen("onClick = #btnCancel")
-    public void onCancel() {
-        navigateBackToList();
-    }
+    public void onCancel()     { navigateBack(); }
 
-    private void navigateBackToList() {
+    private void navigateBack() {
         Executions.getCurrent().sendRedirect(
-            "/inward/inwardChecker/inwardCheckerVerification.zul"
-        );
+            "/inward/inwardChecker/inwardCheckerVerification.zul");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  Private Helpers
+    //  Helpers
     // ══════════════════════════════════════════════════════════════════════════
 
-    /** Restore button highlights and reason box when navigating back to a cheque. */
-    private void restoreActionState(Long chequeId) {
-        String action = actionMap.get(chequeId);
+    private void restoreActionState(Long id) {
+        String action = actionMap.get(id);
         highlightActionButtons(action);
-        toggleReturnReasonBox(chequeId);
-
-        // Restore reason selection in dropdown
+        toggleReturnReasonBox(id);
         if ("RETURNED".equals(action) && comboReturnReason != null) {
-            String code = reasonMap.get(chequeId);
+            String code = reasonMap.get(id);
             if (code != null) {
                 for (Comboitem item : comboReturnReason.getItems()) {
                     if (code.equals(item.getValue())) {
@@ -528,64 +596,55 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         }
     }
 
-    /** Apply CSS sclass to show which action button is selected. */
     private void highlightActionButtons(String action) {
-        if (btnAccept   != null) btnAccept.setSclass("ACCEPTED".equals(action)  ? "pv-btn-accept-on"    : "pv-btn-accept");
-        if (btnReturn   != null) btnReturn.setSclass("RETURNED".equals(action)  ? "pv-btn-return-on"    : "pv-btn-return");
-        if (btnSendBack != null) btnSendBack.setSclass("SEND_BACK".equals(action)? "pv-btn-sendback-on" : "pv-btn-sendback");
+        if (btnAccept   != null) btnAccept.setSclass(
+            "ACCEPTED".equals(action)  ? "pv-btn-accept-on"   : "pv-btn-accept");
+        if (btnReturn   != null) btnReturn.setSclass(
+            "RETURNED".equals(action)  ? "pv-btn-return-on"   : "pv-btn-return");
+        if (btnSendBack != null) btnSendBack.setSclass(
+            "SEND_BACK".equals(action) ? "pv-btn-sendback-on" : "pv-btn-sendback");
     }
 
-    /** Show or hide the return reason box based on current action for this cheque. */
-    private void toggleReturnReasonBox(Long chequeId) {
-        if (divReturnReasonBox == null) return;
-        boolean isReturn = "RETURNED".equals(actionMap.get(chequeId));
-        divReturnReasonBox.setVisible(isReturn);
+    private void toggleReturnReasonBox(Long id) {
+        if (divReturnReasonBox != null)
+            divReturnReasonBox.setVisible("RETURNED".equals(actionMap.get(id)));
     }
 
-    /**
-     * Builds the MICR line displayed at the bottom of the cheque image.
-     * Format: «chequeNo«  micrCode«  —seqNo—
-     * Uses corrected MICR if Maker repaired it; raw otherwise.
-     */
     private String buildMicrLine(InwardCheque c) {
-        String chequeNo = c.getChequeNo() != null ? c.getChequeNo() : "";
-        String micr     = c.getMicrCodeCorrected() != null ? c.getMicrCodeCorrected()
-                        : (c.getMicrCodeRaw() != null ? c.getMicrCodeRaw() : "");
-        int seq = c.getSeqNo();
-        return "«" + chequeNo + "«   " + micr + "«   —" + seq + "—";
+        String no   = nvl(c.getChequeNo());
+        String micr = c.getMicrCodeCorrected() != null
+                    ? c.getMicrCodeCorrected() : nvl(c.getMicrCodeRaw());
+        return "«" + no + "«   " + micr + "«   —" + c.getSeqNo() + "—";
     }
 
-    /**
-     * Formats a date string from "2024-01-15" → "15/01/2024".
-     * Handles null and malformed strings gracefully.
-     */
-    private String formatDate(String isoDate) {
-        if (isoDate == null || isoDate.length() < 10) return isoDate != null ? isoDate : "—";
+    private String fmtDate(String iso) {
+        if (iso == null || iso.length() < 10) return iso != null ? iso : "—";
         try {
-            String[] parts = isoDate.split("-");
-            if (parts.length == 3) return parts[2] + "/" + parts[1] + "/" + parts[0];
+            String[] p = iso.split("-");
+            if (p.length == 3) return p[2] + "/" + p[1] + "/" + p[0];
         } catch (Exception ignored) {}
-        return isoDate;
+        return iso;
     }
 
-    /**
-     * Formats a numeric string with Indian comma grouping.
-     * "30000.00" → "30,000.00"
-     */
-    private String formatAmount(String raw) {
+    private String fmtAmt(BigDecimal bd) {
+        if (bd == null) return "0.00";
+        return fmtBigDecimal(bd);
+    }
+
+    private String fmtBigDecimal(BigDecimal bd) {
         try {
-            java.math.BigDecimal bd = new java.math.BigDecimal(raw);
             NumberFormat nf = NumberFormat.getNumberInstance(new Locale("en", "IN"));
             nf.setMinimumFractionDigits(2);
             nf.setMaximumFractionDigits(2);
             return nf.format(bd);
-        } catch (Exception e) {
-            return raw;
-        }
+        } catch (Exception e) { return bd.toPlainString(); }
     }
 
-    /** Null-safe label setter. */
-    private void set(Label label, String value) {
-        if (label != null) label.setValue(value);
+    private String nvl(String s) {
+        return (s != null && !s.trim().isEmpty()) ? s : "—";
+    }
+
+    private void set(Label lbl, String val) {
+        if (lbl != null) lbl.setValue(val != null ? val : "—");
     }
 }
