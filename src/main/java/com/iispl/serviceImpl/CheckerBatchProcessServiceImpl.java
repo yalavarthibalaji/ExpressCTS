@@ -104,6 +104,53 @@ public class CheckerBatchProcessServiceImpl implements CheckerBatchProcessServic
 		checkerBatchProcessDao.updateBatchStatus(batch);
 	}
 
+	// ── Confirm Return (per-cheque) ──────────────────────────────────────────
+
+	@Override
+	public void confirmReturn(InwardBatch batch, InwardCheque cheque,
+	                          String reasonCode, User checker) {
+
+		if (batch == null) {
+			throw new IllegalArgumentException("Batch cannot be null.");
+		}
+		if (cheque == null) {
+			throw new IllegalArgumentException("Cheque cannot be null.");
+		}
+		if (checker == null) {
+			throw new IllegalArgumentException("Checker information is missing. Please log in again.");
+		}
+		if (reasonCode == null || reasonCode.trim().isEmpty()) {
+			throw new IllegalArgumentException("A return reason must be selected before confirming.");
+		}
+
+		// Resolve human-readable text from NPCI code
+		String reasonText = InwardReturnReason.getReasonText(reasonCode.trim());
+
+		// Build the checker action record
+		InwardCheckerAction action = new InwardCheckerAction();
+		action.setInwardCheque(cheque);
+		action.setInwardBatch(batch);
+		action.setChecker(checker);
+		action.setAction("RETURNED");
+		action.setReasonCode(reasonCode.trim());
+		action.setReasonText(reasonText);
+
+		// Persist: save action + update cheque status to RETURNED
+		checkerBatchProcessDao.saveReturnAction(action);
+
+		// If every cheque in the batch is now actioned, mark batch RETURNED
+		List<InwardCheque> allCheques = batch.getCheques();
+		if (allCheques != null && !allCheques.isEmpty()) {
+			boolean allActioned = allCheques.stream()
+				.allMatch(c -> c.getStatus() != null
+				               && !c.getStatus().equalsIgnoreCase("RECEIVED")
+				               && !c.getStatus().equalsIgnoreCase("PENDING"));
+			if (allActioned) {
+				checkerBatchProcessDao.updateBatchStatusTo(batch, "RETURNED");
+			}
+		}
+	}
+
 	// ── Private Helpers ───────────────────────────────────────────────────────
 
 	private boolean isValidActionType(String action) {

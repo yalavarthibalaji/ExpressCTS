@@ -1,6 +1,7 @@
 package com.iispl.dao;
 
 import com.iispl.dto.InwardReportDTO;
+import com.iispl.entity.inward.InwardBatch;
 
 import java.util.Date;
 import java.util.List;
@@ -9,7 +10,9 @@ import java.util.List;
  * File    : com/iispl/dao/CheckerInwardReportsDao.java
  * Purpose : DAO contract for Checker Inward Reports.
  *           All methods query/update the inward_batch table using Hibernate/HQL.
- *           Results are returned as InwardReportDTO (no ORM entities exposed).
+ *           Results are returned as InwardReportDTO (no ORM entities exposed),
+ *           except for findBatchWithChequesAndActions which is used internally
+ *           by the service for XML generation.
  */
 public interface CheckerInwardReportsDao {
 
@@ -57,7 +60,7 @@ public interface CheckerInwardReportsDao {
      * Update the status of a single batch row.
      *
      * @param batchId   the batch to update
-     * @param newStatus the target status (PENDING | PROCESSING | COMPLETED | FAILED)
+     * @param newStatus the target status (e.g. "CBS_Processed")
      */
     void updateBatchStatus(String batchId, String newStatus);
 
@@ -67,10 +70,20 @@ public interface CheckerInwardReportsDao {
      * Implementations should create account debit entries and perform any
      * downstream posting required by the CTS workflow.
      * This method is called by the service only after the batch has been
-     * transitioned to PROCESSING status.
+     * confirmed as Verified.
      *
      * @param batchId the batch to process
      * @throws RuntimeException if any DB operation fails
      */
     void executeDebitGeneration(String batchId);
+
+    /**
+     * Fetch a fully hydrated InwardBatch including its cheques and all
+     * checker actions for each cheque.  Used by the XML generation workflow
+     * to build ACK / RRF payloads.
+     *
+     * @param batchId the batch to load
+     * @return the populated InwardBatch, or null if not found
+     */
+    InwardBatch findBatchWithChequesAndActions(String batchId);
 }

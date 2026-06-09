@@ -279,15 +279,17 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
 
     private void executeDebit(String batchId) {
         try {
-            // VALIDATION 9 — Duplicate guard handled inside service
-            // (service re-confirms status = Verified before processing)
+            // VALIDATION 9 — Duplicate guard handled inside service.
+            // Service also generates ACK.xml and RRF.xml before updating status.
             reportsService.generateToDebit(batchId);
 
             Clients.showNotification(
-                "Debit generation completed successfully for batch: " + batchId,
-                "info", null, "top_center", 4000
+                "Batch " + batchId + " processed successfully. " +
+                "ACK.xml and RRF.xml have been generated. " +
+                "Batch status updated to CBS_Processed.",
+                "info", null, "top_center", 5000
             );
-            log.info("executeDebit — batch '{}' completed", batchId);
+            log.info("executeDebit — batch '{}' completed (ACK + RRF XML generated)", batchId);
 
             // Auto-refresh so the status updates to Completed and button disables
             loadPage();

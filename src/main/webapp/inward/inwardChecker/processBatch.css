@@ -210,78 +210,106 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   8. IMAGE SECTION — tab bar + image panels inside left panel
+   8. IMAGE SECTION — tab bar + collapsible image viewer
    ═══════════════════════════════════════════════════════════ */
+
+/* Outer container — no min-height; grows only when panel is open */
 .pb-img-section {
     background: var(--surface) !important;
     border-bottom: 1px solid var(--border) !important;
-    overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
-}
-
-/* ─── Image viewer tab bar ────────────────────────────────── */
-/* Wraps the three .tab divs; uses the same underline pattern
-   as .tabs in components.css but scoped tightly to this panel */
-.pb-img-tabs {
-    display: flex !important;
-    align-items: center !important;
-    border-bottom: 2px solid var(--border) !important;
-    background: var(--alt) !important;
-    padding: 0 14px !important;
     flex-shrink: 0 !important;
 }
 
-/* Each tab div — inherits .tab from components.css.
-   The z-label wrapper ZK adds is transparent: we size the div. */
-.pb-img-tabs .tab {
-    padding: 8px 16px !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    color: var(--tm) !important;
-    cursor: pointer !important;
-    border-bottom: 2px solid transparent !important;
-    margin-bottom: -2px !important;
-    white-space: nowrap !important;
-    user-select: none !important;
-    transition: color 0.15s, border-color 0.15s !important;
-}
+/* ─── Tab bar ─────────────────────────────────────────────── */
+/* Image section */
+ .pb-img-section 
+ {
+  background: var(--surface); 
+  border-bottom: 1px solid var(--border); 
+  padding: 8px 14px 14px; 
+ } 
+ /* Tabbox styling */ 
+ 
+ .pb-img-section .z-tabbox 
+ { 
+  border: none; 
+  background: transparent; 
+  }
+   
+  .pb-img-section .z-tabs 
+  { 
+   border-bottom: 1px solid var(--border); 
+   margin-bottom: 12px; 
+   }
+   
+   .pb-img-section .z-tab 
+   {
+    background: var(--surface); 
+    border: 1px solid var(--border); 
+    border-bottom: none; 
+    border-radius: var(--r4) var(--r4) 0 0; 
+    margin-right: 4px; 
+    padding: 6px 14px; 
+    font-size: 11px; 
+    font-weight: 600; 
+    color: var(--t2); 
+    } 
+    
+    .pb-img-section .z-tab-selected 
+    {
+     background: var(--primary);
+     border-color: var(--primary); 
+     color: #fff; 
+     } 
+     .pb-img-section .z-tabpanels 
+     {
+      border: none;
+      background: transparent; 
+     } /* Image */ 
+     .pb-img-actual 
+     { 
+      max-width: 100%;
+      max-height: 220px;
+      width: auto; height: auto; 
+      object-fit: contain; 
+      display: block; 
+      margin: 0 auto; 
+      border-radius: var(--r6); 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.14); 
+      border: 1px solid var(--border); 
+      }
+      
+       .pb-img-grey 
+       { 
+       filter: grayscale(100%);
+        }
+         /* No image badge */ 
+         .pb-no-img-badge.z-label 
+         { 
+         display: inline-block; 
+         margin-bottom: 8px; 
+         font-size: 10px; 
+         font-weight: 600; 
+         color: var(--warning); 
+         background: var(--warning-bg); 
+         border: 1px solid var(--warning-b); 
+         border-radius: 20px; 
+         padding: 2px 10px;
+         }
 
-.pb-img-tabs .tab:hover {
-    color: var(--t2) !important;
-    background: rgba(0,0,0,0.03) !important;
-}
-
-.pb-img-tabs .tab.active {
-    color: var(--primary) !important;
-    border-bottom-color: var(--primary) !important;
-    font-weight: 600 !important;
-}
-
-/* ─── Image panel container ───────────────────────────────── */
-.pb-img-panel {
-    /* Hidden by default — Java setVisible(true/false) controls which panel shows.
-       When ZK sets visible=true it removes display:none from inline style.
-       When ZK sets visible=false it adds display:none to inline style.
-       We set flex here so the active panel lays out correctly. */
-    display: none !important;
-    padding: 20px 16px !important;
-    background: #f0f4f8 !important;
-    min-height: 160px !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-/* Active panel — ZK sets visible=true → removes inline display:none.
-   We need this to override the display:none above. */
-.pb-img-panel.pb-panel-active {
+/* When ZK sets visible=true it removes inline display:none;
+   we restore flex at that point. */
+.pb-img-panel[style]:not([style*="display: none"]),
+.pb-img-panel[style]:not([style*="display:none"]) {
     display: flex !important;
 }
 
-/* ─── Cheque image itself ─────────────────────────────────── */
+/* ─── Cheque image ─────────────────────────────────────────── */
 .pb-img-actual {
     max-width: 100% !important;
-    max-height: 240px !important;
+    max-height: 220px !important;
     height: auto !important;
     width: auto !important;
     object-fit: contain !important;
@@ -292,24 +320,13 @@
     transition: filter 0.25s ease !important;
 }
 
-/* Greyscale tab image — permanent CSS filter; no class toggle needed */
+/* Greyscale — permanent CSS filter */
 .pb-img-grey {
     filter: grayscale(100%) !important;
 }
 
-/* ─── No-image placeholder ────────────────────────────────── */
-.pb-no-img-msg.z-label {
-    display: block !important;
-    text-align: center !important;
-    font-size: 12px !important;
-    color: var(--warning) !important;
-    background: var(--warning-bg) !important;
-    border: 1px solid var(--warning-b) !important;
-    border-radius: var(--r6) !important;
-    padding: 10px 14px !important;
-    margin: 12px !important;
-    font-family: var(--font) !important;
-}
+/* Removed: .pb-no-img-msg (replaced by .pb-no-img-badge in tab bar) */
+/* Removed: .pb-img-panel.pb-panel-active (replaced by Java setVisible) */
 
 /* ═══════════════════════════════════════════════════════════
    9. CHEQUE CARD — bank-cheque styled block (left panel)
@@ -639,11 +656,100 @@
    needed. This comment is retained for reference only.
    ═══════════════════════════════════════════════════════════ */
 
-/* Return reason box */
-.pv-reason-box      { background: var(--danger-bg) !important; border: 1px solid var(--danger-b) !important; border-radius: var(--r6) !important; padding: 12px 14px !important; margin-top: 8px !important; }
-.pv-reason-label.z-label { display: block !important; font-size: 9px !important; font-weight: 700 !important; color: var(--danger) !important; text-transform: uppercase !important; letter-spacing: 0.08em !important; margin-bottom: 8px !important; font-family: var(--font) !important; }
-.pv-reason-combo .z-combobox       { width: 100% !important; height: 32px !important; border: 1px solid var(--danger-b) !important; border-radius: var(--r4) !important; background: #fff !important; }
-.pv-reason-combo .z-combobox-input { font-size: 12px !important; color: var(--t1) !important; font-family: var(--font) !important; padding: 0 8px !important; background: transparent !important; border: none !important; height: 30px !important; }
+/* ═══════════════════════════════════════════════════════════
+   RETURN REASON BOX
+   ═══════════════════════════════════════════════════════════ */
+
+/* Outer container */
+.pv-reason-box {
+    background: var(--danger-bg) !important;
+    border: 1px solid var(--danger-b) !important;
+    border-radius: var(--r6) !important;
+    padding: 10px 12px !important;
+    margin-top: 8px !important;
+}
+
+/* Header row: label + confirm button on the same line */
+.pv-reason-header-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 8px !important;
+}
+
+.pv-reason-label.z-label {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: var(--danger) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    font-family: var(--font) !important;
+}
+
+/* Confirm Return button — right side of header row */
+.z-button.btn.btn-confirm-return {
+    height: 30px !important;
+    padding: 0 14px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+/* ─── Combo clip wrapper ─────────────────────────────────────
+   This div clips the ZK popup div (z-combobox-popup) which ZK
+   renders inline inside the combobox span. Without this wrapper
+   the popup div leaks out and creates a blank bar below the combo.
+   overflow:hidden + height:34px ensures only the input row shows;
+   the popup is positioned absolute at runtime and escapes the clip. */
+.pv-combo-clip {
+    margin-bottom: 0 !important;
+}
+
+/* The combobox span itself */
+.pv-reason-combo.z-combobox {
+    width: 100% !important;
+    height: 32px !important;
+    border: 1px solid var(--danger-b) !important;
+    border-radius: var(--r4) !important;
+    background: #fff !important;
+    display: block !important;
+}
+
+/* The actual text input inside the combobox */
+.pv-reason-combo .z-combobox-real {
+    font-size: 12px !important;
+    color: var(--t1) !important;
+    font-family: var(--font) !important;
+    padding: 0 8px !important;
+    background: transparent !important;
+    border: none !important;
+    height: 30px !important;
+    width: calc(100% - 30px) !important;
+}
+
+/* The dropdown arrow button */
+.pv-reason-combo .z-combobox-btn {
+    width: 28px !important;
+    height: 32px !important;
+    border-left: 1px solid var(--danger-b) !important;
+}
+
+/* ─── Validation error label ─────────────────────────────── */
+.pv-reason-error.z-label {
+    display: block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--danger) !important;
+    background: rgba(220, 38, 38, 0.08) !important;
+    border: 1px solid var(--danger-b) !important;
+    border-radius: var(--r4) !important;
+    padding: 4px 8px !important;
+    margin-top: 6px !important;
+    font-family: var(--font) !important;
+}
+
+/* Confirm Return row / pv-confirm-row — no longer used (button moved to header)
+   Left as empty rule to prevent any legacy reference errors */
+.pv-confirm-row { display: none !important; }
 
 
 /* ═══════════════════════════════════════════════════════════

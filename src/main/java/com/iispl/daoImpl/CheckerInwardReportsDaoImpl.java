@@ -3,6 +3,8 @@ package com.iispl.daoImpl;
 import com.iispl.dao.CheckerInwardReportsDao;
 import com.iispl.dto.InwardReportDTO;
 import com.iispl.entity.inward.InwardBatch;
+import com.iispl.entity.inward.InwardCheckerAction;
+import com.iispl.entity.inward.InwardCheque;
 import com.iispl.util.HibernateUtil;
 
 import org.hibernate.Session;
@@ -236,6 +238,55 @@ public class CheckerInwardReportsDaoImpl implements CheckerInwardReportsDao {
             if (tx != null && tx.isActive()) tx.rollback();
             log.error("executeDebitGeneration error for '{}': {}", batchId, e.getMessage(), e);
             throw new RuntimeException("Debit generation DB error for batch '" + batchId + "'", e);
+        } finally {
+            closeQuietly(session);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  findBatchWithChequesAndActions
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Loads a fully hydrated InwardBatch: cheques + checker actions per cheque.
+     * Two separate queries are used to avoid a Hibernate CartesianProduct from
+     * multiple simultaneous JOIN FETCH on bag collections.
+     *
+     * Query 1 — batch + cheques
+     * Query 2 — batch + checkerActions per cheque  (initialises the lazy list)
+     */
+    @Override
+    public InwardBatch findBatchWithChequesAndActions(String batchId) {
+        Session session = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+
+            // Step 1: fetch batch + cheques
+            InwardBatch batch = session.createQuery(
+                "SELECT DISTINCT b FROM InwardBatch b " +
+                "LEFT JOIN FETCH b.cheques " +
+                "WHERE b.batchId = :batchId",
+                InwardBatch.class
+            ).setParameter("batchId", batchId).uniqueResult();
+
+            if (batch == null) return null;
+
+            // Step 2: for each cheque, initialise checkerActions collection
+            // (avoids MultipleBagFetchException from double JOIN FETCH)
+            for (InwardCheque cheque : batch.getCheques()) {
+                session.createQuery(
+                    "SELECT DISTINCT c FROM InwardCheque c " +
+                    "LEFT JOIN FETCH c.checkerActions ca " +
+                    "WHERE c.id = :chequeId",
+                    InwardCheque.class
+                ).setParameter("chequeId", cheque.getId()).uniqueResult();
+            }
+
+            return batch;
+
+        } catch (Exception e) {
+            log.error("findBatchWithChequesAndActions error for '{}': {}", batchId, e.getMessage(), e);
+            return null;
         } finally {
             closeQuietly(session);
         }

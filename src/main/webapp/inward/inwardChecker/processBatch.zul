@@ -103,41 +103,37 @@
 								value="Inward Cheque" />
 						</div>
 
-						<!-- Image section -->
-						<div sclass="pb-img-section">
-
-							<!-- ✅ FIX: Use <button> with id so @Listen works,
-								NOT <div onClick="onBackTab()"> which is JS -->
-							<div sclass="pb-img-tabs">
-								<button id="pvFrontTab"
-									sclass="tab active" label="Front" />
-								<button id="pvBackTab" sclass="tab"
-									label="Back" />
-								<button id="pvGreyscaleTab" sclass="tab"
-									label="Greyscale" />
-							</div>
-
-							<div id="pvImgSection" visible="true">
-								<div id="pvFrontPanel"
-									sclass="pb-img-panel pb-panel-active">
-									<image id="pvFrontImg"
-										sclass="pb-img-actual" />
-								</div>
-								<div id="pvBackPanel"
-									sclass="pb-img-panel">
-									<image id="pvBackImg"
-										sclass="pb-img-actual" />
-								</div>
-								<div id="pvGreyscalePanel"
-									sclass="pb-img-panel">
-									<image id="pvGreyscaleImg"
-										sclass="pb-img-actual pb-img-grey" />
-								</div>
-							</div>
-
-						</div>
-
-						<!-- Cheque fields card -->
+			<!-- Image Viewer using ZK Tabbox --> 
+			<div sclass="pb-img-section"> 
+			<label id="pvNoImgMsg" 
+				sclass="pb-no-img-badge" 
+				value="No image available" 
+				visible="false" /> 
+				
+			<tabbox id="pvTabbox" 
+			visible="true"> 
+			<tabs> 
+				<tab label="Front"/> 
+				<tab label="Back"/> 
+				<tab label="Greyscale"/> 
+			</tabs> 
+			<tabpanels> 
+				<tabpanel> 
+					<image id="pvFrontImg" 	
+						   sclass="pb-img-actual" /> 
+				</tabpanel> 
+			<tabpanel> 
+				<image id="pvBackImg" 
+					   sclass="pb-img-actual" /> 
+			</tabpanel> 
+			<tabpanel> 
+				<image id="pvGreyscaleImg" 
+					   sclass="pb-img-actual pb-img-grey" /> 
+			</tabpanel> 
+		</tabpanels> 
+	</tabbox> 
+</div>					
+	<!-- Cheque fields card -->
 
 
 					</div><!-- end pb-left -->
@@ -259,11 +255,23 @@
 							</div>
 							<div id="divReturnReasonBox"
 								sclass="pv-reason-box" visible="false">
-								<label sclass="pv-reason-label"
-									value="RETURN REASON (NPCI CODE)" />
-								<combobox id="comboReturnReason"
-									readonly="true" placeholder="Select return reason..."
-									sclass="pv-reason-combo" />
+								<!-- Header row: label + confirm button side by side -->
+								<div sclass="pv-reason-header-row">
+									<label sclass="pv-reason-label"
+										value="RETURN REASON (NPCI CODE)" />
+									<button id="btnConfirmReturn"
+										sclass="btn bd btn-confirm-return"
+										label="✔ Confirm Return" />
+								</div>
+								<!-- Wrapper div: clips the ZK combobox popup overflow (blank bar fix) -->
+								<div sclass="pv-combo-clip">
+									<combobox id="comboReturnReason"
+										readonly="true" placeholder="Select return reason..."
+										sclass="pv-reason-combo" />
+								</div>
+								<label id="lblReturnReasonError"
+									sclass="pv-reason-error" value=""
+									visible="false" />
 							</div>
 						</div>
 

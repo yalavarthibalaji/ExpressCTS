@@ -24,6 +24,7 @@ import org.zkoss.zul.Div;
 import org.zkoss.zul.Image;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Messagebox;
+import org.zkoss.zul.Tabbox;
 
 import com.iispl.dto.CbsValidationResult;
 import com.iispl.dto.LoginDTO;
@@ -31,8 +32,8 @@ import com.iispl.entity.User;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheckerAction;
 import com.iispl.entity.inward.InwardCheque;
-import com.iispl.service.CheckerBatchProcessService;
 import com.iispl.service.CbsFirebaseService;
+import com.iispl.service.CheckerBatchProcessService;
 import com.iispl.serviceImpl.CheckerBatchProcessServiceImpl;
 import com.iispl.util.InwardReturnReason;
 import com.iispl.util.SessionUtil;
@@ -77,16 +78,14 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Wire private Div    divProgressFill;
 
     // ── LEFT — Image viewer tabs + panels ────────────────────────────────────
-    @Wire private Div    pvImgSection;
-    @Wire private Div    pvFrontPanel;
-    @Wire private Div    pvBackPanel;
-    @Wire private Div    pvGreyscalePanel;
+
+    @Wire
+    private Tabbox pvTabbox;
     @Wire private Image  pvFrontImg;
     @Wire private Image  pvBackImg;
     @Wire private Image  pvGreyscaleImg;
-    @Wire private Button    pvFrontTab;       // tab div (not a button)
-    @Wire private Button    pvBackTab;        // tab div (not a button)
-    @Wire private Button    pvGreyscaleTab;   // tab div (not a button)
+    
+  // tab div (not a button)
     @Wire private Label  pvNoImgMsg;
     
 
@@ -125,6 +124,8 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Wire private Button   btnSendBack;
     @Wire private Div      divReturnReasonBox;
     @Wire private Combobox comboReturnReason;
+    @Wire private Label    lblReturnReasonError;
+    @Wire private Button   btnConfirmReturn;
 
     // ── Footer ────────────────────────────────────────────────────────────────
     @Wire private Label  lblFooterProgress;
@@ -136,7 +137,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     private int                currentIndex = 0;
     private Map<Long, String>  actionMap    = new HashMap<>();
     private Map<Long, String>  reasonMap    = new HashMap<>();
-    private String             activeTab    = "FRONT"; // FRONT | BACK | GREY
+    private String             activeTab    = null;    // null | FRONT | BACK | GREY  (null = panel closed)
 
     // ── Services ──────────────────────────────────────────────────────────────
     private final CheckerBatchProcessService batchService =
@@ -155,12 +156,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
         getSelf().getDesktop().enableServerPush(true);
 
         // ── Wire tab buttons manually (most reliable in nested ZUL) ──
-        if (pvFrontTab != null)
-            pvFrontTab.addEventListener("onClick", e -> showTab("FRONT"));
-        if (pvBackTab != null)
-            pvBackTab.addEventListener("onClick", e -> showTab("BACK"));
-        if (pvGreyscaleTab != null)
-            pvGreyscaleTab.addEventListener("onClick", e -> showTab("GREY"));
+       
 
         String batchId = (String) Sessions.getCurrent()
                 .getAttribute("selectedBatchId");
@@ -240,37 +236,37 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     //  Served by InwardImageServlet at /imageServlet?path=<encoded>
     // ══════════════════════════════════════════════════════════════════════════
 
-    private void loadImages(InwardCheque c) {
-        // Reset tab state for each new cheque
-        activeTab = "FRONT";
 
-        String front = c.getFrontImagePath();
-        String back  = c.getBackImagePath();
+    	private void loadImages(InwardCheque c) {
 
-        boolean hasFront = front != null && !front.trim().isEmpty();
-        boolean hasBack  = back  != null && !back.trim().isEmpty();
+    	    String front = c.getFrontImagePath();
+    	    String back  = c.getBackImagePath();
 
-        if (!hasFront && !hasBack) {
-            if (pvImgSection != null) pvImgSection.setVisible(false);
-            if (pvNoImgMsg   != null) pvNoImgMsg.setVisible(true);
-            return;
-        }
+    	    boolean hasFront = front != null && !front.trim().isEmpty();
+    	    boolean hasBack  = back  != null && !back.trim().isEmpty();
 
-        if (pvImgSection != null) pvImgSection.setVisible(true);
-        if (pvNoImgMsg   != null) pvNoImgMsg.setVisible(false);
+    	    // No images
+    	    if (!hasFront && !hasBack) {
+    	        if (pvNoImgMsg != null) pvNoImgMsg.setVisible(true);
+    	        if (pvTabbox != null) pvTabbox.setVisible(false);
+    	        return;
+    	    }
 
-        // Load front + back into their panels; greyscale reuses front image src
-        String frontSrc = hasFront ? imgUrl(front.trim()) : "";
-        String backSrc  = hasBack  ? imgUrl(back.trim())  : "";
+    	    if (pvNoImgMsg != null) pvNoImgMsg.setVisible(false);
+    	    if (pvTabbox != null) pvTabbox.setVisible(true);
 
-        if (pvFrontImg     != null) pvFrontImg.setSrc(frontSrc);
-        if (pvBackImg      != null) pvBackImg.setSrc(backSrc);
-        // Greyscale tab shows the front image with a CSS grayscale filter
-        if (pvGreyscaleImg != null) pvGreyscaleImg.setSrc(frontSrc);
+    	    String frontSrc = hasFront ? imgUrl(front.trim()) : "";
+    	    String backSrc  = hasBack  ? imgUrl(back.trim())  : "";
 
-        showTab("FRONT");
-        
-    }
+    	    if (pvFrontImg     != null) pvFrontImg.setSrc(frontSrc);
+    	    if (pvBackImg      != null) pvBackImg.setSrc(backSrc);
+    	    if (pvGreyscaleImg != null) pvGreyscaleImg.setSrc(frontSrc);
+
+    	    // Default selected tab = Front
+    	    if (pvTabbox != null) {
+    	        pvTabbox.setSelectedIndex(0);
+    	    }
+    	}
 
     private String imgUrl(String path) {
         try { return "/imageServlet?path=" + URLEncoder.encode(path, "UTF-8"); }
@@ -278,55 +274,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     }
 
 
-    /**
-     * Central tab-switching method.
-     * Shows the requested image panel and highlights the matching tab div.
-     * Greyscale tab shows the front image with a CSS filter — no extra DB field needed.
-     */
-    /**
-     * Switches the visible image panel when user clicks Front / Back / Greyscale tab.
-     *
-     * TWO-STEP approach (both steps are required):
-     *
-     * Step 1 — setVisible(true/false)
-     *   ZK renders this as inline style="display:none" on the <div>.
-     *   This is the RELIABLE way to show/hide panels in ZK.
-     *   CSS alone (sclass toggle) was causing all three panels to show
-     *   simultaneously because ZK's default <div> has no inline style,
-     *   so a :not([style]) CSS selector matched all panels at once.
-     *
-     * Step 2 — setSclass() for the active border highlight
-     *   pb-panel-active adds a coloured bottom border to the visible panel.
-     *   This is purely decorative — visibility is controlled by setVisible().
-     */
-    private void showTab(String tab) {
-        activeTab = tab;
 
-        // ── Step 1: setVisible — primary visibility control ──────────────────
-        if (pvFrontPanel != null)     pvFrontPanel.setVisible("FRONT".equals(tab));
-        if (pvBackPanel != null)      pvBackPanel.setVisible("BACK".equals(tab));
-        if (pvGreyscalePanel != null) pvGreyscalePanel.setVisible("GREY".equals(tab));
-
-        // ── Step 2: setSclass — active border highlight on panel ─────────────
-        if (pvFrontPanel != null)
-            pvFrontPanel.setSclass("FRONT".equals(tab) ? "pb-img-panel pb-panel-active" : "pb-img-panel");
-        if (pvBackPanel != null)
-            pvBackPanel.setSclass("BACK".equals(tab) ? "pb-img-panel pb-panel-active" : "pb-img-panel");
-        if (pvGreyscalePanel != null)
-            pvGreyscalePanel.setSclass("GREY".equals(tab) ? "pb-img-panel pb-panel-active" : "pb-img-panel");
-
-        // ── Step 3: highlight active tab button ──────────────────────────────
-        if (pvFrontTab != null)
-            pvFrontTab.setSclass("FRONT".equals(tab) ? "tab active" : "tab");
-        if (pvBackTab != null)
-            pvBackTab.setSclass("BACK".equals(tab) ? "tab active" : "tab");
-        if (pvGreyscaleTab != null)
-            pvGreyscaleTab.setSclass("GREY".equals(tab) ? "tab active" : "tab");
-
-        // ── Step 4: sync greyscale image src with front ──────────────────────
-        if ("GREY".equals(tab) && pvFrontImg != null && pvGreyscaleImg != null)
-            pvGreyscaleImg.setSrc(pvFrontImg.getSrc());
-    }
 
     // ══════════════════════════════════════════════════════════════════════════
     //  LEFT — Cheque Card
@@ -505,6 +453,79 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     @Listen("onClick = #btnSendBack")
     public void onSendBack() { applyAction("SEND_BACK"); }
 
+    /**
+     * Confirm Return — triggered when the user clicks "Confirm Return"
+     * inside the return-reason box.
+     *
+     * Flow:
+     *   1. Validate a reason has been selected — show inline error if not.
+     *   2. Store the reason in reasonMap (keeps per-cheque state consistent).
+     *   3. Call batchService.confirmReturn() → DAO persists action + cheque
+     *      status + (optionally) batch status in one transaction.
+     *   4. Update in-memory actionMap and refresh the progress bar.
+     *   5. Show a success messagebox and auto-advance to the next cheque.
+     */
+    @Listen("onClick = #btnConfirmReturn")
+    public void onConfirmReturn() {
+        if (cheques == null || currentIndex >= cheques.size()) return;
+
+        // 1. Validate reason is selected
+        Comboitem selected = (comboReturnReason != null)
+                             ? comboReturnReason.getSelectedItem() : null;
+
+        if (selected == null || selected.getValue() == null
+                || selected.getValue().toString().trim().isEmpty()) {
+            showReturnReasonError("Please select a return reason before confirming.");
+            return;
+        }
+
+        hideReturnReasonError();
+
+        // 2. Collect data
+        String reasonCode = (String) selected.getValue();
+        InwardCheque cheque = cheques.get(currentIndex);
+        reasonMap.put(cheque.getId(), reasonCode);
+
+        // 3. Get session user
+        LoginDTO userDto = (LoginDTO) Sessions.getCurrent()
+                .getAttribute(SessionUtil.SESSION_KEY);
+        if (userDto == null) {
+            Messagebox.show("Session expired. Please log in again.",
+                "Session Error", Messagebox.OK, Messagebox.ERROR);
+            return;
+        }
+        User checker = new User();
+        checker.setId(userDto.getUserId());
+
+        // 4. Persist via service
+        try {
+            batchService.confirmReturn(currentBatch, cheque, reasonCode, checker);
+        } catch (IllegalArgumentException e) {
+            showReturnReasonError(e.getMessage());
+            return;
+        } catch (Exception e) {
+            Messagebox.show("Failed to save return: " + e.getMessage(),
+                "Error", Messagebox.OK, Messagebox.ERROR);
+            e.printStackTrace();
+            return;
+        }
+
+        // 5. Update in-memory map so progress bar counts this cheque
+        actionMap.put(cheque.getId(), "RETURNED");
+        refreshProgress();
+
+        // 6. Show success messagebox and advance to next cheque
+        Messagebox.show(
+            "Cheque " + (currentIndex + 1) + " marked as RETURNED. Reason: "
+                + selected.getLabel(),
+            "Return Confirmed", Messagebox.OK, Messagebox.INFORMATION,
+            ev -> {
+                if (currentIndex < cheques.size() - 1)
+                    renderCheque(currentIndex + 1);
+            }
+        );
+    }
+
     private void applyAction(String action) {
         if (cheques == null || currentIndex >= cheques.size()) return;
         Long id = cheques.get(currentIndex).getId();
@@ -544,6 +565,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
             Comboitem sel = comboReturnReason.getSelectedItem();
             if (sel != null && cheques != null && currentIndex < cheques.size())
                 reasonMap.put(cheques.get(currentIndex).getId(), (String) sel.getValue());
+            hideReturnReasonError();
         });
     }
 
@@ -658,8 +680,10 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
     }
 
     private void toggleReturnReasonBox(Long id) {
+        boolean show = "RETURNED".equals(actionMap.get(id));
         if (divReturnReasonBox != null)
-            divReturnReasonBox.setVisible("RETURNED".equals(actionMap.get(id)));
+            divReturnReasonBox.setVisible(show);
+        if (!show) hideReturnReasonError();
     }
 
     private String buildMicrLine(InwardCheque c) {
@@ -698,5 +722,21 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 
     private void set(Label lbl, String val) {
         if (lbl != null) lbl.setValue(val != null ? val : "—");
+    }
+
+    /** Shows the inline validation error beneath the reason combo. */
+    private void showReturnReasonError(String message) {
+        if (lblReturnReasonError != null) {
+            lblReturnReasonError.setValue(message);
+            lblReturnReasonError.setVisible(true);
+        }
+    }
+
+    /** Hides the inline validation error label. */
+    private void hideReturnReasonError() {
+        if (lblReturnReasonError != null) {
+            lblReturnReasonError.setValue("");
+            lblReturnReasonError.setVisible(false);
+        }
     }
 }

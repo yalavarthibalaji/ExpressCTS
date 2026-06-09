@@ -85,6 +85,58 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         }
     }
 
+    // ── Save single Return action (Confirm Return flow) ───────────────────────
+
+    @Override
+    public void saveReturnAction(InwardCheckerAction action) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            // 1. Persist the checker action row
+            session.persist(action);
+
+            // 2. Update the linked cheque status to RETURNED in same transaction
+            InwardCheque cheque = action.getInwardCheque();
+            if (cheque != null) {
+                cheque.setStatus("RETURNED");
+                session.merge(cheque);
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            System.err.println("saveReturnAction error: " + e.getMessage());
+            throw new RuntimeException("Failed to save return action.", e);
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
+
+    // ── Update batch status to any given value ────────────────────────────────
+
+    @Override
+    public void updateBatchStatusTo(InwardBatch batch, String statusValue) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            batch.setStatus(statusValue);
+            session.merge(batch);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            System.err.println("updateBatchStatusTo error: " + e.getMessage());
+            throw new RuntimeException("Failed to update batch status to " + statusValue + ".", e);
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
+
     // Maps checker action → inward_cheque.status
     // These match InwardCheque.status column values
     private String mapActionToStatus(String action) {
