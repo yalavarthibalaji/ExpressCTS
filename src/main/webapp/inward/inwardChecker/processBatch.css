@@ -179,8 +179,8 @@
    7. LEFT PANEL — Cheque Image + Card
    ═══════════════════════════════════════════════════════════ */
 .pb-left {
-    width: 440px !important;
-    flex-shrink: 0 !important;
+    flex: 1 !important;
+    min-width: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     border-right: 2px solid var(--border) !important;
@@ -246,12 +246,9 @@
    
    .pb-img-section .z-tab 
    {
-    background: var(--surface); 
-    border: 1px solid var(--border); 
+    
     border-bottom: none; 
     border-radius: var(--r4) var(--r4) 0 0; 
-    margin-right: 4px; 
-    padding: 6px 14px; 
     font-size: 11px; 
     font-weight: 600; 
     color: var(--t2); 
@@ -268,19 +265,12 @@
       border: none;
       background: transparent; 
      } /* Image */ 
-     .pb-img-actual 
-     { 
-      max-width: 100%;
-      max-height: 220px;
-      width: auto; height: auto; 
-      object-fit: contain; 
-      display: block; 
-      margin: 0 auto; 
-      border-radius: var(--r6); 
-      box-shadow: 0 4px 16px rgba(0,0,0,0.14); 
-      border: 1px solid var(--border); 
-      }
-      
+     .pb-img-actual {
+    margin: 0 auto !important;
+    border-radius: var(--r6) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.14) !important;
+    border: 1px solid var(--border) !important;
+}
        .pb-img-grey 
        { 
        filter: grayscale(100%);
@@ -306,17 +296,17 @@
     display: flex !important;
 }
 
+
 /* ─── Cheque image ─────────────────────────────────────────── */
 .pb-img-actual {
     max-width: 100% !important;
-    max-height: 220px !important;
     height: auto !important;
     width: auto !important;
     object-fit: contain !important;
     display: block !important;
     border-radius: var(--r6) !important;
     box-shadow: 0 4px 16px rgba(0,0,0,0.14) !important;
-    border: 1px solid var(--border) !important;
+  
     transition: filter 0.25s ease !important;
 }
 
@@ -415,7 +405,8 @@
    10. RIGHT PANEL — Technical Verification
    ═══════════════════════════════════════════════════════════ */
 .pb-right {
-    flex: 1 !important;
+      flex: 1 !important;
+    min-width: 0 !important;
     overflow-y: auto !important;
     padding: 0 0 80px 0 !important;
     background: var(--bg) !important;
@@ -735,16 +726,19 @@
 
 /* ─── Validation error label ─────────────────────────────── */
 .pv-reason-error.z-label {
+    display: none;
+}
+
+.pv-reason-error.z-label[style*="display: block"] {
     display: block !important;
     font-size: 11px !important;
     font-weight: 600 !important;
     color: var(--danger) !important;
-    background: rgba(220, 38, 38, 0.08) !important;
+    background: rgba(220,38,38,0.08) !important;
     border: 1px solid var(--danger-b) !important;
     border-radius: var(--r4) !important;
     padding: 4px 8px !important;
     margin-top: 6px !important;
-    font-family: var(--font) !important;
 }
 
 /* Confirm Return row / pv-confirm-row — no longer used (button moved to header)
