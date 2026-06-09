@@ -1,3 +1,4 @@
+
 package com.iispl.composer;
 
 import java.io.UnsupportedEncodingException;
@@ -1037,8 +1038,4 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
 		Messagebox.show(msg, "Success", Messagebox.OK, Messagebox.INFORMATION);
 	}
 }
-
-
-
-
 
