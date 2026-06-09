@@ -25,23 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * File    : com/iispl/composer/DashboardComposer.java
- * Purpose : Maker Outward Dashboard — KPI counts and batch table.
- *
- * Correct Batch Status Flow:
- *   NEEDS_REPAIR  → has MICR errors, waiting for MICR repair
- *   ENTRY_PENDING → MICR repair done (or no errors), ready for data entry
- *   SUBMITTED     → data entry done, in checker queue
- *   REFER_BACK    → checker referred batch back to maker
- *   REJECTED      → batch rejected
- *
- * KPI Fixes:
- *   Bug 1 — MICR Pending used repairStatus (NEVER cleared after repair).
- *            Fixed to use main batch status = NEEDS_REPAIR.
- *   Bug 2 — Entry Pending checked ENTRY_PENDING (ghost status, never set).
- *            Fixed to check ENTRY_PENDING + REFER_BACK.
- */
+
 public class DashboardComposer extends SelectorComposer<Component> {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");

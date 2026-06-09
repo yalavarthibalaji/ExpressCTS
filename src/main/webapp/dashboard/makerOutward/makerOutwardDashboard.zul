@@ -13,9 +13,7 @@
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
     <!-- ══ TOPBAR ══ -->
-    <div sclass="topbar">
-        <include src="/component/topbar.zul"/>
-    </div>
+    <include src="/component/topbar.zul"/>
 
     <!-- ══ BODY ══ -->
     <div sclass="body-row">
@@ -160,7 +158,7 @@
 
                 </n:div>
 
-                <!-- ── RECENT BATCHES PANEL (full width) ── -->
+                <!-- ── RECENT BATCHES PANEL ── -->
                 <n:div class="od-recent-panel">
 
                     <!-- Panel header -->
@@ -177,7 +175,6 @@
                     <!-- ── FILTER BAR ── -->
                     <n:div class="od-filter-bar">
 
-                        <!-- Left: Date + Status filters -->
                         <n:div class="od-filter-left">
                             <n:div class="od-filter-group">
                                 <n:label class="od-filter-label">Date</n:label>
@@ -196,29 +193,28 @@
 
                             <n:div class="od-filter-group">
                                 <n:label class="od-filter-label">Status</n:label>
-                              <combobox id="filterStatus"
-          sclass="od-filter-combo"
-          readonly="true"
-          width="180px"
-          placeholder="All statuses">
-    <comboitem label="All"                  value="ALL"/>
-    <comboitem label="Needs MICR Repair"    value="NEEDS_REPAIR"/>
-    <comboitem label="Pending Data Entry"   value="ENTRY_PENDING"/>
-    <comboitem label="Submitted"            value="SUBMITTED"/>
-    <comboitem label="Referred Back"        value="REFER_BACK"/>
-    <comboitem label="Checker In Progress"  value="CHECKER_IN_PROGRESS"/>
-    <comboitem label="On Hold"              value="CHECKER_HOLD"/>
-    <comboitem label="Approved"             value="CHECKER_APPROVED"/>
-    <comboitem label="Exported"             value="EXPORTED"/>
-    <comboitem label="Rejected"             value="REJECTED"/>
-</combobox>
+                                <combobox id="filterStatus"
+                                          sclass="od-filter-combo"
+                                          readonly="true"
+                                          width="180px"
+                                          placeholder="All statuses">
+                                    <comboitem label="All"                 value="ALL"/>
+                                    <comboitem label="Needs MICR Repair"   value="NEEDS_REPAIR"/>
+                                    <comboitem label="Pending Data Entry"  value="ENTRY_PENDING"/>
+                                    <comboitem label="Submitted"           value="SUBMITTED"/>
+                                    <comboitem label="Referred Back"       value="REFER_BACK"/>
+                                    <comboitem label="Checker In Progress" value="CHECKER_IN_PROGRESS"/>
+                                    <comboitem label="On Hold"             value="CHECKER_HOLD"/>
+                                    <comboitem label="Approved"            value="CHECKER_APPROVED"/>
+                                    <comboitem label="Exported"            value="EXPORTED"/>
+                                    <comboitem label="Rejected"            value="REJECTED"/>
+                                </combobox>
                             </n:div>
 
                             <button sclass="od-filter-apply-btn" label="Apply" id="btnApplyFilter"/>
                             <button sclass="od-filter-clear-btn" label="Clear" id="btnClearFilter"/>
                         </n:div>
 
-                        <!-- Right: Batch ID search -->
                         <n:div class="od-filter-right">
                             <n:div class="od-search-wrap">
                                 <n:i class="fa-solid fa-magnifying-glass od-search-icon"/>
@@ -232,25 +228,42 @@
 
                     </n:div>
 
-                    <!-- Table -->
+                    <!-- ── BATCH TABLE ── -->
                     <listbox id="recentBatchList"
                              sclass="od-batch-listbox"
                              visible="false">
                         <listhead sclass="od-listhead">
-                            <listheader label="Batch ID"     width="250px"/>
-                            <listheader label="Cheques"      width="130px"/>
-                            <listheader label="Amount " width="200px"/>
-                            <listheader label="Uploaded At"  width="180px"/>
+                            <listheader label="Batch ID"    width="250px"/>
+                            <listheader label="Cheques"     width="130px"/>
+                            <listheader label="Amount (₹)"  width="200px"/>
+                            <listheader label="Uploaded At" width="180px"/>
                             <listheader label="Status"/>
                         </listhead>
                     </listbox>
 
+                    <!-- ── EMPTY MESSAGE ── -->
                     <label id="emptyBatchesMsg"
                            value="No batches found."
                            sclass="od-empty-msg"
                            visible="true"/>
 
+                    <!-- ── PAGINATION BAR ── -->
+                    <div id="batchPager" sclass="od-pager" visible="false">
+                        <button id="btnPrevPage"
+                                sclass="btn bo btn-sm"
+                                label="← Prev"
+                                disabled="true"/>
+                        <label  id="pagerInfo"
+                                sclass="od-pager-info"
+                                value="Page 1 of 1"/>
+                        <button id="btnNextPage"
+                                sclass="btn bo btn-sm"
+                                label="Next →"
+                                disabled="true"/>
+                    </div>
+
                 </n:div>
+                <!-- end od-recent-panel -->
 
             </div><!-- /dash-main -->
         </div><!-- /main -->
@@ -262,12 +275,13 @@
     </div>
 
 </div>
+<!-- end dash-shell -->
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════
      MODULE PICKER POPUP
-     Shown when maker clicks a REFER_BACK batch with cheques
-     pending fix in BOTH MICR Repair and Data Entry modules.
-═══════════════════════════════════════════════════════ -->
+     Shown when maker clicks a REFER_BACK batch
+     that has cheques in BOTH modules.
+═══════════════════════════════════════════════ -->
 <div id="modulePickerModal" sclass="modal-ov">
     <div sclass="modal" style="width:560px">
 
@@ -335,4 +349,5 @@
 
     </div>
 </div>
+
 </zk>

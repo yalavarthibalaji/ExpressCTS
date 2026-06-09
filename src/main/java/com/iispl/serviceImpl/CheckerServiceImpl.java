@@ -19,6 +19,7 @@ import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.service.AuditService;
 import com.iispl.service.CheckerService;
+import com.iispl.service.NotificationService;
 import com.iispl.util.HibernateUtil;
 
 /**
@@ -53,7 +54,7 @@ public class CheckerServiceImpl implements CheckerService {
     private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
     private final AuditService auditService = new AuditServiceImpl();
-
+    private final NotificationService notifService = new NotificationServiceImpl();
     // ════════════════════════════════════════════════════════════════════════
     //  Queue Loading
     // ════════════════════════════════════════════════════════════════════════
@@ -604,10 +605,31 @@ public class CheckerServiceImpl implements CheckerService {
                     "status=CHECKER_HOLD",
                     "status=REFER_BACK, referredCount=" + referredCount);
 
+                // ── Notification: tell the maker their batch was referred back ──
+                // Step 1: fetch batch_id string and maker's user id from DB
+                String batchIdStr = fetchBatchIdStr(session, batchDbId);
+                Long   makerId    = fetchBatchMakerId(session, batchDbId);
+
+                // Step 2: build the module list so the maker knows where to go
+                int micrCount = chequeDao.countReferredByModule(batchDbId, "MICR_REPAIR");
+                int dataCount = chequeDao.countReferredByModule(batchDbId, "DATA_ENTRY");
+
+                StringBuilder moduleSb = new StringBuilder();
+                if (micrCount > 0) moduleSb.append("MICR_REPAIR");
+                if (dataCount > 0) {
+                    if (moduleSb.length() > 0) moduleSb.append(",");
+                    moduleSb.append("DATA_ENTRY");
+                }
+
+                // Step 3: fire notification (non-blocking — any failure is swallowed inside service)
+                notifService.notifyReferBack(
+                        batchDbId, batchIdStr, moduleSb.toString(), makerId);
+
                 System.out.println("CheckerService → finalizeBatchIfDone: batchId="
                         + batchDbId + " has " + referredCount
                         + " referred cheque(s) → REFER_BACK");
                 return "REFER_BACK";
+
             } else {
                 approveBatch(batchDbId, checkerId);
 
@@ -630,6 +652,41 @@ public class CheckerServiceImpl implements CheckerService {
             return null;
         } finally {
             session.close();
+        }
+    }
+
+    /**
+     * Fetches the human-readable batch_id string (e.g. B-2026-0609-001)
+     * for a given outward_batch primary key.
+     * Uses the already-open session — no extra connection needed.
+     */
+    private String fetchBatchIdStr(Session session, Long batchDbId) {
+        try {
+            NativeQuery<?> q = session.createNativeQuery(
+                "SELECT batch_id FROM outward_batch WHERE id = :id");
+            q.setParameter("id", batchDbId);
+            Object result = q.uniqueResult();
+            return result != null ? result.toString() : ("BATCH-" + batchDbId);
+        } catch (Exception e) {
+            System.err.println("CheckerService → fetchBatchIdStr failed: " + e.getMessage());
+            return "BATCH-" + batchDbId;
+        }
+    }
+
+    /**
+     * Fetches the created_by user id (maker's id) for a given outward_batch.
+     * Uses the already-open session.
+     */
+    private Long fetchBatchMakerId(Session session, Long batchDbId) {
+        try {
+            NativeQuery<?> q = session.createNativeQuery(
+                "SELECT created_by FROM outward_batch WHERE id = :id");
+            q.setParameter("id", batchDbId);
+            Object result = q.uniqueResult();
+            return result != null ? ((Number) result).longValue() : null;
+        } catch (Exception e) {
+            System.err.println("CheckerService → fetchBatchMakerId failed: " + e.getMessage());
+            return null;
         }
     }
 }

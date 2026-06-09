@@ -53,10 +53,6 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
     private final DecimalFormat    moneyFmt  = new DecimalFormat("#,##0.00");
 
-    // ── Topbar ──
-    @Wire private Label  userAvatar;
-    @Wire private Label  userName;
-    @Wire private Label  userRole;
 
     // ── Section 1: Batch List ──
     @Wire private Div    batchSection;
@@ -100,6 +96,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     private List<OutwardCheque> batchCheques;
     private Long                currentUserId;
     private String              currentRole;
+    private String              currentUserName;
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -112,11 +109,10 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         LoginDTO dto = SessionUtil.requireLogin();
         if (dto == null) return;
 
-        userAvatar.setValue(dto.getInitials());
-        userName.setValue(dto.getFullName());
-        userRole.setValue(dto.getRoleCode().replace("_", " "));
-        currentUserId = dto.getUserId();
-        currentRole   = dto.getRoleCode();
+        
+        currentUserId   = dto.getUserId();
+        currentRole     = dto.getRoleCode();
+        currentUserName = dto.getFullName();
 
         // Load batches based on role
         if ("ADMIN".equals(currentRole)) {
@@ -136,10 +132,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     //  Topbar
     // ════════════════════════════════════════════════════
 
-    @Listen("onClick = #logoutBtn")
-    public void doLogout() {
-        SessionUtil.logout();
-    }
+    
 
     // ════════════════════════════════════════════════════
     //  Section Toggle
@@ -776,7 +769,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         resubmitBtn.setDisabled(true);
 
         boolean ok = makerOutwardService.resubmitBatch(
-                selectedBatch.getId(), currentUserId);
+                selectedBatch.getId(), currentUserId, currentUserName);
 
         if (!ok) {
             resubmitBtn.setLabel("↩ Re-submit to Checker");

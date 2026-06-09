@@ -3,22 +3,21 @@ package com.iispl.util;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+import com.iispl.entity.AuditLog;
 import com.iispl.entity.Role;
 import com.iispl.entity.User;
 import com.iispl.entity.UserSession;
-import com.iispl.entity.AuditLog;
-
-import com.iispl.entity.outward.OutwardBatch;
-import com.iispl.entity.outward.OutwardCheque;
-import com.iispl.entity.outward.OutwardExport;
-import com.iispl.entity.outward.OutwardMicrRepair;
-import com.iispl.entity.outward.OutwardCheckerAction;
-
 import com.iispl.entity.inward.InwardBatch;
+import com.iispl.entity.inward.InwardCheckerAction;
 import com.iispl.entity.inward.InwardCheque;
 import com.iispl.entity.inward.InwardExport;
 import com.iispl.entity.inward.InwardMicrRepair;
-import com.iispl.entity.inward.InwardCheckerAction;
+import com.iispl.entity.outward.Notification;
+import com.iispl.entity.outward.OutwardBatch;
+import com.iispl.entity.outward.OutwardCheckerAction;
+import com.iispl.entity.outward.OutwardCheque;
+import com.iispl.entity.outward.OutwardExport;
+import com.iispl.entity.outward.OutwardMicrRepair;
 
 public class HibernateUtil {
 
@@ -45,6 +44,7 @@ public class HibernateUtil {
             cfg.addAnnotatedClass(User.class);
             cfg.addAnnotatedClass(UserSession.class);
             cfg.addAnnotatedClass(AuditLog.class);
+            cfg.addAnnotatedClass(Notification.class);  
 
             // Outward
             cfg.addAnnotatedClass(OutwardBatch.class);

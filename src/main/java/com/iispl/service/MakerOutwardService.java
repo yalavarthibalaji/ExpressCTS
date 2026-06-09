@@ -41,5 +41,5 @@ public interface MakerOutwardService {
      * @param makerId   currently logged-in maker user id (for audit)
      * @return true on success, false if any precondition fails
      */
-    boolean resubmitBatch(Long batchDbId, Long makerId);
+    boolean resubmitBatch(Long batchDbId, Long makerId, String makerName);
 }

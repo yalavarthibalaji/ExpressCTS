@@ -35,13 +35,22 @@ import com.iispl.util.SessionUtil;
  * File    : com/iispl/composer/outward/MicrRepairComposer.java
  * Purpose : MICR Repair screen for Maker Outward.
  *
- * Save Button Enable/Disable Logic:
- *   - When a cheque loads, saveNextBtn is DISABLED if any field is yellow.
+ * Save / Prev / Next Button Logic:
+ *   - When a cheque loads with yellow (wrong) fields:
+ *       saveNextBtn → DISABLED  (user must fix all yellow fields first)
+ *       prevBtn     → DISABLED  (user cannot skip without fixing)
+ *       nextBtn     → DISABLED  (user cannot skip without fixing)
+ *
  *   - As user types in any MICR textbox, the button state is re-evaluated.
+ *
  *   - saveNextBtn is ENABLED only when:
  *       (1) All 6 fields have the correct exact length.
  *       (2) Every yellow field has a value DIFFERENT from its original wrong value.
- *   - Blue fields (already correct) are ignored in the mismatch check.
+ *
+ *   - prevBtn and nextBtn are ENABLED only when there are NO yellow fields
+ *     on the current cheque (i.e. the cheque has no pending MICR errors
+ *     that still need the maker's attention).
+ *     This prevents the maker from navigating away without fixing errors.
  *
  * onChanging fires on every keystroke — uses InputEvent.getValue()
  *   for the field being typed, and .getValue() for all other fields.
@@ -88,6 +97,10 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     @Wire private Label  termChqNo;
     @Wire private Label  termMicrCode;
 
+    // ── Navigation buttons — wired to control disabled state ──
+    @Wire private Button prevBtn;
+    @Wire private Button nextBtn;
+
     // ── Right Panel — MICR Entry Fields ──
     @Wire private Textbox chqNoBox;
     @Wire private Textbox cityCodeBox;
@@ -112,6 +125,11 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     private String              batchId;
     private Long                currentMakerId;
     private boolean             cameFromSidebar = false;
+
+    // Tracks whether the current cheque has any yellow (wrong) fields.
+    // Set to true in loadRepairView() when yellow fields are found.
+    // Used to decide whether Prev/Next should be blocked.
+    private boolean currentChequeHasErrors = false;
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -352,14 +370,15 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         transCodeBox.setValue(safe(cheque.getTransactionCode()));
         repairRemarksBox.setValue("");
 
-        // Colour the fields yellow/blue
-        highlightMismatchFields(cheque);
+        // Colour the fields yellow/blue and record whether errors exist
+        currentChequeHasErrors = detectAndHighlightErrors(cheque);
 
         rejectPanel.setVisible(false);
 
-        // ── KEY FIX: evaluate button state with the just-loaded values ──
-        // Since yellow fields contain the original WRONG values,
-        // canSave() will return false → button starts DISABLED.
+        // Apply initial button state with the just-loaded values.
+        // Yellow fields still contain the original WRONG values →
+        // saveNextBtn starts DISABLED.
+        // prevBtn and nextBtn also start DISABLED when errors exist.
         applySaveButtonState(
             safe(cheque.getChequeNo()),
             safe(cheque.getCityCode()),
@@ -387,30 +406,49 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
 
     // ════════════════════════════════════════════════════
     //  MICR Field Highlighting
+    //  Returns true if ANY field is yellow (has errors).
+    //  Return value stored in currentChequeHasErrors.
     // ════════════════════════════════════════════════════
 
-    private void highlightMismatchFields(OutwardCheque cheque) {
+    /**
+     * Colours each MICR textbox yellow or blue based on whether the
+     * stored value matches the expected value from the raw MICR code.
+     *
+     * Returns true if at least one field is yellow (has an error).
+     * This return value is used to decide whether Prev/Next should be locked.
+     */
+    private boolean detectAndHighlightErrors(OutwardCheque cheque) {
         String micr = cheque.getMicrCode();
 
+        // If MICR code is missing or too short — all fields are suspect
         if (micr == null || micr.trim().length() < 23) {
             setYellow(cityCodeBox);
             setYellow(bankCodeBox);
             setYellow(branchCodeBox);
             setYellow(baseNumberBox);
             setYellow(transCodeBox);
-            return;
+            return true; // errors exist
         }
 
-        highlightField(cityCodeBox,   cheque.getCityCode(),        micr.substring(6,  9));
-        highlightField(bankCodeBox,   cheque.getBankCode(),        micr.substring(9,  12));
-        highlightField(branchCodeBox, cheque.getBranchCode(),      micr.substring(12, 15));
-        highlightField(baseNumberBox, cheque.getBaseNumber(),      micr.substring(15, 21));
-        highlightField(transCodeBox,  cheque.getTransactionCode(), micr.substring(21, 23));
+        boolean hasError = false;
+        hasError |= highlightField(cityCodeBox,   cheque.getCityCode(),        micr.substring(6,  9));
+        hasError |= highlightField(bankCodeBox,   cheque.getBankCode(),        micr.substring(9,  12));
+        hasError |= highlightField(branchCodeBox, cheque.getBranchCode(),      micr.substring(12, 15));
+        hasError |= highlightField(baseNumberBox, cheque.getBaseNumber(),      micr.substring(15, 21));
+        hasError |= highlightField(transCodeBox,  cheque.getTransactionCode(), micr.substring(21, 23));
+
+        return hasError;
     }
 
-    private void highlightField(Textbox box, String stored, String expected) {
-        if (!safe(stored).equals(safe(expected))) setYellow(box);
-        else                                       setBlue(box);
+    /**
+     * Highlights a single field yellow (wrong) or blue (correct).
+     * Returns true if the field is yellow (mismatched).
+     */
+    private boolean highlightField(Textbox box, String stored, String expected) {
+        boolean isWrong = !safe(stored).equals(safe(expected));
+        if (isWrong) setYellow(box);
+        else         setBlue(box);
+        return isWrong;
     }
 
     private void setYellow(Textbox box) { box.setSclass("fi mono field-changed"); }
@@ -434,6 +472,10 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
 
     // ════════════════════════════════════════════════════
     //  Prev / Next Navigation
+    //  These buttons are disabled when currentChequeHasErrors = true
+    //  AND the maker has not yet made any valid changes.
+    //  The @Listen methods still exist so ZK can wire them — but the
+    //  buttons will be physically disabled in the UI when locked.
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #prevBtn")
@@ -538,12 +580,26 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     // ════════════════════════════════════════════════════
     //  Save Button State Engine
     //  Called on every keystroke and focus-out.
-    //  Enables saveNextBtn only when ALL conditions pass.
+    //  Controls saveNextBtn, prevBtn, and nextBtn together.
+    //
+    //  saveNextBtn — enabled only when all fields are valid length
+    //                AND all yellow fields have been changed.
+    //
+    //  prevBtn / nextBtn — enabled only when:
+    //    - the current cheque has NO yellow fields (no errors), OR
+    //    - the maker has already typed something different in at least
+    //      one yellow field (they are actively working on it and can
+    //      save first — but navigation is still blocked until they save).
+    //
+    //  Simpler rule for Prev/Next:
+    //    Disabled when currentChequeHasErrors = true AND canSave = false.
+    //    Once the maker fixes enough to enable Save, they must save first,
+    //    then navigate. Navigation is never allowed mid-fix.
     // ════════════════════════════════════════════════════
 
     /**
-     * Evaluates whether the Save button should be enabled or disabled.
-     * Updates the button style accordingly.
+     * Evaluates whether the Save / Prev / Next buttons should be
+     * enabled or disabled. Updates button styles accordingly.
      *
      * @param chqNo   current value in chqNoBox     (may be from InputEvent)
      * @param city    current value in cityCodeBox
@@ -555,10 +611,24 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     private void applySaveButtonState(String chqNo, String city, String bank,
                                        String branch, String base, String tc) {
         boolean canSave = canEnableSave(chqNo, city, bank, branch, base, tc);
+
+        // ── Save & Next button ──
         saveNextBtn.setDisabled(!canSave);
         saveNextBtn.setSclass(canSave
             ? "btn bp btn-lg w100"
             : "btn bp btn-lg w100 btn-disabled");
+
+        // ── Prev and Next navigation buttons ──
+        // Locked when the cheque has MICR errors and the maker hasn't
+        // completed fixing them yet (canSave is still false).
+        // If the cheque has no errors at all (currentChequeHasErrors = false),
+        // navigation is always allowed.
+        boolean navAllowed = !currentChequeHasErrors;
+        prevBtn.setDisabled(!navAllowed);
+        nextBtn.setDisabled(!navAllowed);
+
+        prevBtn.setSclass(navAllowed ? "btn bo btn-sm" : "btn bo btn-sm btn-disabled");
+        nextBtn.setSclass(navAllowed ? "btn bo btn-sm" : "btn bo btn-sm btn-disabled");
     }
 
     /**
@@ -593,8 +663,8 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         String micrCode = cheque.getMicrCode();
 
         if (micrCode == null || micrCode.trim().length() < 23) {
-            // micrCode not available — can't do mismatch check
-            // Allow save if all lengths are correct (Condition 1 already passed)
+            // micrCode not available — can't do mismatch check.
+            // Allow save if all lengths are correct (Condition 1 already passed).
             return true;
         }
 
@@ -676,9 +746,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         repairList.remove(currentIndex);
 
         if (micrService.isAllRepaired(currentBatch.getId())) {
-            // Auto-finalize only for the NORMAL flow (NEEDS_REPAIR batches).
-            // For REFER_BACK batches, the maker manually clicks
-            // "Re-submit to Checker" in View Batches.
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
                 micrService.markBatchEntryDone(currentBatch.getId());
                 Clients.showNotification(
@@ -758,8 +825,6 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         repairList.remove(currentIndex);
 
         if (micrService.isAllRepaired(currentBatch.getId())) {
-            // Auto-finalize only for the NORMAL flow (NEEDS_REPAIR batches).
-            // For REFER_BACK batches, the maker manually re-submits later.
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
                 micrService.markBatchEntryDone(currentBatch.getId());
                 Clients.showNotification(

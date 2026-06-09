@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?page title="Checker Outward Dashboard" contentType="text/html;charset=UTF-8"?>
+<?link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
@@ -8,20 +9,19 @@
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
     xmlns:n="native">
+
 <div sclass="dash-shell" apply="com.iispl.composer.CheckerOutwardDashboardComposer">
 
-    <div sclass="topbar">
-        <include src="/component/topbar.zul" />
-    </div>
+    <include src="/component/topbar.zul"/>
 
     <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
+        <include src="/component/sidebar.zul"/>
         <div sclass="main">
             <div sclass="dash-main">
 
                 <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Dashboard" />
-                    <label sclass="welcome-sub" value="Outward cheque verification — verify, export and report" />
+                    <label sclass="welcome-title" value="Dashboard"/>
+                    <label sclass="welcome-sub" value="Outward cheque verification — verify, export and report"/>
                 </div>
 
                 <n:div class="quick-cards">

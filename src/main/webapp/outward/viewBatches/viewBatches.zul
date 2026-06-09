@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?page title="ExpressCTS — View Batches"
       contentType="text/html;charset=UTF-8"?>
-<?link rel="stylesheet" type="text/css"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
-<?link rel="stylesheet" type="text/css"
-      href="/outward/viewBatches/viewBatches.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/global.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/outward/viewBatches/viewBatches.css"?>
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
     xmlns:n="native">
@@ -12,25 +12,10 @@
 <div apply="com.iispl.composer.outward.ViewBatchesComposer"
      sclass="shell">
 
-    <!-- TOPBAR -->
-    <div sclass="topbar">
-        <div sclass="logo">
-            <n:div class="logo-box">EC</n:div>
-            <n:div class="logo-txt">
-                Express<n:span style="color:var(--accent)">Clear</n:span> CTS
-            </n:div>
-        </div>
-        <div sclass="topbar-right">
-            <label id="userAvatar" sclass="uavatar" value="--"/>
-            <div>
-                <label id="userName" sclass="uname"  value="—"/>
-                <label id="userRole"  sclass="urole"  value="—"/>
-            </div>
-            <button id="logoutBtn" sclass="logbtn">↩ Logout</button>
-        </div>
-    </div>
+    <!-- ══ TOPBAR ══ -->
+    <include src="/component/topbar.zul"/>
 
-    <!-- BODY ROW -->
+    <!-- ══ BODY ROW ══ -->
     <div sclass="body-row">
 
         <include src="/component/sidebar.zul"/>
@@ -75,17 +60,17 @@
                         </div>
                         <div sclass="fg">
                             <n:label class="fg-lbl">Status</n:label>
-                           <listbox id="statusFilter"
-         sclass="fs"
-         mold="select">
-    <listitem label="All Status"          value=""/>
-    <listitem label="Needs MICR Repair"   value="NEEDS_REPAIR"/>
-    <listitem label="Pending Data Entry"  value="ENTRY_PENDING"/>
-    <listitem label="Referred Back"       value="REFER_BACK"/>
-    <listitem label="Submitted"           value="SUBMITTED"/>
-    <listitem label="Passed"              value="PASSED"/>
-    <listitem label="Rejected"            value="REJECTED"/>
-</listbox>
+                            <listbox id="statusFilter"
+                                     sclass="fs"
+                                     mold="select">
+                                <listitem label="All Status"         value=""/>
+                                <listitem label="Needs MICR Repair"  value="NEEDS_REPAIR"/>
+                                <listitem label="Pending Data Entry" value="ENTRY_PENDING"/>
+                                <listitem label="Referred Back"      value="REFER_BACK"/>
+                                <listitem label="Submitted"          value="SUBMITTED"/>
+                                <listitem label="Passed"             value="PASSED"/>
+                                <listitem label="Rejected"           value="REJECTED"/>
+                            </listbox>
                         </div>
                         <div sclass="fg">
                             <n:label class="fg-lbl">From Date</n:label>
@@ -106,9 +91,7 @@
                     <!-- Batch Table Card -->
                     <div sclass="card">
                         <div sclass="card-hdr">
-                            <n:div class="card-title">
-                                Batches
-                            </n:div>
+                            <n:div class="card-title">Batches</n:div>
                             <label id="batchCountBadge"
                                    sclass="badge b-info"
                                    value="0 Batches"/>
@@ -116,14 +99,14 @@
                         <div sclass="tbl-wrap">
                             <grid sclass="dt-grid">
                                 <columns>
-                                    <column label="S.No"           width="55px"/>
-                                    <column label="Batch ID"       width="165px"/>
-                                    <column label="Cheque Count"   width="120px"/>
+                                    <column label="S.No"             width="55px"/>
+                                    <column label="Batch ID"         width="165px"/>
+                                    <column label="Cheque Count"     width="120px"/>
                                     <column label="Total Amount (₹)" width="150px"/>
-                                    <column label="Pending"        width="90px"/>
-                                    <column label="Processed"      width="100px"/>
-                                    <column label="Status"         width="130px"/>
-                                    <column label="Action"         width="90px"/>
+                                    <column label="Pending"          width="90px"/>
+                                    <column label="Processed"        width="100px"/>
+                                    <column label="Status"           width="130px"/>
+                                    <column label="Action"           width="90px"/>
                                 </columns>
                                 <rows id="batchRows"/>
                             </grid>
@@ -149,11 +132,7 @@
                                value="—"/>
                     </div>
 
-                    <!-- ════════════════════════════════════════════════
-                         RE-SUBMIT PANEL
-                         Visible only for REFER_BACK batches.
-                         Button enabled only when all referrals cleared.
-                    ════════════════════════════════════════════════ -->
+                    <!-- RE-SUBMIT PANEL -->
                     <div id="resubmitPanel"
                          sclass="resubmit-panel mb12"
                          visible="false">
@@ -237,7 +216,6 @@
 
                             <div sclass="split-body">
 
-                                <!-- Empty state placeholder -->
                                 <div id="detailEmpty"
                                      sclass="detail-empty"
                                      visible="true">
@@ -247,7 +225,6 @@
                                     </n:div>
                                 </div>
 
-                                <!-- Dynamic content built by composer -->
                                 <div id="detailBody"
                                      visible="false"/>
 

@@ -504,18 +504,7 @@ table.dt tr:hover td { background: #eef3fa; }
   background: var(--bg);
 }
 
-.logo {
-  width: 26px;
-  height: 26px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: var(--r4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
-}
+
 
 /* ════════════════════════════════════════════════════
    FORM LABELS (extended)

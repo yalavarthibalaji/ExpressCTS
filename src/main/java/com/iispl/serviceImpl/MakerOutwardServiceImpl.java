@@ -9,21 +9,17 @@ import com.iispl.daoImpl.OutwardChequeDaoImpl;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.service.AuditService;
 import com.iispl.service.MakerOutwardService;
+import com.iispl.service.NotificationService;
 
 /**
  * File    : com/iispl/serviceImpl/MakerOutwardServiceImpl.java
- * Purpose : Implementation of MakerOutwardService.
- *           Thin orchestration over OutwardChequeDao + OutwardBatchDao.
  */
 public class MakerOutwardServiceImpl implements MakerOutwardService {
 
-    private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
-    private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
-    private final AuditService auditService = new AuditServiceImpl();
-
-    // ════════════════════════════════════════════════════════════════
-    //  Referral counts per module (dashboard module-picker popup)
-    // ════════════════════════════════════════════════════════════════
+    private final OutwardChequeDao    chequeDao    = new OutwardChequeDaoImpl();
+    private final OutwardBatchDao     batchDao     = new OutwardBatchDaoImpl();
+    private final AuditService        auditService = new AuditServiceImpl();
+    private final NotificationService notifService = new NotificationServiceImpl();
 
     @Override
     public int[] getReferralCounts(Long batchDbId) {
@@ -35,10 +31,6 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
         return new int[]{micr, data};
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  Total active referrals on a batch (re-submit gating)
-    // ════════════════════════════════════════════════════════════════
-
     @Override
     public int countActiveReferrals(Long batchDbId) {
         if (batchDbId == null) return 0;
@@ -48,13 +40,8 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
         return total;
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  Resubmit Batch — REFER_BACK → SUBMITTED
-    // ════════════════════════════════════════════════════════════════
-
     @Override
-    public boolean resubmitBatch(Long batchDbId, Long makerId) {
-        // ── Input validation ──
+    public boolean resubmitBatch(Long batchDbId, Long makerId, String makerName) {
         if (batchDbId == null) {
             System.err.println("MakerOutwardService → resubmitBatch: batchDbId is null");
             return false;
@@ -64,7 +51,7 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
             return false;
         }
 
-        // ── Verify batch exists and is REFER_BACK ──
+        // Verify batch belongs to this maker and is REFER_BACK
         List<OutwardBatch> all = batchDao.findByCreatedBy(makerId);
         OutwardBatch batch = null;
         for (OutwardBatch b : all) {
@@ -82,7 +69,6 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
             return false;
         }
 
-        // ── Verify no referrals remain ──
         int remaining = chequeDao.countActiveReferrals(batchDbId);
         if (remaining > 0) {
             System.err.println("MakerOutwardService → resubmitBatch: "
@@ -91,6 +77,7 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
         }
 
         boolean ok = batchDao.markSubmitted(batchDbId, makerId);
+
         if (ok) {
             System.out.println("MakerOutwardService → resubmitBatch: batchId="
                     + batchDbId + " (" + batch.getBatchId() + ") "
@@ -104,6 +91,10 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
                 batchDbId,
                 "status=REFER_BACK",
                 "status=SUBMITTED, batchId=" + batch.getBatchId());
+
+            // ── Notify all CHECKER_OUTWARD users that this batch is back ──
+            notifService.notifyResubmitted(batch.getBatchId(), makerName);
+
         } else {
             System.err.println("MakerOutwardService → resubmitBatch: "
                     + "status update failed for batchId=" + batchDbId);
