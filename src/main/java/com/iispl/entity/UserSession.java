@@ -14,7 +14,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "session")
+@Table(name = "user_sessions")
 public class UserSession {
 
     @Id

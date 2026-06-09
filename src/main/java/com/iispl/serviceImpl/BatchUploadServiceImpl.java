@@ -18,6 +18,7 @@ import com.iispl.dto.xml.ChequeXml;
 import com.iispl.entity.User;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
+import com.iispl.service.AuditService;
 import com.iispl.service.BatchUploadService;
 import com.iispl.util.CxfParser;
 import com.iispl.util.MicrValidator;
@@ -37,6 +38,7 @@ public class BatchUploadServiceImpl implements BatchUploadService {
 
     private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
+    private final AuditService auditService = new AuditServiceImpl();
 
     // ════════════════════════════════════════════════════
     //  Batch ID Generation — B-YYYY-MMDD-NNN
@@ -156,12 +158,26 @@ public class BatchUploadServiceImpl implements BatchUploadService {
                 + " BatchID: "       + batchId
                 + " | Status: "      + batchStatus
                 + " | MICR errors: " + hasMicrErrors);
-
+     // F3-B audit log
+        auditService.log(
+            makerId,
+            AuditService.M_BATCH_UPLOAD,
+            AuditService.A_BATCH_UPLOADED,
+            AuditService.E_OUTWARD_BATCH,
+            savedBatch.getId(),
+            null,
+            "batchId=" + batchId
+            + ", cheques=" + parsedCount
+            + ", amount=" + parsedAmount
+            + ", file=" + originalFileName
+            + ", micrErrors=" + hasMicrErrors);
         return BatchUploadResult.success(
             batchId, savedBatch.getId(),
             parsedCount, parsedAmount,
             expectedChequeCount, expectedTotalAmount,
             hasMismatch, hasMicrErrors, chequeEntities);
+        
+     
     }
 
     // ════════════════════════════════════════════════════

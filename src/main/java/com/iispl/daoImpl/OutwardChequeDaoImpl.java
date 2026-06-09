@@ -650,6 +650,20 @@ public int countActiveReferrals(Long batchDbId) {
         session.close();
     }
 }
+
+@Override
+public OutwardCheque findById(Long chequeId) {
+    if (chequeId == null) return null;
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    try {
+        return session.get(OutwardCheque.class, chequeId);
+    } catch (Exception e) {
+        System.err.println("OutwardChequeDao → findById failed: " + e.getMessage());
+        return null;
+    } finally {
+        session.close();
+    }
+}
   
     
 }

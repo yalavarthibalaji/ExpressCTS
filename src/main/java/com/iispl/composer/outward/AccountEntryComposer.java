@@ -683,7 +683,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             // For REFER_BACK batches, the maker manually re-submits from
             // View Batches so they explicitly confirm the fix.
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
-                entryService.submitBatch(currentBatch.getId());
+            	entryService.submitBatch(currentBatch.getId(), currentMakerId);
                 Clients.showNotification(
                     "All entries done! Batch " + batchId
                     + " submitted to Checker queue.",
@@ -771,7 +771,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             // Auto-submit only for the NORMAL flow.
             // For REFER_BACK batches, the maker manually re-submits later.
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
-                entryService.submitBatch(currentBatch.getId());
+            	entryService.submitBatch(currentBatch.getId(), currentMakerId);
             } else {
                 System.out.println("AccountEntryComposer → REFER_BACK batch "
                     + currentBatch.getBatchId()

@@ -14,6 +14,7 @@ import com.iispl.entity.User;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.entity.outward.OutwardMicrRepair;
+import com.iispl.service.AuditService;
 import com.iispl.service.MicrRepairService;
 
 /**
@@ -32,6 +33,7 @@ public class MicrRepairServiceImpl implements MicrRepairService {
     private final OutwardBatchDao      batchDao  = new OutwardBatchDaoImpl();
     private final OutwardChequeDao     chequeDao = new OutwardChequeDaoImpl();
     private final OutwardMicrRepairDao repairDao = new OutwardMicrRepairDaoImpl();
+    private final AuditService auditService = new AuditServiceImpl();
 
     // ════════════════════════════════════════════════════
     //  Load Batch
@@ -150,7 +152,15 @@ public class MicrRepairServiceImpl implements MicrRepairService {
         // Individual field logs would require loading the cheque — can be
         // added in a future phase.
 
-        // ── Step 4: Update cheque in DB ──
+     // ── Step 4: Load ORIGINAL cheque BEFORE update (for audit snapshot) ──
+        OutwardCheque before = chequeDao.findById(chequeId);
+        if (before == null) {
+            System.err.println("MicrRepairService → saveRepair: cheque not found id="
+                    + chequeId);
+            return false;
+        }
+
+        // ── Step 5: Update cheque in DB ──
         boolean updated = chequeDao.updateMicrRepaired(
                 chequeId,
                 cityCode.trim(),
@@ -166,9 +176,16 @@ public class MicrRepairServiceImpl implements MicrRepairService {
             return false;
         }
 
-        // ── Step 5: Log audit record to outward_micr_repair ──
-        saveAuditLog(chequeId, cityCode, bankCode, branchCode,
-                     baseNumber, transCode, correctedMicr, remarks, makerId);
+        // ── Step 6: Log audit with REAL old + new values per field (Phase F1) ──
+        writeRepairAuditLog(before,
+                             cityCode.trim(),
+                             bankCode.trim(),
+                             branchCode.trim(),
+                             baseNumber.trim(),
+                             transCode.trim(),
+                             correctedMicr,
+                             remarks,
+                             makerId);
 
         // ── Step 6: Clear referral if this cheque was sent by Checker ──
         // Safe to call unconditionally — DAO method only updates when
@@ -181,6 +198,15 @@ public class MicrRepairServiceImpl implements MicrRepairService {
         System.out.println("MicrRepairService → Repair saved. "
                 + "chequeId=" + chequeId
                 + " | correctedMicr=" + correctedMicr);
+     // F3-B audit log
+        auditService.log(
+            makerId,
+            AuditService.M_MICR_REPAIR,
+            AuditService.A_MICR_REPAIRED,
+            AuditService.E_OUTWARD_CHEQUE,
+            chequeId,
+            before != null ? "micr=" + before.getMicrCode() : null,
+            "micr=" + correctedMicr);
 
         return true;
     }
@@ -217,10 +243,16 @@ public class MicrRepairServiceImpl implements MicrRepairService {
                 makerId);
 
         if (ok) {
-            // Clear referral pointer in case this rejection happened on a
-            // CHECKER_REFERRED cheque (REFER_BACK batch flow). DAO is a
-            // no-op when referred_to_module is already NULL.
             chequeDao.clearReferral(chequeId, "REJECTED");
+
+            auditService.log(
+                makerId,
+                AuditService.M_MICR_REPAIR,
+                AuditService.A_CHEQUE_REJECTED,
+                AuditService.E_OUTWARD_CHEQUE,
+                chequeId,
+                null,
+                "reason=" + reasonCode + ", remarks=" + remarks);
 
             System.out.println("MicrRepairService → Cheque id=" + chequeId
                     + " rejected. Reason=" + reasonCode);
@@ -248,22 +280,24 @@ public class MicrRepairServiceImpl implements MicrRepairService {
     }
 
     /**
-     * Updates batch status from NEEDS_REPAIR → ENTRY_PENDING.
-     * Called after all MICR repairs are completed/rejected.
-     * The batch can now move to the Account & Amount Entry step.
+     * Called by MicrRepairComposer after the last MICR-error cheque in a batch
+     * has been repaired. Moves the batch forward to ENTRY_PENDING AND keeps
+     * the (denormalized) outward_batch.repair_status in sync.
      *
-     * STATUS FIX: was "ENTRY_DONE" — renamed to "ENTRY_PENDING"
-     * because ENTRY_DONE sounds like entries are already done,
-     * but it actually means "ready for data entry (pending)".
+     * Phase F2 fix:
+     *   - Previously only updated status='ENTRY_PENDING'.
+     *   - The repair_status column on outward_batch was left at 'NEEDS_REPAIR'
+     *     forever, so dashboard counts and reports lied about the batch.
+     *   - Now we mark BOTH columns in a single DB call.
      */
     @Override
     public boolean markBatchEntryDone(Long batchDbId) {
         if (batchDbId == null) return false;
 
-        boolean ok = batchDao.updateStatus(batchDbId, "ENTRY_PENDING");
+        boolean ok = batchDao.markRepairsCompleted(batchDbId);
         if (ok) {
             System.out.println("MicrRepairService → Batch id=" + batchDbId
-                    + " status updated to ENTRY_PENDING. "
+                    + " → status=ENTRY_PENDING, repair_status=REPAIRED. "
                     + "Ready for Account & Amount Entry.");
         } else {
             System.err.println("MicrRepairService → markBatchEntryDone failed "
@@ -281,53 +315,117 @@ public class MicrRepairServiceImpl implements MicrRepairService {
      * In a future phase this can be expanded to log each
      * individual field change separately.
      */
-    private void saveAuditLog(Long   chequeId,
-                               String cityCode,
-                               String bankCode,
-                               String branchCode,
-                               String baseNumber,
-                               String transCode,
-                               String correctedMicr,
-                               String remarks,
-                               Long   makerId) {
-        try {
-            OutwardMicrRepair log = new OutwardMicrRepair();
+    /**
+     * Loads the original cheque and emits ONE outward_micr_repair row
+     * per field that actually changed. Fixes C4 + C5:
+     *   - field_name now stores the real field that changed (e.g. 'city_code')
+     *     instead of the meaningless constant 'MICR_REPAIR'.
+     *   - old_value now stores the ACTUAL previous value (e.g. '989')
+     *     instead of the literal placeholder string 'original_micr'.
+     *
+     * Called AFTER updateMicrRepaired() succeeds. The "before" cheque
+     * snapshot is fetched at the start of saveRepair() and passed in here.
+     */
+    private void writeRepairAuditLog(OutwardCheque before,
+                                       String correctedCity,
+                                       String correctedBank,
+                                       String correctedBranch,
+                                       String correctedBase,
+                                       String correctedTxnCode,
+                                       String correctedMicr,
+                                       String remarks,
+                                       Long   makerId) {
 
-            // Reference the cheque by ID (no full load needed)
-            OutwardCheque chequeRef = new OutwardCheque();
-            chequeRef.setId(chequeId);
-            log.setOutwardCheque(chequeRef);
+        if (before == null) {
+            System.err.println("MicrRepairService → writeRepairAuditLog: "
+                    + "no 'before' snapshot — skipping audit");
+            return;
+        }
 
-            // Summary record for the full repair action
-            log.setFieldName("MICR_REPAIR");
-            log.setOldValue("original_micr");
-            log.setNewValue(correctedMicr);
-            log.setRepairType("MICR_ERROR");
+        Long   chequeId  = before.getId();
+        String oldCity   = nz(before.getCityCode());
+        String oldBank   = nz(before.getBankCode());
+        String oldBranch = nz(before.getBranchCode());
+        String oldBase   = nz(before.getBaseNumber());
+        String oldTxn    = nz(before.getTransactionCode());
+        String oldMicr   = nz(before.getMicrCode());
 
-            // Remarks (optional, from maker)
-            if (!isBlank(remarks)) {
-                // Note: OutwardMicrRepair doesn't have remarks field
-                // We encode it into newValue as a suffix if needed
-                // This is acceptable for training scope
-                log.setNewValue(correctedMicr
-                        + (isBlank(remarks) ? "" : " | " + remarks.trim()));
+        // Per-field comparison — only log fields that actually changed
+        logFieldChange(chequeId, makerId, "city_code",        oldCity,   nz(correctedCity));
+        logFieldChange(chequeId, makerId, "bank_code",        oldBank,   nz(correctedBank));
+        logFieldChange(chequeId, makerId, "branch_code",      oldBranch, nz(correctedBranch));
+        logFieldChange(chequeId, makerId, "base_number",      oldBase,   nz(correctedBase));
+        logFieldChange(chequeId, makerId, "transaction_code", oldTxn,    nz(correctedTxnCode));
+        // Also log the full reconstructed MICR for convenience
+        logFieldChange(chequeId, makerId, "micr_code",        oldMicr,   nz(correctedMicr));
+
+        // Maker remarks attached as a single info row (only if provided)
+        if (remarks != null && !remarks.trim().isEmpty()) {
+            try {
+                OutwardMicrRepair row = new OutwardMicrRepair();
+                OutwardCheque chequeRef = new OutwardCheque();
+                chequeRef.setId(chequeId);
+                row.setOutwardCheque(chequeRef);
+
+                row.setFieldName("remarks");
+                row.setOldValue("");
+                row.setNewValue(remarks.trim());
+                row.setRepairType("MAKER_REMARK");
+
+                User maker = new User();
+                maker.setId(makerId);
+                row.setRepairedBy(maker);
+                row.setRepairedAt(LocalDateTime.now());
+
+                repairDao.save(row);
+            } catch (Exception e) {
+                System.err.println("MicrRepairService → remark audit failed: "
+                        + e.getMessage());
             }
-
-            // Who repaired it
-            User maker = new User();
-            maker.setId(makerId);
-            log.setRepairedBy(maker);
-            log.setRepairedAt(LocalDateTime.now());
-
-            repairDao.save(log);
-
-        } catch (Exception e) {
-            // Audit log failure should not block the repair save
-            System.err.println("MicrRepairService → saveAuditLog failed "
-                    + "(non-critical): " + e.getMessage());
         }
     }
 
+    /**
+     * Inserts ONE outward_micr_repair row for a single field, but only
+     * if old != new. Empty / unchanged fields are skipped.
+     */
+    private void logFieldChange(Long   chequeId,
+                                  Long   makerId,
+                                  String fieldName,
+                                  String oldValue,
+                                  String newValue) {
+        if (oldValue == null) oldValue = "";
+        if (newValue == null) newValue = "";
+        if (oldValue.equals(newValue)) return;  // no change → no audit row
+
+        try {
+            OutwardMicrRepair row = new OutwardMicrRepair();
+            OutwardCheque cheque = new OutwardCheque();
+            cheque.setId(chequeId);
+            row.setOutwardCheque(cheque);
+
+            row.setFieldName(fieldName);
+            row.setOldValue(oldValue);
+            row.setNewValue(newValue);
+            row.setRepairType("MICR_FIELD_FIX");
+
+            User maker = new User();
+            maker.setId(makerId);
+            row.setRepairedBy(maker);
+            row.setRepairedAt(LocalDateTime.now());
+
+            repairDao.save(row);
+            System.out.println("MicrRepairService → audit: cheque=" + chequeId
+                    + " field=" + fieldName
+                    + " old='" + oldValue + "' → new='" + newValue + "'");
+        } catch (Exception e) {
+            System.err.println("MicrRepairService → logFieldChange failed: "
+                    + e.getMessage());
+        }
+    }
+
+    /** Null-safe string helper. */
+    private String nz(String s) { return s == null ? "" : s; }
     /**
      * Pads a string with leading zeros to the required length.
      * Truncates if longer than required.

@@ -158,4 +158,12 @@ public interface OutwardChequeDao {
      * Used to gate the "Re-submit to Checker" button.
      */
     int countActiveReferrals(Long batchDbId);
+    
+    /**
+     * Loads a single OutwardCheque by primary key.
+     * Used to capture original field values BEFORE updates (audit logging).
+     *
+     * @return the OutwardCheque or null if not found
+     */
+    OutwardCheque findById(Long chequeId);
 }

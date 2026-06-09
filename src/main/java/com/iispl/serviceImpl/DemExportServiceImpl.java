@@ -16,6 +16,7 @@ import com.iispl.entity.User;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.entity.outward.OutwardExport;
+import com.iispl.service.AuditService;
 import com.iispl.service.DemExportService;
 import com.iispl.util.CigfFileGenerator;
 import com.iispl.util.CxfFileGenerator;
@@ -30,15 +31,22 @@ import com.iispl.util.CxfFileGenerator;
  *
  * If /opt/cts/exports is not writable on the dev machine, change
  * EXPORT_BASE_DIR to a path that is writable (e.g. /tmp/cts-exports).
+ *
+ * Phase F3-B additions:
+ *   - AuditService logs EXPORT_GENERATED for each generated file (CXF + CIGF)
+ *   - AuditService logs BATCH_EXPORTED at the batch level when status moves to EXPORTED
+ *   - markTransmitted() logs EXPORT_TRANSMITTED (using the export row's
+ *     generatedBy as the actor, since this method has no explicit user param)
  */
 public class DemExportServiceImpl implements DemExportService {
 
     /** Base directory where CXF and CIGF files are written. */
     private static final String EXPORT_BASE_DIR = "/opt/cts/exports/outward";
 
-    private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
-    private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
-    private final OutwardExportDao exportDao = new OutwardExportDaoImpl();
+    private final OutwardBatchDao  batchDao     = new OutwardBatchDaoImpl();
+    private final OutwardChequeDao chequeDao    = new OutwardChequeDaoImpl();
+    private final OutwardExportDao exportDao    = new OutwardExportDaoImpl();
+    private final AuditService     auditService = new AuditServiceImpl();
 
     // ════════════════════════════════════════════════════
     //  Queue Loading
@@ -147,9 +155,11 @@ public class DemExportServiceImpl implements DemExportService {
         }
 
         // ── Step 5: Record both files in outward_exports ──
+        OutwardExport cxfExport;
+        OutwardExport cigfExport;
         try {
-            saveExportRow(batch, "CXF",  cxfPath,  checkerId);
-            saveExportRow(batch, "CIGF", cigfPath, checkerId);
+            cxfExport  = saveExportRow(batch, "CXF",  cxfPath,  checkerId);
+            cigfExport = saveExportRow(batch, "CIGF", cigfPath, checkerId);
         } catch (Exception e) {
             System.err.println("DemExportService → DB record failed: " + e.getMessage());
             return DemExportResult.failure(batch.getBatchId(),
@@ -170,6 +180,48 @@ public class DemExportServiceImpl implements DemExportService {
             if ("CHECKER_PASSED".equalsIgnoreCase(c.getStatus())) exportedCount++;
         }
 
+        // ── Step 8 (F3-B): Audit log ──
+        try {
+            // One row per generated file
+            if (cxfExport != null && cxfExport.getId() != null) {
+                auditService.log(
+                    checkerId,
+                    AuditService.M_DEM_EXPORT,
+                    AuditService.A_EXPORT_GENERATED,
+                    AuditService.E_EXPORT_FILE,
+                    cxfExport.getId(),
+                    null,
+                    "type=CXF, file=" + cxfExport.getFileName()
+                    + ", batchId=" + batch.getBatchId());
+            }
+            if (cigfExport != null && cigfExport.getId() != null) {
+                auditService.log(
+                    checkerId,
+                    AuditService.M_DEM_EXPORT,
+                    AuditService.A_EXPORT_GENERATED,
+                    AuditService.E_EXPORT_FILE,
+                    cigfExport.getId(),
+                    null,
+                    "type=CIGF, file=" + cigfExport.getFileName()
+                    + ", batchId=" + batch.getBatchId());
+            }
+            // Batch-level state change row
+            if (statusUpdated) {
+                auditService.log(
+                    checkerId,
+                    AuditService.M_DEM_EXPORT,
+                    "BATCH_EXPORTED",
+                    AuditService.E_OUTWARD_BATCH,
+                    batch.getId(),
+                    "status=CHECKER_APPROVED",
+                    "status=EXPORTED, exportedCheques=" + exportedCount);
+            }
+        } catch (Exception e) {
+            // Audit failure must never break the export flow
+            System.err.println("DemExportService → audit log failed (non-critical): "
+                    + e.getMessage());
+        }
+
         System.out.println("DemExportService → Export complete for batch "
                 + batch.getBatchId() + " | exportedCheques=" + exportedCount);
 
@@ -184,20 +236,47 @@ public class DemExportServiceImpl implements DemExportService {
     @Override
     public boolean markTransmitted(Long exportId) {
         if (exportId == null) return false;
-        return exportDao.markTransmitted(exportId);
-    }
 
+        boolean ok = exportDao.markTransmitted(exportId);
+
+        if (ok) {
+            // F3-B audit log — userId is null because markTransmitted has no
+            // explicit user context. AuditServiceImpl handles null userId by
+            // falling back to a "system" row.
+            // The EXPORT_GENERATED audit row already records who generated the
+            // file, so the actor for the transmit event is implicit.
+            try {
+                auditService.log(
+                    null,
+                    AuditService.M_DEM_EXPORT,
+                    AuditService.A_EXPORT_TRANSMITTED,
+                    AuditService.E_EXPORT_FILE,
+                    exportId,
+                    "status=GENERATED",
+                    "status=TRANSMITTED");
+            } catch (Exception e) {
+                System.err.println("DemExportService → markTransmitted audit failed "
+                        + "(non-critical): " + e.getMessage());
+            }
+        }
+
+        return ok;
+    }
     // ════════════════════════════════════════════════════
     //  Private Helpers
     // ════════════════════════════════════════════════════
 
     /**
      * Inserts a row in outward_exports for one generated file.
+     *
+     * Phase F3-B change:
+     *   - Returns the persisted OutwardExport so callers can read its id
+     *     for audit logging. Previously returned void.
      */
-    private void saveExportRow(OutwardBatch batch,
-                                String        fileType,
-                                String        filePath,
-                                Long          checkerId) {
+    private OutwardExport saveExportRow(OutwardBatch batch,
+                                          String        fileType,
+                                          String        filePath,
+                                          Long          checkerId) {
         OutwardExport export = new OutwardExport();
 
         // Reference batch and user by id-only proxy (no full load required)
@@ -216,5 +295,7 @@ public class DemExportServiceImpl implements DemExportService {
         export.setGeneratedAt(LocalDateTime.now());
 
         exportDao.save(export);
+        // After session.persist(), Hibernate populates the id on the entity
+        return export;
     }
 }

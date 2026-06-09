@@ -15,10 +15,9 @@ import com.iispl.dao.OutwardBatchDao;
 import com.iispl.dao.OutwardChequeDao;
 import com.iispl.daoImpl.OutwardBatchDaoImpl;
 import com.iispl.daoImpl.OutwardChequeDaoImpl;
-import com.iispl.entity.User;
 import com.iispl.entity.outward.OutwardBatch;
-import com.iispl.entity.outward.OutwardCheckerAction;
 import com.iispl.entity.outward.OutwardCheque;
+import com.iispl.service.AuditService;
 import com.iispl.service.CheckerService;
 import com.iispl.util.HibernateUtil;
 
@@ -53,6 +52,7 @@ public class CheckerServiceImpl implements CheckerService {
 
     private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
+    private final AuditService auditService = new AuditServiceImpl();
 
     // ════════════════════════════════════════════════════════════════════════
     //  Queue Loading
@@ -584,7 +584,6 @@ public class CheckerServiceImpl implements CheckerService {
 
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            // Count referred cheques in this batch
             String sql = "SELECT COUNT(*) FROM outward_cheque "
                        + "WHERE batch_id = :id "
                        + "  AND status = 'CHECKER_REFERRED'";
@@ -594,21 +593,40 @@ public class CheckerServiceImpl implements CheckerService {
             int referredCount = n != null ? n.intValue() : 0;
 
             if (referredCount > 0) {
-                // Has referrals → send batch back to Maker
                 batchDao.updateStatus(batchDbId, "REFER_BACK");
+
+                auditService.log(
+                    checkerId,
+                    AuditService.M_CHECKER_QUEUE,
+                    AuditService.A_BATCH_REFERRED,
+                    AuditService.E_OUTWARD_BATCH,
+                    batchDbId,
+                    "status=CHECKER_HOLD",
+                    "status=REFER_BACK, referredCount=" + referredCount);
+
                 System.out.println("CheckerService → finalizeBatchIfDone: batchId="
                         + batchDbId + " has " + referredCount
                         + " referred cheque(s) → REFER_BACK");
                 return "REFER_BACK";
             } else {
-                // No referrals → approve and ready for export
                 approveBatch(batchDbId, checkerId);
+
+                auditService.log(
+                    checkerId,
+                    AuditService.M_CHECKER_QUEUE,
+                    AuditService.A_BATCH_APPROVED,
+                    AuditService.E_OUTWARD_BATCH,
+                    batchDbId,
+                    null,
+                    "status=CHECKER_APPROVED");
+
                 System.out.println("CheckerService → finalizeBatchIfDone: batchId="
                         + batchDbId + " → CHECKER_APPROVED");
                 return "CHECKER_APPROVED";
             }
         } catch (Exception e) {
-            System.err.println("CheckerService → finalizeBatchIfDone failed: " + e.getMessage());
+            System.err.println("CheckerService → finalizeBatchIfDone failed: "
+                    + e.getMessage());
             return null;
         } finally {
             session.close();

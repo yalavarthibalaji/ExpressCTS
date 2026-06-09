@@ -415,4 +415,69 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
+    
+    
+    @Override
+    public boolean markSubmitted(Long batchDbId, Long makerId) {
+        if (batchDbId == null || makerId == null) {
+            System.err.println("OutwardBatchDao → markSubmitted: null input");
+            return false;
+        }
+        Session     session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tx      = null;
+        try {
+            tx = session.beginTransaction();
+            String sql = "UPDATE outward_batch "
+                       + "SET status       = 'SUBMITTED', "
+                       + "    submitted_at = NOW(), "
+                       + "    submitted_by = :makerId, "
+                       + "    updated_at   = NOW() "
+                       + "WHERE id = :id";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("makerId", makerId);
+            q.setParameter("id",      batchDbId);
+            int rows = q.executeUpdate();
+            tx.commit();
+            System.out.println("OutwardBatchDao → markSubmitted: batchId=" + batchDbId
+                    + " by makerId=" + makerId + " (rows=" + rows + ")");
+            return rows > 0;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            System.err.println("OutwardBatchDao → markSubmitted failed: " + e.getMessage());
+            return false;
+        } finally {
+            session.close();
+        }
+    }
+    
+    
+    @Override
+    public boolean markRepairsCompleted(Long batchDbId) {
+        if (batchDbId == null) return false;
+        Session     session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tx      = null;
+        try {
+            tx = session.beginTransaction();
+            // Single atomic UPDATE — status + repair_status together.
+            String sql = "UPDATE outward_batch "
+                       + "SET status        = 'ENTRY_PENDING', "
+                       + "    repair_status = 'REPAIRED', "
+                       + "    updated_at    = NOW() "
+                       + "WHERE id = :id";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("id", batchDbId);
+            int rows = q.executeUpdate();
+            tx.commit();
+            System.out.println("OutwardBatchDao → markRepairsCompleted: batchId="
+                    + batchDbId + " (rows=" + rows + ")");
+            return rows > 0;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            System.err.println("OutwardBatchDao → markRepairsCompleted failed: "
+                    + e.getMessage());
+            return false;
+        } finally {
+            session.close();
+        }
+    }
 }

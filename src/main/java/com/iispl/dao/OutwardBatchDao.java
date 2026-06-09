@@ -77,4 +77,21 @@ public interface OutwardBatchDao {
      * @return        Number of batches with that status
      */
     int countByStatus(String status);
+    
+    /**
+     * Updates batch when Maker submits it to Checker queue.
+     * Sets status='SUBMITTED', submitted_at=NOW(), submitted_by=:makerId.
+     * Replaces the buggy single-column updateStatus() call.
+     */
+    boolean markSubmitted(Long batchDbId, Long makerId);
+    
+    /**
+     * Marks a batch as fully repaired:
+     *   - status        → 'ENTRY_PENDING'
+     *   - repair_status → 'REPAIRED'
+     *
+     * Used by MICR Repair when the last MICR error in the batch is fixed.
+     * Single atomic UPDATE so the two columns can never drift out of sync.
+     */
+    boolean markRepairsCompleted(Long batchDbId);
 }

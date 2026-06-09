@@ -1,13 +1,14 @@
 package com.iispl.serviceImpl;
 
+import java.util.List;
+
 import com.iispl.dao.OutwardBatchDao;
 import com.iispl.dao.OutwardChequeDao;
 import com.iispl.daoImpl.OutwardBatchDaoImpl;
 import com.iispl.daoImpl.OutwardChequeDaoImpl;
 import com.iispl.entity.outward.OutwardBatch;
+import com.iispl.service.AuditService;
 import com.iispl.service.MakerOutwardService;
-
-import java.util.List;
 
 /**
  * File    : com/iispl/serviceImpl/MakerOutwardServiceImpl.java
@@ -18,6 +19,7 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
 
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
     private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
+    private final AuditService auditService = new AuditServiceImpl();
 
     // ════════════════════════════════════════════════════════════════
     //  Referral counts per module (dashboard module-picker popup)
@@ -88,12 +90,20 @@ public class MakerOutwardServiceImpl implements MakerOutwardService {
             return false;
         }
 
-        // ── Update batch status ──
-        boolean ok = batchDao.updateStatus(batchDbId, "SUBMITTED");
+        boolean ok = batchDao.markSubmitted(batchDbId, makerId);
         if (ok) {
             System.out.println("MakerOutwardService → resubmitBatch: batchId="
                     + batchDbId + " (" + batch.getBatchId() + ") "
                     + "→ SUBMITTED by maker " + makerId);
+
+            auditService.log(
+                makerId,
+                AuditService.M_ACCOUNT_ENTRY,
+                AuditService.A_BATCH_RESUBMITTED,
+                AuditService.E_OUTWARD_BATCH,
+                batchDbId,
+                "status=REFER_BACK",
+                "status=SUBMITTED, batchId=" + batch.getBatchId());
         } else {
             System.err.println("MakerOutwardService → resubmitBatch: "
                     + "status update failed for batchId=" + batchDbId);

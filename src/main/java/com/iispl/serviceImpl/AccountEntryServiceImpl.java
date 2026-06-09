@@ -11,6 +11,7 @@ import com.iispl.daoImpl.OutwardChequeDaoImpl;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.service.AccountEntryService;
+import com.iispl.service.AuditService;
 
 /**
  * File    : com/iispl/serviceImpl/AccountEntryServiceImpl.java
@@ -20,6 +21,7 @@ public class AccountEntryServiceImpl implements AccountEntryService {
 
     private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
+    private final AuditService auditService = new AuditServiceImpl();
 
     @Override
     public OutwardBatch getBatch(String batchId) {
@@ -95,9 +97,16 @@ public class AccountEntryServiceImpl implements AccountEntryService {
             makerId);
 
         if (ok) {
-            // Clear referral if this rejection happened on a CHECKER_REFERRED
-            // cheque (REFER_BACK batch flow). No-op otherwise.
             chequeDao.clearReferral(chequeId, "REJECTED");
+
+            auditService.log(
+                makerId,
+                AuditService.M_ACCOUNT_ENTRY,
+                AuditService.A_CHEQUE_REJECTED,
+                AuditService.E_OUTWARD_CHEQUE,
+                chequeId,
+                null,
+                "reason=" + reasonCode + ", remarks=" + remarks);
         }
         return ok;
     }
@@ -112,12 +121,22 @@ public class AccountEntryServiceImpl implements AccountEntryService {
     }
 
     @Override
-    public boolean submitBatch(Long batchDbId) {
-        if (batchDbId == null) return false;
-        boolean ok = batchDao.updateStatus(batchDbId, "SUBMITTED");
+    public boolean submitBatch(Long batchDbId, Long makerId) {
+        if (batchDbId == null || makerId == null) return false;
+
+        boolean ok = batchDao.markSubmitted(batchDbId, makerId);
         if (ok) {
             System.out.println("AccountEntryService → Batch id=" + batchDbId
-                    + " SUBMITTED to Checker queue.");
+                    + " SUBMITTED to Checker queue by makerId=" + makerId);
+
+            auditService.log(
+                makerId,
+                AuditService.M_ACCOUNT_ENTRY,
+                AuditService.A_BATCH_SUBMITTED,
+                AuditService.E_OUTWARD_BATCH,
+                batchDbId,
+                "status=ENTRY_PENDING",
+                "status=SUBMITTED");
         }
         return ok;
     }

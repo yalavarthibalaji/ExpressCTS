@@ -71,8 +71,13 @@ public interface AccountEntryService {
     boolean isAllEntriesDone(Long batchDbId);
 
     /**
-     * Marks batch status = SUBMITTED once all account entries are done.
-     * Batch moves to Checker queue after this.
+     * Maker submits a batch to the Checker queue.
+     * Sets status='SUBMITTED' AND records submitted_at + submitted_by
+     * (was a lifecycle gap in the prior implementation).
+     *
+     * @param batchDbId outward_batch primary key
+     * @param makerId   the user submitting the batch (for audit)
      */
-    boolean submitBatch(Long batchDbId);
+    boolean submitBatch(Long batchDbId, Long makerId);
+    
 }
