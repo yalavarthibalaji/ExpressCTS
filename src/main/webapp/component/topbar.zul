@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    File    : component/topbar.zul
-    Purpose : Reusable top navigation bar with logo, user info and logout.
-              Used by all dashboards via <include src="/component/topbar.zul" />
-    Composer: com.iispl.composer.TopbarComposer
--->
-
 <div sclass="topbar" apply="com.iispl.composer.TopbarComposer"
      xmlns="http://www.zkoss.org/2005/zul">
+
+    <timer id="notifTimer" delay="15000" repeats="true" />
 
     <!-- Logo -->
     <div sclass="logo">
@@ -15,8 +10,25 @@
         <div sclass="logo-txt">Express<span>Clear</span> CTS</div>
     </div>
 
-    <!-- Right side: user info + logout -->
+    <!-- Right side -->
     <div sclass="topbar-right">
+
+        <!-- Notification bell -->
+        <div sclass="notif-wrap">
+            <button id="btnBell" sclass="bell-btn" label="🔔" />
+            <label id="notifBadge" sclass="notif-badge" value="" visible="false" />
+            <popup id="notifPopup" sclass="notif-popup">
+                <div sclass="notif-popup-header">
+                    <label value="Notifications" sclass="notif-popup-title" />
+                    <button id="btnMarkAllRead" sclass="notif-mark-read-btn" label="Mark all read" />
+                </div>
+                <div id="notifList" sclass="notif-list" />
+                <div id="notifEmpty" sclass="notif-empty" visible="false">
+                    <label value="No new notifications" />
+                </div>
+            </popup>
+        </div>
+
         <div id="userAvatar" sclass="uavatar" />
         <div>
             <label id="userName" sclass="uname" value="—" />
