@@ -11,20 +11,12 @@ import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Window;
 
 import com.iispl.entity.inward.InwardCheque;
-import com.iispl.service.ChequeRepairService;
-import com.iispl.serviceImpl.ChequeRepairServiceImpl;
+import com.iispl.service.DateAmountService;
+import com.iispl.serviceImpl.DateAmountServiceImpl;
 
-/**
- * Step3EntryDialogComposer
- *
- * Modal dialog composer for entering payee name and account number (Step 3).
- * Receives chequeId via Executions.getCurrent().getArg().
- */
 public class EntryDialogComposer extends SelectorComposer<Component> {
 
     private static final long serialVersionUID = 1L;
-
-    // ── Wired ─────────────────────────────────────────────────────────────
 
     @Wire("#step3EntryDialog")
     private Window step3EntryDialog;
@@ -44,12 +36,8 @@ public class EntryDialogComposer extends SelectorComposer<Component> {
     @Wire("#tbxAccountNo")
     private Textbox tbxAccountNo;
 
-    // ── State ─────────────────────────────────────────────────────────────
-
     private InwardCheque cheque;
-    private final ChequeRepairService service = new ChequeRepairServiceImpl();
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    private final DateAmountService service = new DateAmountServiceImpl();
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
@@ -57,14 +45,16 @@ public class EntryDialogComposer extends SelectorComposer<Component> {
 
         Long chequeId = (Long) Executions.getCurrent().getArg().get("chequeId");
         if (chequeId == null) {
-            Messagebox.show("Missing cheque ID.", "Error", Messagebox.OK, Messagebox.ERROR);
+            Messagebox.show("Missing cheque ID.", "Error",
+                    Messagebox.OK, Messagebox.ERROR);
             step3EntryDialog.detach();
             return;
         }
 
         cheque = service.getChequeById(chequeId);
         if (cheque == null) {
-            Messagebox.show("Cheque not found.", "Error", Messagebox.OK, Messagebox.ERROR);
+            Messagebox.show("Cheque not found.", "Error",
+                    Messagebox.OK, Messagebox.ERROR);
             step3EntryDialog.detach();
             return;
         }
@@ -72,28 +62,22 @@ public class EntryDialogComposer extends SelectorComposer<Component> {
         populateFields();
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────
-
     private void populateFields() {
         lblChequeNo.setValue(nvl(cheque.getChequeNo()));
         lblBank.setValue(nvl(cheque.getPresentingBankName()));
         lblAmount.setValue(
-                cheque.getAmount() != null ? "₹ " + String.format("%,.2f", cheque.getAmount()) : "₹ 0.00");
+                cheque.getAmount() != null
+                        ? "₹ " + String.format("%,.2f", cheque.getAmount()) : "₹ 0.00");
 
-        // Pre-fill if values already exist (editing scenario)
-        if (cheque.getPayeeName() != null) {
+        if (cheque.getPayeeName() != null)
             tbxPayeeName.setValue(cheque.getPayeeName());
-        }
-        if (cheque.getDraweeAccountNumber() != null) {
+        if (cheque.getDraweeAccountNumber() != null)
             tbxAccountNo.setValue(cheque.getDraweeAccountNumber());
-        }
     }
 
     private String nvl(String s) {
         return s != null ? s : "";
     }
-
-    // ── Event handlers ────────────────────────────────────────────────────
 
     @Listen("onClick = #btnSave")
     public void onSave() {
@@ -113,9 +97,8 @@ public class EntryDialogComposer extends SelectorComposer<Component> {
 
         cheque.setPayeeName(payeeName.trim());
         cheque.setDraweeAccountNumber(accountNo.trim());
-        cheque.setRepairStatus("REPAIRED");
 
-        boolean saved = service.savePayeeAccountRepair(cheque);
+        boolean saved = service.savePayeeAndAccount(cheque);
         if (saved) {
             Messagebox.show("Saved successfully.", "Success",
                     Messagebox.OK, Messagebox.INFORMATION,

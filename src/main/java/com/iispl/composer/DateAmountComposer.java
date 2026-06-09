@@ -1,5 +1,6 @@
 package com.iispl.composer;
 
+import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.RejectRepairService;
 import com.iispl.serviceImpl.RejectRepairServiceImpl;
@@ -22,122 +23,105 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DateAmountComposer extends SelectorComposer<Component> {
-	
 
     private static final long serialVersionUID = 1L;
 
     private static final DateTimeFormatter FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private static final String SESSION_BATCH_ID  = "cts_inward_batch_id";
-    private static final String SESSION_MAX_STEP  = "cts_inward_max_step";
+    private static final String SESSION_BATCH_ID = "cts_inward_batch_id";
+    private static final String SESSION_MAX_STEP = "cts_inward_max_step";
     private static final String PAGE_STEP1 = "/inward/inwardMicr/RejectRepair.zul";
     private static final String PAGE_STEP3 = "/inward/inwardMicr/PayeeAccount.zul";
 
     private static final int PAGE_SIZE = 10;
 
     // ── Wizard bar ────────────────────────────────────────────────────────
-    @Wire("#btnStep1")       private Button btnStep1;
-    @Wire("#btnStep2")       private Button btnStep2;
-    @Wire("#btnStep3")       private Button btnStep3;
-    @Wire("#conn1")          private Div    conn1;
-    @Wire("#conn2")          private Div    conn2;
-    @Wire("#lblStep3Num")    private Label  lblStep3Num;
-    @Wire("#lblStep3Desc")   private Label  lblStep3Desc;
-    
- // Image viewer
-  	@Wire("#btnViewFront")
-  	private Button btnViewFront;
-  	@Wire("#btnViewBack")
-  	private Button btnViewBack;
-  	@Wire("#btnViewGray")
-  	private Button btnViewGray;
-  	@Wire("#btnZoomIn")
-  	private Button btnZoomIn;
-  	@Wire("#btnZoomOut")
-  	private Button btnZoomOut;
-  	@Wire("#btnZoomFit")
-  	private Button btnZoomFit;
-  	@Wire("#lblZoomLevel")
-  	private Label lblZoomLevel;
-  	@Wire("#divFrontImage")
-  	private Div divFrontImage;
-  	@Wire("#divBackImage")
-  	private Div divBackImage;
-  	@Wire("#divGrayImage")
-  	private Div divGrayImage;
-  	@Wire("#imgFront")
-  	private Image imgFront;
-  	@Wire("#imgBack")
-  	private Image imgBack;
-  	@Wire("#imgGray")
-  	private Image imgGray;
-  	@Wire("#lblMicrBandStrip")
-  	private Label lblMicrBandStrip;
-  	@Wire("#ocrWarningBar")
-  	private Div ocrWarningBar;
+    @Wire("#btnStep1")     private Button btnStep1;
+    @Wire("#btnStep2")     private Button btnStep2;
+    @Wire("#btnStep3")     private Button btnStep3;
+    @Wire("#conn1")        private Div    conn1;
+    @Wire("#conn2")        private Div    conn2;
+    @Wire("#lblStep3Num")  private Label  lblStep3Num;
+    @Wire("#lblStep3Desc") private Label  lblStep3Desc;
 
+    // Image viewer
+    @Wire("#btnViewFront")  private Button btnViewFront;
+    @Wire("#btnViewBack")   private Button btnViewBack;
+    @Wire("#btnViewGray")   private Button btnViewGray;
+    @Wire("#btnZoomIn")     private Button btnZoomIn;
+    @Wire("#btnZoomOut")    private Button btnZoomOut;
+    @Wire("#btnZoomFit")    private Button btnZoomFit;
+    @Wire("#lblZoomLevel")  private Label  lblZoomLevel;
+    @Wire("#divFrontImage") private Div    divFrontImage;
+    @Wire("#divBackImage")  private Div    divBackImage;
+    @Wire("#divGrayImage")  private Div    divGrayImage;
+    @Wire("#imgFront")      private Image  imgFront;
+    @Wire("#imgBack")       private Image  imgBack;
+    @Wire("#imgGray")       private Image  imgGray;
+    @Wire("#lblMicrBandStrip") private Label lblMicrBandStrip;
+    @Wire("#ocrWarningBar")    private Div   ocrWarningBar;
 
     // ── Sub-toolbar ───────────────────────────────────────────────────────
-    @Wire("#lblBatchBadge")  private Label    lblBatchBadge;
-    @Wire("#lblPendingBadge")private Label    lblPendingBadge;
-    @Wire("#cmbFilter")      private Combobox cmbFilter;
-    @Wire("#btnBackToStep1") private Button   btnBackToStep1;
+    @Wire("#lblBatchBadge")   private Label    lblBatchBadge;
+    @Wire("#lblPendingBadge") private Label    lblPendingBadge;
+    @Wire("#cmbFilter")       private Combobox cmbFilter;
+    @Wire("#btnBackToStep1")  private Button   btnBackToStep1;
 
     // ── Panels ────────────────────────────────────────────────────────────
-    @Wire("#listPanel")           private Div listPanel;
-    @Wire("#reviewSplitPanel")    private Div reviewSplitPanel;
+    @Wire("#listPanel")        private Div listPanel;
+    @Wire("#reviewSplitPanel") private Div reviewSplitPanel;
 
     // ── List panel ────────────────────────────────────────────────────────
-    @Wire("#chequeListbox")  private Listbox chequeListbox;
-    @Wire("#lblPageInfo")    private Label   lblPageInfo;
-    @Wire("#btnPrevPage")    private Button  btnPrevPage;
-    @Wire("#btnNextPage")    private Button  btnNextPage;
-    @Wire("#btnNextStep3")   private Button  btnNextStep3;
+    @Wire("#chequeListbox") private Listbox chequeListbox;
+    @Wire("#lblPageInfo")   private Label   lblPageInfo;
+    @Wire("#btnPrevPage")   private Button  btnPrevPage;
+    @Wire("#btnNextPage")   private Button  btnNextPage;
+    @Wire("#btnNextStep3")  private Button  btnNextStep3;
 
     // ── Split-screen left panel ───────────────────────────────────────────
-    @Wire("#btnPrevCheque")      private Button btnPrevCheque;
-    @Wire("#btnNextCheque")      private Button btnNextCheque;
-    @Wire("#lblNavIndicator")    private Label  lblNavIndicator;
-    @Wire("#lblChequeBankName")  private Label  lblChequeBankName;
-    @Wire("#lblChequeDate")      private Label  lblChequeDate;
-    @Wire("#lblChequeWords")     private Label  lblChequeWords;
-    @Wire("#lblChequeAmt")       private Label  lblChequeAmt;
-    @Wire("#daWarningBar")       private Div    daWarningBar;
+    @Wire("#btnPrevCheque")     private Button btnPrevCheque;
+    @Wire("#btnNextCheque")     private Button btnNextCheque;
+    @Wire("#lblNavIndicator")   private Label  lblNavIndicator;
+    @Wire("#lblChequeBankName") private Label  lblChequeBankName;
+    @Wire("#lblChequeDate")     private Label  lblChequeDate;
+    @Wire("#lblChequeWords")    private Label  lblChequeWords;
+    @Wire("#lblChequeAmt")      private Label  lblChequeAmt;
+    @Wire("#daWarningBar")      private Div    daWarningBar;
 
     // ── Split-screen right panel ──────────────────────────────────────────
-    @Wire("#lblOcrErrorBadge")   private Label    lblOcrErrorBadge;
-    @Wire("#lblProcDate")        private Label    lblProcDate;
-    @Wire("#lblProcAmt")         private Label    lblProcAmt;
-    @Wire("#lblRcvdDate")        private Label    lblRcvdDate;
-    @Wire("#lblRcvdAmt")         private Label    lblRcvdAmt;
-    @Wire("#dtCorrectedDate")    private Datebox  dtCorrectedDate;
-    @Wire("#numCorrectedAmt")    private Doublebox numCorrectedAmt;
-    @Wire("#txtRemarks")         private Textbox  txtRemarks;
-    @Wire("#btnAccept")          private Button   btnAccept;
-    @Wire("#btnReject")          private Button   btnReject;
-    @Wire("#btnRefer")           private Button   btnRefer;
-    @Wire("#btnBackToList2")     private Button   btnBackToList2;
+    @Wire("#lblOcrErrorBadge") private Label    lblOcrErrorBadge;
+    @Wire("#lblProcDate")      private Label    lblProcDate;
+    @Wire("#lblProcAmt")       private Label    lblProcAmt;
+    @Wire("#lblRcvdDate")      private Label    lblRcvdDate;
+    @Wire("#lblRcvdAmt")       private Label    lblRcvdAmt;
+    @Wire("#dtCorrectedDate")  private Datebox  dtCorrectedDate;
+    @Wire("#numCorrectedAmt")  private Doublebox numCorrectedAmt;
+    @Wire("#txtRemarks")       private Textbox  txtRemarks;
+    @Wire("#btnAccept")        private Button   btnAccept;
+    @Wire("#btnReject")        private Button   btnReject;
+    @Wire("#btnRefer")         private Button   btnRefer;
+    @Wire("#btnBackToList2")   private Button   btnBackToList2;
 
     // ── Reject reason popup ───────────────────────────────────────────────
-    @Wire("#rejectReasonPopup")  private Window   rejectReasonPopup;
-    @Wire("#lblRejChqNo")        private Label    lblRejChqNo;
-    @Wire("#lblRejAmt")          private Label    lblRejAmt;
-    @Wire("#cmbRejectReason")    private Combobox cmbRejectReason;
-    @Wire("#txtRejectRemarks")   private Textbox  txtRejectRemarks;
-    @Wire("#btnConfirmReject")   private Button   btnConfirmReject;
-    @Wire("#btnCancelReject")    private Button   btnCancelReject;
+    @Wire("#rejectReasonPopup") private Window   rejectReasonPopup;
+    @Wire("#lblRejChqNo")       private Label    lblRejChqNo;
+    @Wire("#lblRejAmt")         private Label    lblRejAmt;
+    @Wire("#cmbRejectReason")   private Combobox cmbRejectReason;
+    @Wire("#txtRejectRemarks")  private Textbox  txtRejectRemarks;
+    @Wire("#btnConfirmReject")  private Button   btnConfirmReject;
+    @Wire("#btnCancelReject")   private Button   btnCancelReject;
 
     // ── Service & state ───────────────────────────────────────────────────
     private final RejectRepairService service = new RejectRepairServiceImpl();
 
     private String             currentBatchId;
     private List<InwardCheque> allCheques;
-    private List<InwardCheque> reviewList;   // cheques shown in split-screen nav
+    private List<InwardCheque> reviewList;
     private InwardCheque       selectedCheque;
 
-    private int currentPage  = 1;
-    private int reviewIdx    = 0;
+    private int currentPage = 1;
+    private int reviewIdx   = 0;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -145,8 +129,14 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     public void doAfterCompose(Component comp) throws Exception {
         super.doAfterCompose(comp);
         resolveBatchId();
+
         if (currentBatchId != null) {
-            allCheques = service.getStep2ChequesByBatchId(currentBatchId);
+            // FIX: getStep2ChequesByBatchId() takes Long (numeric PK), not String.
+            // Resolve InwardBatch first, then pass batch.getId().
+            InwardBatch batch = service.getBatchById(currentBatchId);
+            if (batch != null) {
+                allCheques = service.getStep2ChequesByBatchId(batch.getId());
+            }
             if (allCheques == null) allCheques = Collections.emptyList();
             updateBatchBadge();
             renderTable();
@@ -179,10 +169,8 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     // ── Event wiring ──────────────────────────────────────────────────────
 
     private void wireEvents() {
-        // Filter
         addEvt(cmbFilter, Events.ON_SELECT, e -> { currentPage = 1; renderTable(); });
 
-        // Pagination
         addEvt(btnPrevPage, Events.ON_CLICK, e -> {
             if (currentPage > 1) { currentPage--; renderTable(); }
         });
@@ -190,7 +178,6 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             if (currentPage < totalPages()) { currentPage++; renderTable(); }
         });
 
-        // Split-screen navigation
         addEvt(btnPrevCheque, Events.ON_CLICK, e -> {
             if (reviewIdx > 0) { reviewIdx--; loadReviewRecord(); }
         });
@@ -200,19 +187,17 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             }
         });
 
-        // Repair actions
-        addEvt(btnAccept,       Events.ON_CLICK, e -> doAccept());
-        addEvt(btnReject,       Events.ON_CLICK, e -> openRejectPopup());
-        addEvt(btnRefer,        Events.ON_CLICK, e -> doRefer());
-        addEvt(btnBackToList2,  Events.ON_CLICK, e -> showList());
+        addEvt(btnAccept,      Events.ON_CLICK, e -> doAccept());
+        addEvt(btnReject,      Events.ON_CLICK, e -> openRejectPopup());
+        addEvt(btnRefer,       Events.ON_CLICK, e -> doRefer());
+        addEvt(btnBackToList2, Events.ON_CLICK, e -> showList());
 
-        // Popup
         addEvt(btnConfirmReject, Events.ON_CLICK, e -> doConfirmReject());
         addEvt(btnCancelReject,  Events.ON_CLICK, e -> rejectReasonPopup.setVisible(false));
     }
 
     private void addEvt(Component c, String evt,
-                        org.zkoss.zk.ui.event.EventListener<?> l) {
+            org.zkoss.zk.ui.event.EventListener<?> l) {
         if (c != null) c.addEventListener(evt, l);
     }
 
@@ -224,8 +209,6 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     }
 
     private void showSplitReview(int idx) {
-        // Build list of cheques shown in split-screen nav
-        // (all cheques, not just filtered — consistent with step 1 approach)
         reviewList = (allCheques != null) ? allCheques : Collections.emptyList();
         reviewIdx  = Math.max(0, Math.min(reviewList.size() - 1, idx));
         setVis(listPanel,        false);
@@ -236,36 +219,35 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     private static void setVis(Div div, boolean visible) {
         if (div != null) div.setVisible(visible);
     }
-    
-    private void loadChequeImages(InwardCheque c) {
-		setImageViaServlet(imgFront, c.getFrontImagePath());
-		setImageViaServlet(imgBack, c.getBackImagePath());
-		setImageViaServlet(imgGray, c.getFrontImagePath());
-		if (imgGray != null)
-			imgGray.setStyle("filter:grayscale(100%);max-width:100%;display:block;");
-	}
 
-	private void setImageViaServlet(Image img, String path) {
-		if (img == null)
-			return;
-		if (path == null || path.trim().isEmpty()) {
-			img.setSrc("");
-			return;
-		}
-		try {
-			String encoded = URLEncoder.encode(path.trim(), "UTF-8");
-			img.setSrc("/imageServlet?path=" + encoded);
-		} catch (UnsupportedEncodingException e) {
-			img.setSrc("/imageServlet?path=" + path.trim());
-		}
-	}
+    private void loadChequeImages(InwardCheque c) {
+        setImageViaServlet(imgFront, c.getFrontImagePath());
+        setImageViaServlet(imgBack,  c.getBackImagePath());
+        setImageViaServlet(imgGray,  c.getFrontImagePath());
+        if (imgGray != null)
+            imgGray.setStyle("filter:grayscale(100%);max-width:100%;display:block;");
+    }
+
+    private void setImageViaServlet(Image img, String path) {
+        if (img == null) return;
+        if (path == null || path.trim().isEmpty()) {
+            img.setSrc("");
+            return;
+        }
+        try {
+            String encoded = URLEncoder.encode(path.trim(), "UTF-8");
+            img.setSrc("/imageServlet?path=" + encoded);
+        } catch (UnsupportedEncodingException e) {
+            img.setSrc("/imageServlet?path=" + path.trim());
+        }
+    }
 
     // ── Render list table ─────────────────────────────────────────────────
 
     private void renderTable() {
         if (chequeListbox == null || allCheques == null) return;
 
-        List<InwardCheque> filtered = getFilteredList();
+        List<InwardCheque> filtered  = getFilteredList();
         int total      = filtered.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
         currentPage    = Math.min(currentPage, totalPages);
@@ -283,36 +265,31 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             addCell(row, nvl(c.getChequeNo()));
             addCell(row, nvl(c.getPresentingBankName()));
 
-            // Proc Date
             addCell(row, c.getChequeDate() != null
                     ? c.getChequeDate().format(FMT) : "—");
 
-            // Rcvd Date — highlight mismatch
             boolean dateErr = c.getChequeDateOcr() == null
                     || !c.getChequeDateOcr().equals(c.getChequeDate());
             Listcell rcvdDateCell = new Listcell(
                     c.getChequeDateOcr() != null
                             ? c.getChequeDateOcr().format(FMT) : "—");
-            if (dateErr) rcvdDateCell.setStyle("color:var(--danger,#dc2626);font-weight:600");
+            if (dateErr)
+                rcvdDateCell.setStyle("color:var(--danger,#dc2626);font-weight:600");
             row.appendChild(rcvdDateCell);
 
-            // Proc Amount
             Listcell procAmtCell = new Listcell(
                     c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
             procAmtCell.setStyle("text-align:right");
             row.appendChild(procAmtCell);
 
-            // Rcvd Amount — highlight mismatch
             boolean amtErr = c.getAmountOcr() == null
                     || c.getAmountOcr().compareTo(c.getAmount()) != 0;
             Listcell rcvdAmtCell = new Listcell(
                     c.getAmountOcr() != null ? "₹ " + fmt(c.getAmountOcr()) : "—");
-            String amtStyle = "text-align:right" + (amtErr
-                    ? ";color:var(--danger,#dc2626);font-weight:600" : "");
-            rcvdAmtCell.setStyle(amtStyle);
+            rcvdAmtCell.setStyle("text-align:right"
+                    + (amtErr ? ";color:var(--danger,#dc2626);font-weight:600" : ""));
             row.appendChild(rcvdAmtCell);
 
-            // Status badge
             Listcell statusCell = new Listcell();
             statusCell.setStyle("text-align:center");
             Label badge = new Label(resolveStatusLabel(c.getRepairStatus()));
@@ -320,13 +297,11 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             statusCell.appendChild(badge);
             row.appendChild(statusCell);
 
-            // Review button — opens split-screen
             Listcell actionCell = new Listcell();
             actionCell.setStyle("text-align:center");
             Button reviewBtn = new Button("Review");
             reviewBtn.setSclass("btn-repair");
-            final int listIdx = filtered.indexOf(c);
-            // Use global index in allCheques for split-screen nav
+            final int listIdx   = filtered.indexOf(c);
             final int globalIdx = allCheques.indexOf(c);
             reviewBtn.addEventListener(Events.ON_CLICK, ev -> {
                 ev.stopPropagation();
@@ -351,18 +326,16 @@ public class DateAmountComposer extends SelectorComposer<Component> {
 
     private void loadReviewRecord() {
         if (reviewList == null || reviewList.isEmpty()) { showList(); return; }
-        reviewIdx = Math.max(0, Math.min(reviewList.size() - 1, reviewIdx));
+        reviewIdx      = Math.max(0, Math.min(reviewList.size() - 1, reviewIdx));
         selectedCheque = reviewList.get(reviewIdx);
         InwardCheque c = selectedCheque;
 
-        // Navigation indicator
         if (lblNavIndicator != null)
             lblNavIndicator.setValue((reviewIdx + 1) + " of " + reviewList.size());
         if (btnPrevCheque != null) btnPrevCheque.setDisabled(reviewIdx <= 0);
         if (btnNextCheque != null)
             btnNextCheque.setDisabled(reviewIdx >= reviewList.size() - 1);
 
-        // ── Left panel: populate cheque card ─────────────────────────────
         boolean dateErr = c.getChequeDateOcr() == null
                 || !c.getChequeDateOcr().equals(c.getChequeDate());
         boolean amtErr  = c.getAmountOcr() == null
@@ -372,7 +345,6 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         if (lblChequeBankName != null)
             lblChequeBankName.setValue(nvl(c.getPresentingBankName()));
 
-        // Date field — red-bordered if mismatch
         if (lblChequeDate != null) {
             String dateVal = c.getChequeDateOcr() != null
                     ? c.getChequeDateOcr().format(FMT) : "—";
@@ -381,11 +353,9 @@ public class DateAmountComposer extends SelectorComposer<Component> {
                     ? "cheque-date-field has-mismatch" : "cheque-date-field");
         }
 
-        // Amount in words (derived simply)
         if (lblChequeWords != null)
             lblChequeWords.setValue(amountInWords(c.getAmount()));
 
-        // Amount box — red if mismatch
         if (lblChequeAmt != null) {
             String amtVal = c.getAmount() != null ? "₹  " + fmt(c.getAmount()) : "—";
             lblChequeAmt.setValue(amtVal);
@@ -393,19 +363,15 @@ public class DateAmountComposer extends SelectorComposer<Component> {
                     ? "cheque-amount-box has-mismatch" : "cheque-amount-box");
         }
 
-        // Warning bar
-        boolean hasMismatch = dateErr || amtErr;
-        if (daWarningBar != null) daWarningBar.setVisible(hasMismatch);
+        if (daWarningBar != null) daWarningBar.setVisible(dateErr || amtErr);
 
-        // OCR badge text
         if (lblOcrErrorBadge != null) {
-            if (dateErr && amtErr)       lblOcrErrorBadge.setValue("DATE + AMT MISMATCH");
-            else if (dateErr)            lblOcrErrorBadge.setValue("DATE MISMATCH");
-            else if (amtErr)             lblOcrErrorBadge.setValue("AMOUNT MISMATCH");
-            else                         lblOcrErrorBadge.setValue("✓ MATCH");
+            if (dateErr && amtErr) lblOcrErrorBadge.setValue("DATE + AMT MISMATCH");
+            else if (dateErr)      lblOcrErrorBadge.setValue("DATE MISMATCH");
+            else if (amtErr)       lblOcrErrorBadge.setValue("AMOUNT MISMATCH");
+            else                   lblOcrErrorBadge.setValue("✓ MATCH");
         }
 
-        // ── Right panel: comparison values ───────────────────────────────
         if (lblProcDate != null)
             lblProcDate.setValue(c.getChequeDate() != null
                     ? c.getChequeDate().format(FMT) : "—");
@@ -419,7 +385,6 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             lblRcvdAmt.setValue(c.getAmountOcr() != null
                     ? "₹  " + fmt(c.getAmountOcr()) : "—");
 
-        // Pre-fill corrected fields with processed (authoritative) values
         if (dtCorrectedDate != null) {
             if (c.getChequeDate() != null) {
                 dtCorrectedDate.setValue(java.util.Date.from(
@@ -437,26 +402,25 @@ public class DateAmountComposer extends SelectorComposer<Component> {
                 numCorrectedAmt.setValue(null);
         }
         if (txtRemarks != null) txtRemarks.setValue("");
-        
+
         loadChequeImages(c);
     }
 
-    // ── Accept ────────────────────────────────────────────────────────────
+    // ── Accept  — FIXED: Messagebox.EXCLAMATION → Messagebox.ERROR ───────
 
     private void doAccept() {
         if (selectedCheque == null) return;
         if (dtCorrectedDate != null && dtCorrectedDate.getValue() == null) {
             Messagebox.show("Please enter corrected date.", "Validation",
-                    Messagebox.OK, Messagebox.EXCLAMATION);
+                    Messagebox.OK, Messagebox.ERROR);
             return;
         }
         if (numCorrectedAmt != null && numCorrectedAmt.getValue() == null) {
             Messagebox.show("Please enter corrected amount.", "Validation",
-                    Messagebox.OK, Messagebox.EXCLAMATION);
+                    Messagebox.OK, Messagebox.ERROR);
             return;
         }
 
-        // Persist corrected values
         if (dtCorrectedDate != null && dtCorrectedDate.getValue() != null) {
             selectedCheque.setChequeDateOcr(
                     dtCorrectedDate.getValue().toInstant()
@@ -467,7 +431,8 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             selectedCheque.setAmountOcr(
                     BigDecimal.valueOf(numCorrectedAmt.getValue()));
         }
-        selectedCheque.setRepairStatus("REPAIRED");
+        // Status is owned by the service — set to DATE_AMT_REPAIRED via saveStep2Repair
+        selectedCheque.setRepairStatus("DATE_AMT_REPAIRED");
         if (txtRemarks != null)
             selectedCheque.setRemarks(txtRemarks.getValue());
 
@@ -479,7 +444,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         moveToNextPending();
     }
 
-    // ── Reject ────────────────────────────────────────────────────────────
+    // ── Reject popup ──────────────────────────────────────────────────────
 
     private void openRejectPopup() {
         if (selectedCheque == null) return;
@@ -491,21 +456,26 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         if (rejectReasonPopup != null) rejectReasonPopup.setVisible(true);
     }
 
+    // ── Confirm Reject  — FIXED ───────────────────────────────────────────
+    // Was: service.saveStep2Repair() → sets DATE_AMT_REPAIRED, wrong for rejection
+    // Now: service.rejectStep2()     → sets REJECTED correctly inside the service
+
     private void doConfirmReject() {
         if (cmbRejectReason != null && cmbRejectReason.getSelectedItem() == null) {
             Messagebox.show("Please select a reject reason.", "Validation",
-                    Messagebox.OK, Messagebox.EXCLAMATION);
+                    Messagebox.OK, Messagebox.ERROR);
             return;
         }
         if (selectedCheque == null) return;
 
-        String reason = (cmbRejectReason != null && cmbRejectReason.getSelectedItem() != null)
+        String reason  = (cmbRejectReason != null && cmbRejectReason.getSelectedItem() != null)
                 ? cmbRejectReason.getSelectedItem().getValue().toString() : "";
-        String remarks = (txtRejectRemarks != null) ? txtRejectRemarks.getValue() : "";
+        String remarks = (txtRejectRemarks != null)
+                ? txtRejectRemarks.getValue() : "";
 
-        selectedCheque.setRepairStatus("REJECTED");
-        selectedCheque.setRemarks(reason + (remarks.isBlank() ? "" : " | " + remarks));
-        service.saveStep2Repair(selectedCheque);
+        // FIX: rejectStep2() owns the REJECTED status — do not set it manually here
+        service.rejectStep2(selectedCheque,
+                reason + (remarks.isBlank() ? "" : " | " + remarks));
 
         if (rejectReasonPopup != null) rejectReasonPopup.setVisible(false);
         Messagebox.show("Cheque " + selectedCheque.getChequeNo() + " rejected.",
@@ -514,14 +484,18 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         moveToNextPending();
     }
 
-    // ── Refer ─────────────────────────────────────────────────────────────
+    // ── Refer  — FIXED ───────────────────────────────────────────────────
+    // Was: service.saveStep2Repair() → sets DATE_AMT_REPAIRED, wrong for refer
+    // Now: service.referStep2()      → sets REFERRED_STEP2 correctly inside the service
 
     private void doRefer() {
         if (selectedCheque == null) return;
-        selectedCheque.setRepairStatus("REFERRED_BACK");
-        if (txtRemarks != null && !txtRemarks.getValue().isBlank())
-            selectedCheque.setRemarks(txtRemarks.getValue());
-        service.saveStep2Repair(selectedCheque);
+
+        String remarks = (txtRemarks != null && !txtRemarks.getValue().isBlank())
+                ? txtRemarks.getValue() : "";
+
+        // FIX: referStep2() owns the REFERRED_STEP2 status — do not set it manually here
+        service.referStep2(selectedCheque, remarks);
 
         Messagebox.show("Cheque " + selectedCheque.getChequeNo() + " referred back.",
                 "Info", Messagebox.OK, Messagebox.INFORMATION);
@@ -534,20 +508,17 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     private void moveToNextPending() {
         if (reviewList == null) { showList(); return; }
 
-        // Try forward first
         for (int i = reviewIdx + 1; i < reviewList.size(); i++) {
             if (isPending(reviewList.get(i))) {
                 reviewIdx = i; loadReviewRecord(); return;
             }
         }
-        // Then backward
         for (int i = 0; i < reviewIdx; i++) {
             if (isPending(reviewList.get(i))) {
                 reviewIdx = i; loadReviewRecord(); return;
             }
         }
 
-        // All done
         Messagebox.show(
                 "All Date & Amount reviews completed.\nProceed to Step 3: Payee & Account?",
                 "Step 2 Complete", Messagebox.YES | Messagebox.NO, Messagebox.QUESTION,
@@ -563,7 +534,8 @@ public class DateAmountComposer extends SelectorComposer<Component> {
 
     private boolean isPending(InwardCheque c) {
         String s = c.getRepairStatus();
-        return s == null || "NEEDS_REPAIR".equalsIgnoreCase(s)
+        return s == null
+                || "NEEDS_REPAIR".equalsIgnoreCase(s)
                 || "REFERRED_BACK".equalsIgnoreCase(s);
     }
 
@@ -610,7 +582,8 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     }
 
     private int totalPages() {
-        return Math.max(1, (int) Math.ceil((double) getFilteredList().size() / PAGE_SIZE));
+        return Math.max(1,
+                (int) Math.ceil((double) getFilteredList().size() / PAGE_SIZE));
     }
 
     private void updateBatchBadge() {
@@ -653,32 +626,29 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     private String resolveStatusLabel(String s) {
         if (s == null || s.isEmpty()) return "NEEDS REPAIR";
         return switch (s.toUpperCase()) {
-            case "REPAIRED"      -> "REPAIRED";
-            case "REFERRED_BACK" -> "REFERRED BACK";
-            case "REJECTED"      -> "REJECTED";
-            default              -> "NEEDS REPAIR";
+            case "REPAIRED"           -> "REPAIRED";
+            case "REFERRED_BACK"      -> "REFERRED BACK";
+            case "REJECTED"           -> "REJECTED";
+            case "DATE_AMT_REPAIRED"  -> "DATE & AMT REPAIRED";
+            default                   -> "NEEDS REPAIR";
         };
     }
 
     private String resolveStatusSclass(String s) {
         if (s == null || s.isEmpty()) return "badge-needs-repair";
         return switch (s.toUpperCase()) {
-            case "REPAIRED"      -> "badge-repaired";
-            case "REFERRED_BACK" -> "badge-referred";
-            case "REJECTED"      -> "badge-fail";
-            default              -> "badge-needs-repair";
+            case "REPAIRED"          -> "badge-repaired";
+            case "REFERRED_BACK"     -> "badge-referred";
+            case "REJECTED"          -> "badge-fail";
+            case "DATE_AMT_REPAIRED" -> "badge-repaired";
+            default                  -> "badge-needs-repair";
         };
     }
 
-    /**
-     * Simple amount-in-words helper (handles up to crores for Indian banking context).
-     * For production use, replace with a proper library or utility.
-     */
     private String amountInWords(BigDecimal amount) {
         if (amount == null) return "—";
         long val = amount.longValue();
         if (val == 0) return "Zero Only";
-        // Basic implementation — replace with full utility if needed
         return toWords(val) + " Only";
     }
 
@@ -693,11 +663,16 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     };
 
     private String toWords(long n) {
-        if (n < 20)        return ONES[(int) n];
-        if (n < 100)       return TENS[(int)(n / 10)] + (n % 10 != 0 ? " " + ONES[(int)(n % 10)] : "");
-        if (n < 1000)      return ONES[(int)(n / 100)] + " Hundred" + (n % 100 != 0 ? " " + toWords(n % 100) : "");
-        if (n < 100000)    return toWords(n / 1000) + " Thousand" + (n % 1000 != 0 ? " " + toWords(n % 1000) : "");
-        if (n < 10000000)  return toWords(n / 100000) + " Lakh" + (n % 100000 != 0 ? " " + toWords(n % 100000) : "");
-        return toWords(n / 10000000) + " Crore" + (n % 10000000 != 0 ? " " + toWords(n % 10000000) : "");
+        if (n < 20)       return ONES[(int) n];
+        if (n < 100)      return TENS[(int)(n / 10)]
+                + (n % 10 != 0 ? " " + ONES[(int)(n % 10)] : "");
+        if (n < 1000)     return ONES[(int)(n / 100)] + " Hundred"
+                + (n % 100 != 0 ? " " + toWords(n % 100) : "");
+        if (n < 100000)   return toWords(n / 1000) + " Thousand"
+                + (n % 1000 != 0 ? " " + toWords(n % 1000) : "");
+        if (n < 10000000) return toWords(n / 100000) + " Lakh"
+                + (n % 100000 != 0 ? " " + toWords(n % 100000) : "");
+        return toWords(n / 10000000) + " Crore"
+                + (n % 10000000 != 0 ? " " + toWords(n % 10000000) : "");
     }
 }

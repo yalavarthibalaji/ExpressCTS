@@ -1,6 +1,5 @@
 package com.iispl.composer;
 
-
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -18,21 +17,14 @@ import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Window;
 
 import com.iispl.entity.inward.InwardCheque;
-import com.iispl.service.ChequeRepairService;
-import com.iispl.serviceImpl.ChequeRepairServiceImpl;
+import com.iispl.service.DateAmountService;
+import com.iispl.serviceImpl.DateAmountServiceImpl;
 
-/**
- * Step2ReviewDialogComposer
- *
- * Modal dialog composer for reviewing and correcting date & amount (Step 2).
- * Receives chequeId and batchId via Executions.getCurrent().getArg().
- */
 public class ReviewDialogComposer extends SelectorComposer<Component> {
 
     private static final long serialVersionUID = 1L;
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-    // ── Wired ─────────────────────────────────────────────────────────────
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Wire("#step2ReviewDialog")
     private Window step2ReviewDialog;
@@ -55,12 +47,8 @@ public class ReviewDialogComposer extends SelectorComposer<Component> {
     @Wire("#dbxRcvdAmount")
     private Decimalbox dbxRcvdAmount;
 
-    // ── State ─────────────────────────────────────────────────────────────
-
     private InwardCheque cheque;
-    private final ChequeRepairService service = new ChequeRepairServiceImpl();
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    private final DateAmountService service = new DateAmountServiceImpl();
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
@@ -68,14 +56,16 @@ public class ReviewDialogComposer extends SelectorComposer<Component> {
 
         Long chequeId = (Long) Executions.getCurrent().getArg().get("chequeId");
         if (chequeId == null) {
-            Messagebox.show("Missing cheque ID.", "Error", Messagebox.OK, Messagebox.ERROR);
+            Messagebox.show("Missing cheque ID.", "Error",
+                    Messagebox.OK, Messagebox.ERROR);
             step2ReviewDialog.detach();
             return;
         }
 
         cheque = service.getChequeById(chequeId);
         if (cheque == null) {
-            Messagebox.show("Cheque not found.", "Error", Messagebox.OK, Messagebox.ERROR);
+            Messagebox.show("Cheque not found.", "Error",
+                    Messagebox.OK, Messagebox.ERROR);
             step2ReviewDialog.detach();
             return;
         }
@@ -83,26 +73,28 @@ public class ReviewDialogComposer extends SelectorComposer<Component> {
         populateFields();
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────
-
     private void populateFields() {
         lblChequeNo.setValue(nvl(cheque.getChequeNo()));
         lblBank.setValue(nvl(cheque.getPresentingBankName()));
         lblProcDate.setValue(
-                cheque.getChequeDate() != null ? cheque.getChequeDate().format(DATE_FMT) : "");
+                cheque.getChequeDate() != null
+                        ? cheque.getChequeDate().format(DATE_FMT) : "");
         lblProcAmount.setValue(
-                cheque.getAmount() != null ? "₹ " + String.format("%,.2f", cheque.getAmount()) : "₹ 0.00");
+                cheque.getAmount() != null
+                        ? "₹ " + String.format("%,.2f", cheque.getAmount()) : "₹ 0.00");
 
-        // Pre-fill editable fields with OCR values (or fall back to declared)
         if (cheque.getChequeDateOcr() != null) {
-            dtbRcvdDate.setValue(
-                    Date.from(cheque.getChequeDateOcr().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            dtbRcvdDate.setValue(Date.from(
+                    cheque.getChequeDateOcr()
+                          .atStartOfDay(ZoneId.systemDefault()).toInstant()));
         } else if (cheque.getChequeDate() != null) {
-            dtbRcvdDate.setValue(
-                    Date.from(cheque.getChequeDate().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            dtbRcvdDate.setValue(Date.from(
+                    cheque.getChequeDate()
+                          .atStartOfDay(ZoneId.systemDefault()).toInstant()));
         }
 
-        BigDecimal ocrAmt = cheque.getAmountOcr() != null ? cheque.getAmountOcr() : cheque.getAmount();
+        BigDecimal ocrAmt = cheque.getAmountOcr() != null
+                ? cheque.getAmountOcr() : cheque.getAmount();
         dbxRcvdAmount.setValue(ocrAmt);
     }
 
@@ -110,11 +102,9 @@ public class ReviewDialogComposer extends SelectorComposer<Component> {
         return s != null ? s : "";
     }
 
-    // ── Event handlers ────────────────────────────────────────────────────
-
     @Listen("onClick = #btnSave")
     public void onSave() {
-        Date selectedDate = dtbRcvdDate.getValue();
+        Date selectedDate   = dtbRcvdDate.getValue();
         BigDecimal selectedAmt = dbxRcvdAmount.getValue();
 
         if (selectedDate == null) {
@@ -133,7 +123,7 @@ public class ReviewDialogComposer extends SelectorComposer<Component> {
         cheque.setAmountOcr(selectedAmt);
         cheque.setRepairStatus("REPAIRED");
 
-        boolean saved = service.saveDateAmountRepair(cheque);
+        boolean saved = service.saveRepairDateAndAmount(cheque);
         if (saved) {
             Messagebox.show("Saved successfully.", "Success",
                     Messagebox.OK, Messagebox.INFORMATION,

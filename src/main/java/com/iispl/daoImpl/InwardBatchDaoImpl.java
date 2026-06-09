@@ -3,41 +3,44 @@ package com.iispl.daoImpl;
 import com.iispl.dao.InwardBatchDao;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.util.HibernateUtil;
+
 import org.hibernate.Session;
-
 import org.hibernate.Transaction;
-
-
 import org.hibernate.query.NativeQuery;
 
 import java.util.ArrayList;
-
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class InwardBatchDaoImpl implements InwardBatchDao {
 
-	@Override
-	public void save(InwardBatch batch) {
-	    Transaction tx = null;
-	    Session session = HibernateUtil.getSessionFactory().openSession();
-	    try {
-	        tx = session.beginTransaction();
-	        session.persist(batch);
-	        session.flush();   // ✅ forces INSERT on batch first → ID assigned → cheques can reference it
-	        tx.commit();
-	    } catch (Exception e) {
-	        if (tx != null) tx.rollback();
-	        throw new RuntimeException("Failed to save InwardBatch: " + e.getMessage(), e);
-	    } finally {
-	        session.close();
-	    }
-	}
+    private static final Logger LOG =
+            Logger.getLogger(InwardBatchDaoImpl.class.getName());
+
+    @Override
+    public void save(InwardBatch batch) {
+        Transaction tx = null;
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            tx = session.beginTransaction();
+            session.persist(batch);
+            session.flush();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            throw new RuntimeException("Failed to save InwardBatch: " + e.getMessage(), e);
+        } finally {
+            session.close();
+        }
+    }
 
     @Override
     public List<InwardBatch> findAll() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("FROM InwardBatch ORDER BY createdAt DESC", InwardBatch.class)
-                          .list();
+            return session.createQuery(
+                    "FROM InwardBatch ORDER BY createdAt DESC",
+                    InwardBatch.class).list();
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch InwardBatches: " + e.getMessage(), e);
         }
@@ -47,13 +50,12 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
     public List<InwardBatch> findPendingCheckerBatches() {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            // FIX: MakerVerified is the correct status when maker sends to checker
             return session.createNativeQuery(
-                "SELECT * FROM inward_batch WHERE status = 'MakerVerified' ORDER BY created_at ASC",
-                InwardBatch.class
-            ).list();
+                    "SELECT * FROM inward_batch WHERE status = 'MakerVerified' " +
+                    "ORDER BY created_at ASC",
+                    InwardBatch.class).list();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "findPendingCheckerBatches failed", e);
             return new ArrayList<>();
         } finally {
             session.close();
@@ -61,32 +63,75 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
     }
 
     @Override
-    public List<InwardBatch> findInwardBatchesByStatus(String status) {
+    public List<InwardBatch> findRepairEligibleBatches() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
-                    "FROM InwardBatch WHERE status = :status ORDER BY createdAt DESC",
-                    InwardBatch.class)
-                .setParameter("status", status)
-                .list();
+                    "FROM InwardBatch b " +
+                    "WHERE b.status IN ('RECEIVED', 'PARSED') " +
+                    "AND b.micrErrorCount > 0 " +
+                    "ORDER BY b.createdAt DESC",
+                    InwardBatch.class).list();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch InwardBatches by status: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "findRepairEligibleBatches failed", e);
+            return new ArrayList<>();
         }
     }
-    
+
+    @Override
     public InwardBatch findByBatchId(String batchId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
             NativeQuery<InwardBatch> q = session.createNativeQuery(
-                "SELECT * FROM inward_batch WHERE batch_id = :batchId",
-                InwardBatch.class
-            );
+                    "SELECT * FROM inward_batch WHERE batch_id = :batchId",
+                    InwardBatch.class);
             q.setParameter("batchId", batchId);
             return q.uniqueResult();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "findByBatchId failed, batchId=" + batchId, e);
             return null;
         } finally {
             session.close();
+        }
+    }
+
+    @Override
+    public void updateBatchStatus(String batchId, String status, String repairStatus) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.createMutationQuery(
+                    "UPDATE InwardBatch b " +
+                    "SET b.status = :status, b.repairStatus = :repairStatus " +
+                    "WHERE b.batchId = :batchId")
+                   .setParameter("status",       status)
+                   .setParameter("repairStatus", repairStatus)
+                   .setParameter("batchId",      batchId)
+                   .executeUpdate();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            LOG.log(Level.SEVERE, "updateBatchStatus failed, batchId=" + batchId, e);
+            throw new RuntimeException("updateBatchStatus failed", e);
+        }
+    }
+
+    @Override
+    public void updateBatchMicrErrorCount(String batchId, int count) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.createMutationQuery(
+                    "UPDATE InwardBatch b SET b.micrErrorCount = :cnt " +
+                    "WHERE b.batchId = :batchId")
+                   .setParameter("cnt",     count)
+                   .setParameter("batchId", batchId)
+                   .executeUpdate();
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            LOG.log(Level.SEVERE,
+                    "updateBatchMicrErrorCount failed, batchId=" + batchId, e);
+            throw new RuntimeException("updateBatchMicrErrorCount failed", e);
         }
     }
 
@@ -95,11 +140,10 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
             Number result = (Number) session.createNativeQuery(
-                "SELECT COUNT(*) FROM inward_batch"
-            ).uniqueResult();
+                    "SELECT COUNT(*) FROM inward_batch").uniqueResult();
             return result != null ? result.intValue() : 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "countAllBatches failed", e);
             return 0;
         } finally {
             session.close();
@@ -110,16 +154,21 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
     public int countClearedBatches() {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            // FIX: Verified = checker submitted, CBS_Processed = debit generated
             Number result = (Number) session.createNativeQuery(
-                "SELECT COUNT(*) FROM inward_batch WHERE status IN ('Verified','CBS_Processed')"
-            ).uniqueResult();
+                    "SELECT COUNT(*) FROM inward_batch " +
+                    "WHERE status IN ('Verified','CBS_Processed')").uniqueResult();
             return result != null ? result.intValue() : 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "countClearedBatches failed", e);
             return 0;
         } finally {
             session.close();
         }
     }
+
+	@Override
+	public List<InwardBatch> findInwardBatchesByStatus(String status) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
