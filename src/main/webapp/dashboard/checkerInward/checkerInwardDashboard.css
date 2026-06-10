@@ -14,36 +14,6 @@
     margin-bottom: 16px;
 }
 
-/* Each card takes equal width */
-.ci-action-card { flex: 1; }
-
-/* Horizontal layout inside card body: icon | text | button */
-.ci-action-card-body {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-/* Icon badge */
-.ci-card-icon {
-    width: 42px;
-    height: 42px;
-    background: var(--info-bg);
-    border-radius: var(--r8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-}
-
-/* Text block — grows to push button right */
-.ci-card-info { flex: 1; }
-
-/* Stack cards on small screens */
-@media (max-width: 768px) {
-    .ci-action-row { flex-direction: column; }
-}
 .dt .btn-sm {
     height: 34px;
     padding: 0 18px;
@@ -108,33 +78,6 @@
     line-height: 1.3;
     word-break: break-word;
     color: rgba(255,255,255,0.85) !important;
-}
-
-.stat-card-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
-    background: rgba(0,0,0,0.25);
-    border-radius: 12px;
-}
-
-.stat-card:hover .stat-card-overlay {
-    opacity: 1;
-}
-
-.stat-overlay-btn {
-    background: #ffffff;
-    border: none;
-    border-radius: 8px;
-    padding: 9px 22px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.1s;
 }
 
 .stat-card--pending  .stat-overlay-btn { color: #dc2626; }
@@ -212,3 +155,104 @@
 
 .go-btn-blue { background: #1e3a5f; color: #ffffff; }
 .go-btn-gold { background: #c8860a; color: #ffffff; } 
+/* ── Match reports table colour scheme ── */
+.dt .z-columns,
+.dt .z-column {
+    background: #1e3a5f !important;
+    border-right: 1px solid #2d5492 !important;
+}
+
+.dt .z-column-content {
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.dt .z-row-inner {
+    font-size: 13px;
+    color: #2d3748;
+}
+
+.dt .z-row:hover .z-row-inner {
+    background: #f0f4fb !important;
+}
+
+.dt {
+    border: 1px solid #dde3ec !important;
+    border-radius: 6px !important;
+    background: #fff;
+}
+
+/* ── Reports-style table colouring + alignment ── */
+
+.dt {
+    border: 1px solid #dde3ec !important;
+    border-radius: 6px !important;
+    background: #fff;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Dark navy header — matches .rpt-listbox */
+.dt .z-columns {
+    background: #1e3a5f !important;
+}
+.dt .z-column {
+    background: #1e3a5f !important;
+    border-right: 1px solid #2d5492 !important;
+}
+.dt .z-column:last-child {
+    border-right: none !important;
+}
+.dt .z-column-content {
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 12px !important;
+}
+
+/* Row cells */
+.dt .z-row-inner {
+    font-size: 13px;
+    color: #2d3748;
+}
+.dt .z-cell {
+    padding: 0 !important;
+    vertical-align: middle !important;
+    border-right: 1px solid #edf2f7 !important;
+}
+.dt .z-cell:last-child {
+    border-right: none !important;
+}
+.dt .z-cell > * {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+}
+
+/* Center-aligned columns (Cheques + Action) */
+.dt .z-cell:nth-child(2),
+.dt .z-cell:nth-child(3) {
+    text-align: center !important;
+}
+.dt .z-cell:nth-child(2) > *,
+.dt .z-cell:nth-child(3) > * {
+    justify-content: center;
+}
+
+/* Alternating row stripe */
+.dt .z-row:nth-child(even) .z-row-inner {
+    background: #fafbfc;
+}
+.dt .z-row:hover .z-row-inner {
+    background: #f0f4fb !important;
+}
+
+/* ── Better action card left-border colours ── */
+.action-card:first-child { border-left-color: #1e3a5f; }
+.action-card:last-child  { border-left-color: #c8860a; }

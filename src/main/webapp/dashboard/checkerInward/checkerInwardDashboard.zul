@@ -85,14 +85,17 @@
        							sclass="card-title"
        							value="Inward Batches Pending"/>
                     </div>
-                    <grid sclass="dt">
-                        <columns>
-                            <column label="Batch ID" />
-                            <column label="Cheques"  width="160px" />
-                            <column label="Action"   width="140px" />
-                        </columns>
-                        <rows id="pendingBatchRows" />
-                    </grid>
+               		<grid sclass="dt"
+               			  width="100%"
+               			  mold="paging"
+     					  pageSize="10">
+					    <columns>
+					        <column label="Batch ID" />
+					        <column label="Cheques"  width="160px" align="center" />
+					        <column label="Action"   width="140px" align="center" />
+					    </columns>
+   					 <rows id="pendingBatchRows" />
+				</grid>
                 </div>
 
             </div><!-- end dash-main -->

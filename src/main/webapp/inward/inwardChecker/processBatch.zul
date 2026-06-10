@@ -103,38 +103,36 @@
 								value="Inward Cheque" />
 						</div>
 
-			<!-- Image Viewer using ZK Tabbox --> 
-			<div sclass="pb-img-section"> 
-			<label id="pvNoImgMsg" 
-				sclass="pb-no-img-badge" 
-				value="No image available" 
-				visible="false" /> 
-				
-			<tabbox id="pvTabbox" 
-			visible="true"> 
-			<tabs> 
-				<tab label="Front"/> 
-				<tab label="Back"/> 
-				<tab label="Greyscale"/> 
-			</tabs> 
-			<tabpanels> 
-				<tabpanel> 
-					<image id="pvFrontImg" 	
-						   sclass="pb-img-actual" /> 
-				</tabpanel> 
-			<tabpanel> 
-				<image id="pvBackImg" 
-					   sclass="pb-img-actual" /> 
-			</tabpanel> 
-			<tabpanel> 
-				<image id="pvGreyscaleImg" 
-					   sclass="pb-img-actual pb-img-grey" /> 
-			</tabpanel> 
-		</tabpanels> 
-	</tabbox> 
-</div>					
-	<!-- Cheque fields card -->
+						<!-- Image Viewer using ZK Tabbox -->
+						<div sclass="pb-img-section">
+							<label id="pvNoImgMsg"
+								sclass="pb-no-img-badge" value="No image available"
+								visible="false" />
 
+							<tabbox id="pvTabbox" visible="true">
+								<tabs>
+									<tab label="Front" />
+									<tab label="Back" />
+									<tab label="Greyscale" />
+								</tabs>
+								<tabpanels>
+									<tabpanel>
+										<image id="pvFrontImg"
+											sclass="pb-img-actual" />
+									</tabpanel>
+									<tabpanel>
+										<image id="pvBackImg"
+											sclass="pb-img-actual" />
+									</tabpanel>
+									<tabpanel>
+										<image id="pvGreyscaleImg"
+											sclass="pb-img-actual pb-img-grey" />
+									</tabpanel>
+								</tabpanels>
+							</tabbox>
+						</div>
+
+						<!-- Cheque fields card -->
 
 					</div><!-- end pb-left -->
 
@@ -251,17 +249,17 @@
 								<button id="btnReturn" sclass="btn bd"
 									label="✗ Return → RRF" />
 								<button id="btnSendBack" sclass="btn bo"
-									label="↩ Send Back" />
+									label="↩ Refer Back" />
 							</div>
+
+							<!-- Return Reason Box — shown only when btnReturn is clicked -->
 							<div id="divReturnReasonBox"
 								sclass="pv-reason-box" visible="false">
-								<!-- Header row: label + confirm button side by side -->
 								<div sclass="pv-reason-header-row">
 									<label sclass="pv-reason-label"
 										value="RETURN REASON (NPCI CODE)" />
 									<button id="btnConfirmReturn"
-										sclass="btn bd btn-confirm-return"
-										label="✔ Confirm Return" />
+										sclass="btn bd btn-confirm-return" label="✔ Confirm Return" />
 								</div>
 								<!-- Wrapper div: clips the ZK combobox popup overflow (blank bar fix) -->
 								<div sclass="pv-combo-clip">
@@ -270,9 +268,9 @@
 										sclass="pv-reason-combo" />
 								</div>
 								<label id="lblReturnReasonError"
-									sclass="pv-reason-error" value=""
-									visible="false" />
+									sclass="pv-reason-error" value="" visible="false" />
 							</div>
+
 						</div>
 
 					</div><!-- end pb-right -->
@@ -295,5 +293,97 @@
 
 			</div><!-- end .main -->
 		</div><!-- end .body-row -->
-	</div>
+
+
+		<!-- ══════════════════════════════════════════════════════════════
+			REFER BACK POPUP WINDOW
+			Triggered when checker clicks "↩ Refer Back".
+			Modal — sits over the page. Composer opens it via doModal().
+			IDs wired in ProcessBatchComposer:
+			winReferBack, comboReferReason, comboReferModule,
+			txtReferRemarks, lblReferError,
+			btnConfirmReferBack, btnCancelReferBack
+			══════════════════════════════════════════════════════════════ -->
+		<div id="winReferBack" sclass="rb-overlay" >
+			<div sclass="rb-dialog">
+
+				<!-- Header -->
+				<div sclass="rb-dialog-header">
+					<label sclass="rb-dialog-title"
+						value="Refer Back to Maker" />
+				</div>
+
+				<div sclass="rb-body">
+
+					<!-- Step indicator -->
+					<div sclass="rb-steps">
+						<span sclass="rb-step rb-step-active">
+							1 Reason
+						</span>
+						<span sclass="rb-step-divider">›</span>
+						<span sclass="rb-step rb-step-active">
+							2 Module
+						</span>
+						<span sclass="rb-step-divider">›</span>
+						<span sclass="rb-step rb-step-active">
+							3 Remarks
+						</span>
+					</div>
+
+					<!-- Field 1: Reason -->
+					<div sclass="rb-field-group">
+						<label sclass="rb-field-label"
+							value="1. Reason for Refer Back" />
+						<label sclass="rb-field-hint"
+							value="Select the defect or mismatch that requires maker attention" />
+						<div sclass="rb-combo-wrap">
+							<combobox id="comboReferReason"
+								readonly="false" width="100%" placeholder="Select a reason..."
+								sclass="rb-combo" />
+						</div>
+					</div>
+
+					<!-- Field 2: Module -->
+					<div sclass="rb-field-group">
+						<label sclass="rb-field-label"
+							value="2. Send Back To Module" />
+						<label sclass="rb-field-hint"
+							value="Choose which maker queue this cheque should reappear in" />
+						<div sclass="rb-combo-wrap">
+							<combobox id="comboReferModule"
+								readonly="false" width="100%" placeholder="Select a module..."
+								sclass="rb-combo" />
+						</div>
+					</div>
+
+					<!-- Field 3: Remarks -->
+					<div sclass="rb-field-group">
+						<label sclass="rb-field-label"
+							value="3. Remarks" />
+						<label sclass="rb-field-hint"
+							value="Optional — describe the issue so the maker knows what to fix" />
+						<textbox id="txtReferRemarks" rows="3"
+							width="100%" maxlength="500"
+							placeholder="e.g. MICR digits 4–6 are unreadable on the scan..."
+							sclass="rb-remarks" />
+					</div>
+
+					<!-- Inline error -->
+					<label id="lblReferReasonError" sclass="rb-error"
+						value="" visible="false" />
+
+					<!-- Footer buttons -->
+					<div sclass="rb-footer">
+						<button id="btnCancelReferBack"
+							sclass="btn bo rb-btn-cancel" label="Cancel" />
+						<button id="btnConfirmReferBack"
+							sclass="btn bp rb-btn-confirm" label="✔ Confirm Refer Back" />
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+
+	</div><!-- end dash-shell -->
 </zk>

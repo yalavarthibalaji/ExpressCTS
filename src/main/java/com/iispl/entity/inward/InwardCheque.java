@@ -19,16 +19,13 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
-
 @Entity
 @Table(name = "inward_cheque")
 public class InwardCheque {
 
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "batch_id", nullable = false)
@@ -106,11 +103,9 @@ public class InwardCheque {
 	@Column(name = "status", nullable = false, length = 30)
 	private String status = "RECEIVED";
 
-
 	// NOT_REQUIRED | NEEDS_REPAIR | REPAIRED (covers Step 1 MICR + Step 2 Date/Amt)
-	@Column(name = "repair_status", nullable = false, length = 20)
+	@Column(name = "repair_status", nullable = false, length = 30)
 	private String repairStatus = "NOT_REQUIRED";
-
 
 	@Column(name = "front_image_path", length = 500)
 	private String frontImagePath;
@@ -127,13 +122,14 @@ public class InwardCheque {
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
+	@Column(name = "refer_back_module", length = 30)
+	private String referBackModule; // MICR_REPAIR | DATE_AMOUNT | PAYEE_ACCOUNT
+
 	@OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<InwardMicrRepair> micrRepairs;
 
-
 	@OneToMany(mappedBy = "inwardCheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<InwardCheckerAction> checkerActions;
-
 
 	@PrePersist
 	public void prePersist() {
@@ -147,11 +143,9 @@ public class InwardCheque {
 
 	// ── Getters and Setters ──
 
-
 	public Long getId() {
 		return id;
 	}
-
 
 	public void setId(Long id) {
 		this.id = id;
@@ -277,9 +271,13 @@ public class InwardCheque {
 		this.presentingBankCode = presentingBankCode;
 	}
 
+	public List<InwardCheckerAction> getCheckerActions() {
+		return checkerActions;
+	}
 
-    public List<InwardCheckerAction> getCheckerActions() { return checkerActions; }
-    public void setCheckerActions(List<InwardCheckerAction> checkerActions) { this.checkerActions = checkerActions; }
+	public void setCheckerActions(List<InwardCheckerAction> checkerActions) {
+		this.checkerActions = checkerActions;
+	}
 
 	public String getPresentingBankName() {
 		return presentingBankName;
@@ -409,6 +407,12 @@ public class InwardCheque {
 		this.micrRepairs = micrRepairs;
 	}
 
-	
-}
+	public String getReferBackModule() {
+		return referBackModule;
+	}
 
+	public void setReferBackModule(String referBackModule) {
+		this.referBackModule = referBackModule;
+	}
+
+}

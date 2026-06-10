@@ -54,6 +54,9 @@ public class InwardCheckerAction {
 	@Column(name = "actioned_at", nullable = false)
 	private LocalDateTime actionedAt;
 
+	@Column(name = "refer_back_module", length = 30)
+	private String referBackModule; // MICR_REPAIR | DATE_AMOUNT | PAYEE_ACCOUNT
+
 	@PrePersist
 	public void prePersist() {
 		this.actionedAt = LocalDateTime.now();
@@ -129,5 +132,13 @@ public class InwardCheckerAction {
 
 	public void setActionedAt(LocalDateTime actionedAt) {
 		this.actionedAt = actionedAt;
+	}
+
+	public String getReferBackModule() {
+		return referBackModule;
+	}
+
+	public void setReferBackModule(String referBackModule) {
+		this.referBackModule = referBackModule;
 	}
 }

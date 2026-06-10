@@ -13,155 +13,221 @@ import com.iispl.util.InwardReturnReason;
 
 public class CheckerBatchProcessServiceImpl implements CheckerBatchProcessService {
 
-	// ── DAO Dependency ────────────────────────────────────────────────────────
-	private CheckerBatchProcessDao checkerBatchProcessDao = new CheckerBatchProcessDaoImpl();
+    private CheckerBatchProcessDao checkerBatchProcessDao = new CheckerBatchProcessDaoImpl();
 
-	// ── Load Batch ────────────────────────────────────────────────────────────
+    // ── Load Batch ────────────────────────────────────────────────────────────
 
-	@Override
-	public InwardBatch loadBatchForProcessing(String batchId) {
+    @Override
+    public InwardBatch loadBatchForProcessing(String batchId) {
 
-		if (batchId == null || batchId.trim().isEmpty()) {
-			throw new IllegalArgumentException("Batch ID cannot be empty.");
-		}
+        if (batchId == null || batchId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Batch ID cannot be empty.");
+        }
 
-		InwardBatch batch = checkerBatchProcessDao.findBatchWithCheques(batchId);
+        InwardBatch batch = checkerBatchProcessDao.findBatchWithCheques(batchId);
 
-		if (batch == null) {
-			throw new IllegalArgumentException("No batch found with ID: " + batchId);
-		}
+        if (batch == null) {
+            throw new IllegalArgumentException("No batch found with ID: " + batchId);
+        }
 
-		return batch;
-	}
+        return batch;
+    }
 
-	// ── Submit Batch ──────────────────────────────────────────────────────────
+    // ── Submit Batch ──────────────────────────────────────────────────────────
 
-	@Override
-	public void submitBatch(InwardBatch batch, List<InwardCheckerAction> actions, User checker) {
+    @Override
+    public void submitBatch(InwardBatch batch, List<InwardCheckerAction> actions, User checker) {
 
-		if (batch == null) {
-			throw new IllegalArgumentException("Batch cannot be null.");
-		}
+        if (batch == null) {
+            throw new IllegalArgumentException("Batch cannot be null.");
+        }
+        if (actions == null || actions.isEmpty()) {
+            throw new IllegalArgumentException("No actions provided. Please action all cheques before submitting.");
+        }
+        if (checker == null) {
+            throw new IllegalArgumentException("Checker information is missing. Please log in again.");
+        }
 
-		if (actions == null || actions.isEmpty()) {
-			throw new IllegalArgumentException("No actions provided. Please action all cheques before submitting.");
-		}
+        List<InwardCheque> cheques = batch.getCheques();
 
-		if (checker == null) {
-			throw new IllegalArgumentException("Checker information is missing. Please log in again.");
-		}
+        if (cheques == null || cheques.isEmpty()) {
+            throw new IllegalArgumentException("This batch has no cheques to process.");
+        }
 
-		List<InwardCheque> cheques = batch.getCheques();
+        // SEND_BACK cheques already saved individually via confirmReferBack()
+        // so exclude them from the expected count
+        long expectedCount = cheques.stream()
+            .filter(c -> !"SEND_BACK".equalsIgnoreCase(c.getStatus()))
+            .count();
 
-		if (cheques == null || cheques.isEmpty()) {
-			throw new IllegalArgumentException("This batch has no cheques to process.");
-		}
+        if (actions.size() != expectedCount) {
+            throw new IllegalArgumentException(
+                "All cheques must be actioned before submitting. " +
+                "Expected: " + expectedCount + ", Actioned: " + actions.size()
+            );
+        }
 
-		if (actions.size() != cheques.size()) {
-			throw new IllegalArgumentException("All cheques must be actioned before submitting. " + "Expected: "
-					+ cheques.size() + ", Actioned: " + actions.size());
-		}
+        // Only ACCEPTED and RETURNED allowed at submit time
+        for (InwardCheckerAction action : actions) {
+            String actionType = action.getAction();
 
-		// Validate action types
-		for (InwardCheckerAction action : actions) {
-			String actionType = action.getAction();
+            if (actionType == null || actionType.trim().isEmpty()) {
+                throw new IllegalArgumentException(
+                    "One or more cheques have no action selected. " +
+                    "Please select Accept or Return for every cheque."
+                );
+            }
 
-			if (actionType == null || actionType.trim().isEmpty()) {
-				throw new IllegalArgumentException("One or more cheques have no action selected. "
-						+ "Please select Accept, Return, or Send Back for every cheque.");
-			}
+            if (!isValidSubmitActionType(actionType)) {
+                throw new IllegalArgumentException(
+                    "Invalid action type: " + actionType +
+                    ". Allowed values are ACCEPTED, RETURNED."
+                );
+            }
+        }
 
-			if (!isValidActionType(actionType)) {
-				throw new IllegalArgumentException(
-						"Invalid action type: " + actionType + ". Allowed values are ACCEPTED, RETURNED, SEND_BACK.");
-			}
-		}
+        // Validate return reasons for RETURNED cheques
+        for (InwardCheckerAction action : actions) {
+            if ("RETURNED".equalsIgnoreCase(action.getAction())) {
 
-		// Validate return reasons
-		for (InwardCheckerAction action : actions) {
-			if ("RETURNED".equalsIgnoreCase(action.getAction())) {
+                if (action.getReasonCode() == null || action.getReasonCode().trim().isEmpty()) {
+                    throw new IllegalArgumentException(
+                        "A return reason must be selected for all returned cheques. " +
+                        "Cheque: " + getChequeNo(action)
+                    );
+                }
 
-				if (action.getReasonCode() == null || action.getReasonCode().trim().isEmpty()) {
-					throw new IllegalArgumentException("A return reason must be selected for all returned cheques. "
-							+ "Cheque: " + getChequeNo(action));
-				}
+                if (action.getReasonText() == null || action.getReasonText().trim().isEmpty()) {
+                    String reasonText = InwardReturnReason.getReasonText(action.getReasonCode());
+                    action.setReasonText(reasonText);
+                }
+            }
+        }
 
-				if (action.getReasonText() == null || action.getReasonText().trim().isEmpty()) {
-					String reasonText = InwardReturnReason.getReasonText(action.getReasonCode());
-					action.setReasonText(reasonText);
-				}
-			}
-		}
+        // Set checker and batch reference on every action before saving
+        for (InwardCheckerAction action : actions) {
+            action.setChecker(checker);
+            action.setInwardBatch(batch);
+        }
 
-		// Set checker and batch reference on every action
-		for (InwardCheckerAction action : actions) {
-			action.setChecker(checker);
-			action.setInwardBatch(batch);
-		}
+        checkerBatchProcessDao.saveCheckerActions(actions);
+        checkerBatchProcessDao.updateBatchStatus(batch);
+    }
 
-		// Persist to DB
-		checkerBatchProcessDao.saveCheckerActions(actions);
-		checkerBatchProcessDao.updateBatchStatus(batch);
-	}
+    // ── Confirm Return (per-cheque) ───────────────────────────────────────────
 
-	// ── Confirm Return (per-cheque) ──────────────────────────────────────────
+    @Override
+    public void confirmReturn(InwardBatch batch, InwardCheque cheque,
+                              String reasonCode, User checker) {
 
-	@Override
-	public void confirmReturn(InwardBatch batch, InwardCheque cheque,
-	                          String reasonCode, User checker) {
+        if (batch == null) {
+            throw new IllegalArgumentException("Batch cannot be null.");
+        }
+        if (cheque == null) {
+            throw new IllegalArgumentException("Cheque cannot be null.");
+        }
+        if (checker == null) {
+            throw new IllegalArgumentException("Checker information is missing. Please log in again.");
+        }
+        if (reasonCode == null || reasonCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("A return reason must be selected before confirming.");
+        }
 
-		if (batch == null) {
-			throw new IllegalArgumentException("Batch cannot be null.");
-		}
-		if (cheque == null) {
-			throw new IllegalArgumentException("Cheque cannot be null.");
-		}
-		if (checker == null) {
-			throw new IllegalArgumentException("Checker information is missing. Please log in again.");
-		}
-		if (reasonCode == null || reasonCode.trim().isEmpty()) {
-			throw new IllegalArgumentException("A return reason must be selected before confirming.");
-		}
+        String reasonText = InwardReturnReason.getReasonText(reasonCode.trim());
 
-		// Resolve human-readable text from NPCI code
-		String reasonText = InwardReturnReason.getReasonText(reasonCode.trim());
+        InwardCheckerAction action = new InwardCheckerAction();
+        action.setInwardCheque(cheque);
+        action.setInwardBatch(batch);
+        action.setChecker(checker);
+        action.setAction("RETURNED");
+        action.setReasonCode(reasonCode.trim());
+        action.setReasonText(reasonText);
 
-		// Build the checker action record
-		InwardCheckerAction action = new InwardCheckerAction();
-		action.setInwardCheque(cheque);
-		action.setInwardBatch(batch);
-		action.setChecker(checker);
-		action.setAction("RETURNED");
-		action.setReasonCode(reasonCode.trim());
-		action.setReasonText(reasonText);
+        checkerBatchProcessDao.saveReturnAction(action);
 
-		// Persist: save action + update cheque status to RETURNED
-		checkerBatchProcessDao.saveReturnAction(action);
+        // If every cheque in the batch is now actioned, mark batch as RETURNED
+        List<InwardCheque> allCheques = batch.getCheques();
+        if (allCheques != null && !allCheques.isEmpty()) {
+            boolean allActioned = allCheques.stream()
+                .allMatch(c -> c.getStatus() != null
+                    && !c.getStatus().equalsIgnoreCase("RECEIVED")
+                    && !c.getStatus().equalsIgnoreCase("PENDING"));
+            if (allActioned) {
+                checkerBatchProcessDao.updateBatchStatusTo(batch, "RETURNED");
+            }
+        }
+    }
 
-		// If every cheque in the batch is now actioned, mark batch RETURNED
-		List<InwardCheque> allCheques = batch.getCheques();
-		if (allCheques != null && !allCheques.isEmpty()) {
-			boolean allActioned = allCheques.stream()
-				.allMatch(c -> c.getStatus() != null
-				               && !c.getStatus().equalsIgnoreCase("RECEIVED")
-				               && !c.getStatus().equalsIgnoreCase("PENDING"));
-			if (allActioned) {
-				checkerBatchProcessDao.updateBatchStatusTo(batch, "RETURNED");
-			}
-		}
-	}
+    // ── Confirm Refer Back (per-cheque) ───────────────────────────────────────
 
-	// ── Private Helpers ───────────────────────────────────────────────────────
+    @Override
+    public void confirmReferBack(InwardBatch batch, InwardCheque cheque,
+                                  String reasonCode, String targetModule,
+                                  String remarks, User checker) {
 
-	private boolean isValidActionType(String action) {
-		return "ACCEPTED".equalsIgnoreCase(action) || "RETURNED".equalsIgnoreCase(action)
-				|| "SEND_BACK".equalsIgnoreCase(action);
-	}
+        if (batch == null || cheque == null || checker == null) {
+            throw new IllegalArgumentException("Batch, cheque, and checker are required.");
+        }
+        if (reasonCode == null || reasonCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("A reason must be selected.");
+        }
+        if (targetModule == null || targetModule.trim().isEmpty()) {
+            throw new IllegalArgumentException("A target module must be selected.");
+        }
 
-	private String getChequeNo(InwardCheckerAction action) {
-		if (action.getInwardCheque() != null && action.getInwardCheque().getChequeNo() != null) {
-			return action.getInwardCheque().getChequeNo();
-		}
-		return "Unknown";
-	}
+        String reasonText = InwardReturnReason.getReasonText(reasonCode.trim());
+
+        InwardCheckerAction action = new InwardCheckerAction();
+        action.setInwardCheque(cheque);
+        action.setInwardBatch(batch);
+        action.setChecker(checker);
+        action.setAction("SEND_BACK");
+        action.setReasonCode(reasonCode.trim());
+        action.setReasonText(reasonText);
+        action.setRemarks(remarks);
+        action.setReferBackModule(targetModule.trim());
+
+        // Save action row + update cheque status and repair_status in DB
+        checkerBatchProcessDao.saveReferBackAction(action);
+
+        // Update in-memory cheque so batch-level checks work correctly
+        cheque.setStatus("SEND_BACK");
+        cheque.setReferBackModule(targetModule.trim());
+        cheque.setRepairStatus(mapModuleToRepairStatus(targetModule.trim()));
+    }
+
+    // ── Decrement Batch Cheque Count ──────────────────────────────────────────
+
+    @Override
+    public void decrementBatchChequeCount(InwardBatch batch) {
+        if (batch == null) {
+            throw new IllegalArgumentException("Batch cannot be null.");
+        }
+        checkerBatchProcessDao.decrementBatchChequeCount(batch);
+    }
+
+    // ── Private Helpers ───────────────────────────────────────────────────────
+
+    private boolean isValidSubmitActionType(String action) {
+        return "ACCEPTED".equalsIgnoreCase(action)
+            || "RETURNED".equalsIgnoreCase(action);
+    }
+
+    private String getChequeNo(InwardCheckerAction action) {
+        if (action.getInwardCheque() != null
+                && action.getInwardCheque().getChequeNo() != null) {
+            return action.getInwardCheque().getChequeNo();
+        }
+        return "Unknown";
+    }
+
+    private String mapModuleToRepairStatus(String module) {
+        if (module == null) return "NEEDS_REPAIR";
+        switch (module.toUpperCase()) {
+            case "MICR_REPAIR":   return "REFERRED_MICR";
+            case "DATE_AMOUNT":   return "REFERRED_DATEAMOUNT";
+            case "PAYEE_ACCOUNT": return "REFERRED_PAYEEACCOUNT";
+            default:              return "NEEDS_REPAIR";
+        }
+    }
 }

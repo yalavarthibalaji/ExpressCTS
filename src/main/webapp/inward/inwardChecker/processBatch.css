@@ -227,8 +227,8 @@
  .pb-img-section 
  {
   background: var(--surface); 
-  border-bottom: 1px solid var(--border); 
-  padding: 8px 14px 14px; 
+  border-bottom: 0px solid var(--border); 
+  padding: 8px 10px 10px; 
  } 
  /* Tabbox styling */ 
  
@@ -241,7 +241,7 @@
   .pb-img-section .z-tabs 
   { 
    border-bottom: 1px solid var(--border); 
-   margin-bottom: 12px; 
+   margin-bottom: 8px; 
    }
    
    .pb-img-section .z-tab 
@@ -435,6 +435,292 @@
     letter-spacing: 0.07em !important;
     font-family: var(--font) !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   REFER BACK POPUP — rb-* classes
+   ═══════════════════════════════════════════════════════════════════
+
+   WHY THE DROPDOWN WAS INVISIBLE:
+   ZK appends .z-combobox-popup as a direct child of <body>, NOT
+   inside the window or combobox span. So .rb-window .z-combobox-popup
+   never matches. The popup was being hidden by ZK's own z-index
+   conflict with the modal overlay. Fix: target .z-combobox-popup
+   globally and push it above the modal (z-index 10500+).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── GLOBAL: ZK combobox popup always floats above everything ──
+   ZK appends this div to <body> at runtime with its own inline
+   z-index. We must override globally — scoped selectors won't work. */
+.z-combobox-popup {
+    z-index: 19000 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REFER BACK OVERLAY — div-based modal (not ZK Window)
+══════════════════════════════════════════════════════════════ */
+
+/* ── Full screen backdrop ── */
+.rb-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    z-index: 9999 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.rb-overlay-open {
+    display: flex !important;
+}
+
+/* ── Dialog box — centered card ── */
+.rb-dialog {
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    width: 500px !important;
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* ── Dialog header ── */
+.rb-dialog-header {
+    background: #1e2d40 !important;
+    padding: 14px 20px !important;
+    border-bottom: 2px solid #e8a020 !important;
+    border-radius: 8px 8px 0 0 !important;
+    flex-shrink: 0 !important;
+}
+
+.rb-dialog-title.z-label {
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+    font-family: var(--font) !important;
+}
+
+/* ── Body wrapper ── */
+.rb-body {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 20px 24px 0 24px !important;
+    overflow: visible !important;
+}
+
+/* ── Step indicator ── */
+.rb-steps {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-bottom: 18px !important;
+    padding-bottom: 14px !important;
+    border-bottom: 1px solid #e8edf2 !important;
+}
+
+.rb-step {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: #1e2d40 !important;
+    background: #e8f0fe !important;
+    padding: 3px 10px !important;
+    border-radius: 20px !important;
+    font-family: var(--font) !important;
+}
+
+.rb-step-divider {
+    color: #b0bec5 !important;
+    font-size: 13px !important;
+}
+
+/* ── Field groups ── */
+.rb-field-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    margin-bottom: 16px !important;
+    overflow: visible !important;
+}
+
+.rb-field-label.z-label {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #1e2d40 !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    font-family: var(--font) !important;
+}
+
+.rb-field-hint.z-label {
+    font-size: 11px !important;
+    color: #78909c !important;
+    margin-bottom: 2px !important;
+    font-family: var(--font) !important;
+}
+
+/* ── Combobox wrapper ── */
+.rb-combo-wrap {
+    overflow: visible !important;
+    position: relative !important;
+}
+
+/* ── ZK Combobox ── */
+.rb-combo.z-combobox {
+    width: 100% !important;
+    height: 34px !important;
+    border: 1px solid #cfd8dc !important;
+    border-radius: 4px !important;
+    background: #fafcff !important;
+    display: block !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+}
+
+.rb-combo .z-combobox-real {
+    font-size: 13px !important;
+    color: #263238 !important;
+    font-family: var(--font) !important;
+    padding: 0 8px !important;
+    background: transparent !important;
+    border: none !important;
+    height: 32px !important;
+    width: calc(100% - 32px) !important;
+    box-sizing: border-box !important;
+}
+
+.rb-combo .z-combobox-real:focus {
+    outline: none !important;
+}
+
+.rb-combo .z-combobox-btn {
+    width: 30px !important;
+    height: 34px !important;
+    border-left: 1px solid #cfd8dc !important;
+    background: #f0f4f8 !important;
+    cursor: pointer !important;
+}
+
+/* ── Remarks textbox ── */
+.rb-remarks.z-textbox {
+    width: 100% !important;
+    font-size: 13px !important;
+    font-family: var(--font) !important;
+    border: 1px solid #cfd8dc !important;
+    border-radius: 4px !important;
+    padding: 8px !important;
+    color: #263238 !important;
+    background: #fafcff !important;
+    box-sizing: border-box !important;
+    resize: vertical !important;
+}
+
+.rb-remarks.z-textbox:focus {
+    outline: none !important;
+    border-color: #1e2d40 !important;
+}
+
+/* ── Inline error ── */
+.rb-error.z-label {
+    color: #c0392b !important;
+    font-size: 12px !important;
+    font-family: var(--font) !important;
+    display: block !important;
+    margin-bottom: 8px !important;
+}
+
+/* ── Footer buttons ── */
+.rb-footer {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    margin-top: 16px !important;
+    padding: 12px 0 20px 0 !important;
+    border-top: 1px solid #eee !important;
+}
+
+/* ── Popup list items — targeted globally since ZK puts popup on body ── */
+.z-combobox-popup .z-comboitem {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    color: #263238 !important;
+    font-family: var(--font) !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+
+.z-combobox-popup .z-comboitem:hover,
+.z-combobox-popup .z-comboitem-over,
+.z-combobox-popup .z-comboitem-selected {
+    background: #e8f0fe !important;
+    color: #1e2d40 !important;
+}
+
+/* ── Remarks textbox ── */
+.rb-remarks.z-textbox {
+    width: 100% !important;
+    border: 1px solid #cfd8dc !important;
+    border-radius: 4px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    color: #263238 !important;
+    background: #fafcff !important;
+    font-family: var(--font) !important;
+    line-height: 1.5 !important;
+    resize: vertical !important;
+    box-sizing: border-box !important;
+    display: block !important;
+}
+
+.rb-remarks.z-textbox:focus {
+    border-color: #1e2d40 !important;
+    outline: none !important;
+    background: #fff !important;
+}
+
+/* ── Inline validation error ── */
+.rb-error.z-label {
+    display: block !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #d32f2f !important;
+    background: #fdecea !important;
+    border: 1px solid #f5c6c6 !important;
+    border-radius: 4px !important;
+    padding: 6px 10px !important;
+    margin-bottom: 10px !important;
+    font-family: var(--font) !important;
+}
+
+/* ── Footer ── */
+.rb-footer {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    padding: 14px 0 18px 0 !important;
+    border-top: 1px solid #e8edf2 !important;
+    margin-top: 6px !important;
+}
+
+.rb-btn-cancel .z-button {
+    min-width: 90px !important;
+}
+
+.rb-btn-confirm .z-button {
+    min-width: 168px !important;
+    font-weight: 700 !important;
+}
+
+
 
 /* Status badge on the right panel header */
 .pv-badge-pending.z-label {

@@ -69,10 +69,6 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-
-            // FIX: Use "Verified" (InwardStatus enum value) not "CLEARED"
-            // After checker submits → Verified
-            // This makes batch appear in Reports page as "Pending (debit eligible)"
             batch.setStatus("Verified");
             session.merge(batch);
             tx.commit();
@@ -85,8 +81,6 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         }
     }
 
-    // ── Save single Return action (Confirm Return flow) ───────────────────────
-
     @Override
     public void saveReturnAction(InwardCheckerAction action) {
         Session session = null;
@@ -95,10 +89,8 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
 
-            // 1. Persist the checker action row
             session.persist(action);
 
-            // 2. Update the linked cheque status to RETURNED in same transaction
             InwardCheque cheque = action.getInwardCheque();
             if (cheque != null) {
                 cheque.setStatus("RETURNED");
@@ -115,8 +107,6 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         }
     }
 
-    // ── Update batch status to any given value ────────────────────────────────
-
     @Override
     public void updateBatchStatusTo(InwardBatch batch, String statusValue) {
         Session session = null;
@@ -124,7 +114,6 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-
             batch.setStatus(statusValue);
             session.merge(batch);
             tx.commit();
@@ -137,8 +126,72 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         }
     }
 
-    // Maps checker action → inward_cheque.status
-    // These match InwardCheque.status column values
+    @Override
+    public void saveReferBackAction(InwardCheckerAction action) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            session.persist(action);
+
+            InwardCheque cheque = action.getInwardCheque();
+            if (cheque != null) {
+                cheque.setStatus("SEND_BACK");
+                cheque.setReferBackModule(action.getReferBackModule());
+                cheque.setRepairStatus(mapModuleToRepairStatus(action.getReferBackModule()));
+                session.merge(cheque);
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            System.err.println("saveReferBackAction error: " + e.getMessage());
+            throw new RuntimeException("Failed to save refer-back action.", e);
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
+
+    // Maps refer-back module code → inward_cheque.repair_status value
+    private String mapModuleToRepairStatus(String module) {
+        if (module == null) return "NEEDS_REPAIR";
+        switch (module.toUpperCase()) {
+            case "MICR_REPAIR":   return "REFERRED_MICR";
+            case "DATE_AMOUNT":   return "REFERRED_DATEAMOUNT";
+            case "PAYEE_ACCOUNT": return "REFERRED_PAYEEACCOUNT";
+            default:              return "NEEDS_REPAIR";
+        }
+    }
+
+    @Override
+    public void decrementBatchChequeCount(InwardBatch batch) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            // FIX: use batch.getId() (Long) not batch.getBatchId() (String)
+            InwardBatch managed = session.get(InwardBatch.class, batch.getId());
+            if (managed != null && managed.getTotalCheques() > 0) {
+                managed.setTotalCheques(managed.getTotalCheques() - 1);
+                session.merge(managed);
+                batch.setTotalCheques(managed.getTotalCheques());
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            System.err.println("decrementBatchChequeCount error: " + e.getMessage());
+            throw new RuntimeException("Failed to decrement batch cheque count.", e);
+        } finally {
+            if (session != null && session.isOpen()) session.close();
+        }
+    }
+
+    // Maps checker action string → inward_cheque.status column value
     private String mapActionToStatus(String action) {
         if (action == null) return "RECEIVED";
         switch (action.toUpperCase()) {
@@ -148,4 +201,5 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
             default:          return "RECEIVED";
         }
     }
+    
 }

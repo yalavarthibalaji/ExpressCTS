@@ -70,6 +70,17 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Card wrapper — shadow + rounded corners
+   ═══════════════════════════════════════════════════════════════ */
+.card {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #dde3ec;
+    background: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    FIX C — Tabbox: width-only fix, NO display override.
    ZK controls display:none/block on .z-tabpanel for tab switching.
    We must NEVER override display on .z-tabpanels or .z-tabpanel.
@@ -83,10 +94,9 @@
 
 /* Tab bar */
 .ci-tabbox .z-tabs {
-    background: #fff !important;
-    border: 1px solid #dde3ec !important;
-    border-bottom: none !important;
-    border-radius: 6px 6px 0 0 !important;
+    background: #f8fafc !important;
+    border-bottom: 2px solid #dde3ec !important;
+    border-radius: 0 !important;
     padding: 0 16px !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -95,9 +105,6 @@
 /* Tabpanels container — width only, NO display override */
 .ci-tabbox .z-tabpanels {
     width: 100% !important;
-    border: 1px solid #dde3ec !important;
-    border-top: none !important;
-    border-radius: 0 0 6px 6px !important;
     background: #fff !important;
     box-sizing: border-box !important;
 }
@@ -119,27 +126,27 @@
     font-size: 13px !important;
     font-weight: 500 !important;
     color: #6b7280 !important;
-    padding: 10px 18px !important;
+    padding: 11px 20px !important;
     border: none !important;
-    border-bottom: 2px solid transparent !important;
+    border-bottom: 3px solid transparent !important;
     background: transparent !important;
     cursor: pointer !important;
-    margin-bottom: -1px !important;
+    margin-bottom: -2px !important;
     border-radius: 0 !important;
     font-family: var(--font) !important;
-    transition: color 0.15s !important;
+    transition: color 0.15s, border-color 0.15s !important;
 }
 
 .ci-tabbox .z-tab:hover {
     color: #1e3a5f !important;
-    background: transparent !important;
+    background: rgba(30, 58, 95, 0.04) !important;
 }
 
 .ci-tabbox .z-tab-selected,
 .ci-tabbox .z-tab-selected .z-tab-text {
     color: #1e3a5f !important;
-    border-bottom: 2px solid #1e3a5f !important;
-    font-weight: 600 !important;
+    border-bottom: 3px solid #1e3a5f !important;
+    font-weight: 700 !important;
     background: transparent !important;
 }
 
@@ -152,18 +159,18 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Filter bar — identical to inward-reports.css (rpt-fbar)
+   Filter bar
    ═══════════════════════════════════════════════════════════════ */
 .rpt-fbar {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: nowrap;
-    background: #fff;
+    background: #f8fafc;
     border: 1px solid #dde3ec;
     border-radius: 6px;
     padding: 8px 12px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     overflow: visible;
     position: relative;
     z-index: 1;
@@ -183,6 +190,14 @@
     padding: 0 10px !important;
     box-sizing: border-box !important;
     vertical-align: middle;
+    background: #fff !important;
+    transition: border-color 0.15s !important;
+}
+.rpt-fbar .rpt-fi-search:focus,
+.rpt-fbar .rpt-fi-search.z-textbox:focus {
+    outline: none !important;
+    border-color: #1e3a5f !important;
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.10) !important;
 }
 
 /* Datebox outer */
@@ -198,6 +213,11 @@
     box-sizing: border-box !important;
     vertical-align: middle;
     overflow: visible !important;
+    transition: border-color 0.15s !important;
+}
+.rpt-fbar .rpt-fi-date:focus-within {
+    border-color: #1e3a5f !important;
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.10) !important;
 }
 
 /* Datebox inner input */
@@ -262,8 +282,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Listbox — matches inward-reports.css
-   table-layout:fixed ensures px column widths are honoured
+   Listbox
    ═══════════════════════════════════════════════════════════════ */
 .rpt-listbox {
     border: 1px solid #dde3ec !important;
@@ -271,6 +290,7 @@
     background: #fff;
     width: 100% !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
 }
 
 /* Force inner ZK table to full width with fixed layout */
@@ -281,6 +301,7 @@
     table-layout: fixed !important;
 }
 
+/* ── Header ── */
 .rpt-listbox .z-listhead {
     background: #1e3a5f !important;
     width: 100% !important;
@@ -289,6 +310,10 @@
 .rpt-listbox .z-listheader {
     background: #1e3a5f !important;
     border-right: 1px solid #2d5492 !important;
+    vertical-align: middle !important;
+}
+.rpt-listbox .z-listheader:last-child {
+    border-right: none !important;
 }
 
 .rpt-listbox .z-listheader-content {
@@ -296,28 +321,119 @@
     font-size: 12px !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: .04em;
+    letter-spacing: 0.04em;
+    padding: 11px 12px !important;
+    white-space: nowrap;
 }
 
-.rpt-listbox .z-listcell-content {
-    font-size: 13px;
-    color: #2d3748;
-    padding: 8px 12px;
+/* ── Rows ── */
+.rpt-listbox .z-listitem {
+    height: 44px;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+.rpt-listbox .z-listitem:last-child {
+    border-bottom: none !important;
+}
+
+/* Alternating stripe */
+.rpt-listbox .z-listitem:nth-child(even) {
+    background: #fafbfc;
 }
 
 .rpt-listbox .z-listitem:hover {
-    background: #f0f4fb !important;
+    background: #eef2fb !important;
 }
 
+/* ── Cells ── */
+.rpt-listbox .z-listcell {
+    vertical-align: middle !important;
+    border-right: 1px solid #edf2f7 !important;
+}
+.rpt-listbox .z-listcell:last-child {
+    border-right: none !important;
+}
+
+.rpt-listbox .z-listcell-content {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 44px !important;
+    padding: 8px 12px !important;
+    font-size: 13px;
+    color: #2d3748;
+    line-height: 1.4;
+}
+
+/* ── Per-column alignment ──────────────────────────────────────
+   Tab 1 — Pending: col2=COUNT, col3=MICR ERRORS, col5=STATUS, col6=ACTION (centre)
+   Tab 2 — Cleared: col2=TOTAL, col3=ACCEPTED, col4=RETURNED (centre), col6=CLEARED AT (centre)
+   Tab 3 — Failed : col3=AMOUNT (right), col6=RETURNED BY (centre), col7=DATE (centre)
+
+   Using :nth-child selectors — applies across all three tabs.
+   The ZUL align= attribute on <listheader> controls header text alignment.
+   These rules align the cell content to match the header.
+   ─────────────────────────────────────────────────────────────── */
+
+/* Centre: COUNT / TOTAL / ACCEPTED (col 2) */
+.rpt-listbox .z-listcell:nth-child(2) .z-listcell-content {
+    justify-content: center !important;
+}
+
+/* Centre: MICR ERRORS / RETURNED (col 3)  |  Right: AMOUNT (col 3, Tab 3) */
+/* Tab 3 amount right-align is handled via .rpt-amount-cell below */
+.rpt-listbox .z-listcell:nth-child(3) .z-listcell-content {
+    justify-content: center !important;
+}
+
+/* Centre: RETURNED (col 4) */
+.rpt-listbox .z-listcell:nth-child(4) .z-listcell-content {
+    justify-content: center !important;
+}
+
+/* Centre: STATUS (col 5, Tab 1) */
+.rpt-listbox .z-listcell:nth-child(5) .z-listcell-content {
+    justify-content: center !important;
+}
+
+/* Centre: ACTION (col 6, Tab 1) | CLEARED AT (col 6, Tab 2) | RETURNED BY (col 6, Tab 3) */
+.rpt-listbox .z-listcell:nth-child(6) .z-listcell-content {
+    justify-content: center !important;
+}
+
+/* Centre: DATE (col 7, Tab 3) */
+.rpt-listbox .z-listcell:nth-child(7) .z-listcell-content {
+    justify-content: center !important;
+}
+
+/* ── Amount cell — right-align + monospace ──
+   Applied via sclass="rpt-amount-cell" in the composer on the amount Listcell */
+.rpt-amount-cell .z-listcell-content {
+    justify-content: flex-end !important;
+    font-family: var(--mono) !important;
+    font-weight: 600 !important;
+    color: #1a2d4f !important;
+    letter-spacing: 0.01em;
+}
+
+/* ── Paging bar ── */
 .rpt-listbox .z-paging {
     border-top: 1px solid #dde3ec;
+    background: #f8fafc;
+    padding: 6px 12px;
+    font-size: 12px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ZK button shim — bridges ZK's .z-button reset to components.css
-   btn bp / bs / bd / bw / bo styles are defined in components.css.
-   These !important overrides ensure ZK's native button styling
-   does not conflict with the shared design system.
+   Bold mono Batch ID cell
+   ═══════════════════════════════════════════════════════════════ */
+.ci-bold-cell {
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    font-family: var(--mono) !important;
+    font-size: 12px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ZK button shim
    ═══════════════════════════════════════════════════════════════ */
 .z-button.btn {
     height: 32px !important;
@@ -335,22 +451,21 @@
     line-height: 1 !important;
 }
 
-.z-button.bp { background: var(--primary) !important;   color: #fff !important; border: none !important; }
+.z-button.bp       { background: var(--primary) !important; color: #fff !important; border: none !important; }
 .z-button.bp:hover { background: var(--primary-light) !important; }
 
-.z-button.bs { background: var(--success) !important;   color: #fff !important; border: none !important; }
+.z-button.bs       { background: var(--success) !important; color: #fff !important; border: none !important; }
 .z-button.bs:hover { background: #156a3e !important; }
 
-.z-button.bd { background: var(--danger) !important;    color: #fff !important; border: none !important; }
+.z-button.bd       { background: var(--danger) !important;  color: #fff !important; border: none !important; }
 .z-button.bd:hover { background: #a93226 !important; }
 
-.z-button.bw { background: var(--warning) !important;   color: #fff !important; border: none !important; }
+.z-button.bw       { background: var(--warning) !important; color: #fff !important; border: none !important; }
 .z-button.bw:hover { background: #9a5e00 !important; }
 
-.z-button.bo { background: transparent !important; color: var(--t2) !important; border: 1px solid var(--border) !important; }
+.z-button.bo       { background: transparent !important; color: var(--t2) !important; border: 1px solid var(--border) !important; }
 .z-button.bo:hover { background: var(--alt) !important; }
 
-/* Disabled state */
 .z-button.btn.disabled,
 .z-button.btn[disabled],
 .z-button.btn:disabled {
@@ -360,49 +475,4 @@
     cursor: not-allowed !important;
     pointer-events: none !important;
     opacity: 1 !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Bold mono Batch ID cell
-   ═══════════════════════════════════════════════════════════════ */
-.ci-bold-cell {
-    font-weight: 600 !important;
-    color: #1e293b !important;
-    font-family: var(--mono) !important;
-    font-size: 12px !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Status badges — defined in components.css (.badge, .b-pend, etc.).
-   No local override needed; this comment is retained for reference.
-   ═══════════════════════════════════════════════════════════════ */
-
-
-.rpt-listbox .z-listheader-content {
-    text-align: center !important;
-}
-
-.rpt-listbox .z-listcell-content {
-    display: flex;
-    align-items: center;
-    min-height: 42px;
-    padding: 8px 12px !important;
-}
-
-.rpt-listbox .z-listitem {
-    height: 44px;
-}
-
-.rpt-listbox .z-listcell {
-    vertical-align: middle !important;
-}
-
-.rpt-listbox .z-listheader,
-.rpt-listbox .z-listcell {
-    border-right: 1px solid #edf2f7;
-}
-
-.rpt-listbox .z-listheader:last-child,
-.rpt-listbox .z-listcell:last-child {
-    border-right: none;
 }
