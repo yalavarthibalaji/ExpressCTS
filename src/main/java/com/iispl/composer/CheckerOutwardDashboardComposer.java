@@ -81,7 +81,7 @@ public class CheckerOutwardDashboardComposer extends SelectorComposer<Component>
                 () -> Executions.sendRedirect("/outward/demExport/demExport.zul"));
 
         wireFellow(comp, "gotoReports",
-                () -> Executions.sendRedirect("/reports/reports.zul"));
+                () -> Executions.sendRedirect("/reports/checkerReports.zul"));
 
         // Step 5: Load dashboard data
         if (pendingBatchRows != null) loadPendingBatches();

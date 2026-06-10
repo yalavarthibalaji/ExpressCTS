@@ -81,7 +81,7 @@ public class SidebarComposer extends SelectorComposer<Component> {
         // Now correctly wired to their ZUL paths.
         addNavItem("Dashboard",           "/dashboard/checkerOutward/checkerOutwardDashboard.zul");
         addNavItem("Verification Queue",  "/outward/checkerQueue/checkerQueue.zul");
-        addNavItem("DEM Export",          null);  // Not yet implemented — remains disabled
+        addNavItem("DEM Export",          "/outward/demExport/demExport.zul");  // Not yet implemented — remains disabled
         addNavItem("Reports",             "/reports/checkerReports.zul");  // Not yet implemented — remains disabled
     }
 
