@@ -12,7 +12,7 @@
     <!-- ═══════════════════════════════════════════════════════════
          TOP NAV BAR
          ═══════════════════════════════════════════════════════════ -->
-    <div sclass="pa-topnav">
+    <div sclass="">
        <include src="/component/topbar.zul" />
     </div>
 
@@ -48,9 +48,9 @@
             <div sclass="pa-wizard-bar">
                 <!-- Step 1 -->
                 <div sclass="pa-wizard-step">
-                    <button id="btnStep1" sclass="step-circle-btn completed">🔧</button>
+                    <button id="btnStep1" sclass="step-circle-btn completed">1</button>
                     <div sclass="pa-step-label-wrap">
-                        <span sclass="step-num completed">Step 1</span>
+                        <span sclass="step-num completed">Step </span>
                         <span sclass="step-desc completed">Reject &amp; Repair</span>
                     </div>
                 </div>
@@ -58,9 +58,9 @@
 
                 <!-- Step 2 -->
                 <div sclass="pa-wizard-step">
-                    <button id="btnStep2" sclass="step-circle-btn completed">📅</button>
+                    <button id="btnStep2" sclass="step-circle-btn completed">2</button>
                     <div sclass="pa-step-label-wrap">
-                        <span sclass="step-num completed">Step 2</span>
+                        <span sclass="step-num completed">Step </span>
                         <span sclass="step-desc completed">Date &amp; Amount</span>
                     </div>
                 </div>
@@ -68,9 +68,9 @@
 
                 <!-- Step 3 — ACTIVE -->
                 <div sclass="pa-wizard-step">
-                    <button id="btnStep3" sclass="step-circle-btn active">👤</button>
+                    <button id="btnStep3" sclass="step-circle-btn active">3</button>
                     <div sclass="pa-step-label-wrap">
-                        <span sclass="step-num active">Step 3</span>
+                        <span sclass="step-num active">Step </span>
                         <span sclass="step-desc active">Payee &amp; Account</span>
                     </div>
                 </div>
