@@ -1,114 +1,429 @@
 package com.iispl.serviceImpl;
 
-import com.iispl.dao.ReportsDao;
-import com.iispl.daoImpl.ReportsDaoImpl;
-import com.iispl.service.ReportsService;
-import com.iispl.util.JasperPdfGenerator;
-
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.iispl.dao.ReportsDao;
+import com.iispl.daoImpl.ReportsDaoImpl;
+import com.iispl.dto.reports.BatchReportRow;
+import com.iispl.dto.reports.CheckerBatchReportRow;
+import com.iispl.dto.reports.CheckerChequeActionReportRow;
+import com.iispl.dto.reports.ChequeReportRow;
+import com.iispl.entity.outward.OutwardBatch;
+import com.iispl.entity.outward.OutwardCheckerAction;
+import com.iispl.entity.outward.OutwardCheque;
+import com.iispl.service.BatchUploadService;
+import com.iispl.service.ReportsService;
+
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+
 /**
  * File    : com/iispl/serviceImpl/ReportsServiceImpl.java
- * Purpose : Orchestrates report generation:
- *             1. Fetch data via ReportsDao
- *             2. Build JasperReports parameters (title, date range, generated-at)
- *             3. Delegate PDF rendering to JasperPdfGenerator
+ *
+ * Implements five reports:
+ *
+ *   MAKER
+ *   1. generateMyBatchesReport       — Maker's batch list PDF
+ *   2. generateBatchChequeReport     — Maker's per-batch cheque detail PDF
+ *
+ *   CHECKER
+ *   3. generateCheckerBatchReport    — Checker's verified batches PDF
+ *   4. generateCheckerActionLogReport — Checker's exception audit PDF
+ *
+ * All PDF generation follows the same pattern:
+ *   Composer filters data in memory → passes filtered list here →
+ *   service builds DTO rows → fills jrxml → returns PDF bytes.
  */
 public class ReportsServiceImpl implements ReportsService {
 
-    private final ReportsDao reportsDao = new ReportsDaoImpl();
+    private final ReportsDao         reportDao    = new ReportsDaoImpl();
+    private final BatchUploadService batchService = new BatchUploadServiceImpl();
 
-    private static final DateTimeFormatter D_FMT =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DISPLAY_FORMAT =
+            DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private static final DateTimeFormatter DT_FORMAT =
+            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    /** Map report type → template path on classpath */
-    private static final Map<String, String> TEMPLATES = new HashMap<>();
-    /** Map report type → human label */
-    private static final Map<String, String> LABELS    = new HashMap<>();
-    static {
-        TEMPLATES.put("DAILY_SUMMARY",     "/reports/templates/dailySummary.jrxml");
-        TEMPLATES.put("BATCH_DETAIL",      "/reports/templates/batchDetail.jrxml");
-        TEMPLATES.put("CHECKER_ACTION",    "/reports/templates/checkerAction.jrxml");
-        TEMPLATES.put("MAKER_PERFORMANCE", "/reports/templates/makerPerformance.jrxml");
-        TEMPLATES.put("REJECTION",         "/reports/templates/rejection.jrxml");
+    // ════════════════════════════════════════════════════════════════
+    //  MAKER REPORTS  (existing — not modified)
+    // ════════════════════════════════════════════════════════════════
 
-        LABELS.put("DAILY_SUMMARY",     "Daily Outward Summary");
-        LABELS.put("BATCH_DETAIL",      "Batch-wise Detail Report");
-        LABELS.put("CHECKER_ACTION",    "Checker Action Report");
-        LABELS.put("MAKER_PERFORMANCE", "Maker Performance Report");
-        LABELS.put("REJECTION",         "Rejection Report");
+    @Override
+    public List<OutwardBatch> getMyBatches(Long makerId) {
+        return batchService.getMyBatches(makerId);
     }
 
     @Override
-    public String getReportLabel(String reportType) {
-        return LABELS.getOrDefault(reportType, "Outward Report");
-    }
-
-    @Override
-    public byte[] generatePdf(String reportType,
-                               LocalDate fromDate,
-                               LocalDate toDate) {
-
-        if (reportType == null) {
-            System.err.println("ReportsService → reportType is null");
-            return new byte[0];
-        }
-        if (fromDate == null || toDate == null) {
-            System.err.println("ReportsService → date range required");
-            return new byte[0];
-        }
-        if (toDate.isBefore(fromDate)) {
-            System.err.println("ReportsService → toDate is before fromDate; swapping");
-            LocalDate tmp = fromDate; fromDate = toDate; toDate = tmp;
-        }
-
-        String template = TEMPLATES.get(reportType);
-        if (template == null) {
-            System.err.println("ReportsService → unknown reportType: " + reportType);
-            return new byte[0];
-        }
-
-        // Common parameters every report shows in its header
-        Map<String, Object> params = new HashMap<>();
-        params.put("REPORT_TITLE", getReportLabel(reportType));
-        params.put("FROM_DATE",    fromDate.format(D_FMT));
-        params.put("TO_DATE",      toDate.format(D_FMT));
-        params.put("GENERATED_AT", java.time.LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-
+    public byte[] generateMyBatchesReport(List<OutwardBatch> batches,
+                                           String             makerName,
+                                           LocalDate          fromDate,
+                                           LocalDate          toDate,
+                                           String             jrxmlPath) {
         try {
-            List<?> data = fetchData(reportType, fromDate, toDate);
-            if (data == null || data.isEmpty()) {
-                System.out.println("ReportsService → " + reportType
-                        + " has 0 records in range; generating empty-state PDF");
+            System.out.println("ReportsServiceImpl → generateMyBatchesReport → "
+                    + batches.size() + " batches for maker=" + makerName);
+
+            List<BatchReportRow> dataList = new ArrayList<>();
+            int serialNo = 1;
+            for (OutwardBatch batch : batches) {
+                dataList.add(new BatchReportRow(
+                    serialNo++,
+                    nvl(batch.getBatchId(), "-"),
+                    batch.getChequeCount(),
+                    batch.getExpectedAmount() != null ? batch.getExpectedAmount() : BigDecimal.ZERO,
+                    batch.getActualAmount()   != null ? batch.getActualAmount()   : BigDecimal.ZERO,
+                    formatStatus(batch.getStatus()),
+                    batch.getCreatedAt() != null ? batch.getCreatedAt().format(DT_FORMAT) : "-"
+                ));
             }
-            return JasperPdfGenerator.generatePdf(template, data, params);
+
+            String fromLabel = fromDate != null ? fromDate.format(DISPLAY_FORMAT) : "All";
+            String toLabel   = toDate   != null ? toDate.format(DISPLAY_FORMAT)   : "All";
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("reportTitle",  "My Batches Report");
+            params.put("makerName",    makerName != null ? makerName : "-");
+            params.put("fromDate",     fromLabel);
+            params.put("toDate",       toLabel);
+            params.put("totalBatches", batches.size());
+
+            return renderPdf(jrxmlPath, params, dataList);
 
         } catch (Exception e) {
-            System.err.println("ReportsService → PDF generation failed for "
-                    + reportType + ": " + e.getMessage());
             e.printStackTrace();
-            return new byte[0];
+            return null;
+        }
+    }
+
+    @Override
+    public byte[] generateBatchChequeReport(Long   batchDbId,
+                                              String batchId,
+                                              String batchStatus,
+                                              String makerName,
+                                              String jrxmlPath) {
+        try {
+            List<OutwardCheque> cheques = reportDao.getChequesByBatch(batchDbId);
+
+            System.out.println("ReportsServiceImpl → generateBatchChequeReport → "
+                    + "batchId=" + batchId
+                    + " cheques=" + cheques.size());
+
+            BigDecimal totalAmount = cheques.stream()
+                    .filter(c -> c.getAmount() != null)
+                    .map(OutwardCheque::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            List<ChequeReportRow> dataList = new ArrayList<>();
+            int serialNo = 1;
+            for (OutwardCheque cheque : cheques) {
+                String chequeDate = cheque.getChequeDate() != null
+                        ? cheque.getChequeDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                        : "—";
+
+                String micrDisplay = cheque.getMicrCodeCorrected() != null
+                        && !cheque.getMicrCodeCorrected().trim().isEmpty()
+                        ? cheque.getMicrCodeCorrected()
+                        : nvl(cheque.getMicrCode(), "—");
+
+                dataList.add(new ChequeReportRow(
+                    serialNo++,
+                    nvl(cheque.getChequeNo(),      "—"),
+                    nvl(cheque.getAccountNo(),     "—"),
+                    nvl(cheque.getAccountHolder(), "—"),
+                    nvl(cheque.getPayeeName(),     "—"),
+                    cheque.getAmount() != null ? cheque.getAmount() : BigDecimal.ZERO,
+                    chequeDate,
+                    micrDisplay,
+                    formatStatus(cheque.getStatus()),
+                    formatRepairStatus(cheque.getRepairStatus())
+                ));
+            }
+
+            String generatedAt = LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("batchId",      batchId);
+            params.put("makerName",    makerName != null ? makerName : "-");
+            params.put("batchStatus",  batchStatus != null ? batchStatus : "-");
+            params.put("totalCheques", cheques.size());
+            params.put("totalAmount",  totalAmount);
+            params.put("generatedAt",  generatedAt);
+
+            return renderPdf(jrxmlPath, params, dataList);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  CHECKER REPORTS  (new)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns all batches verified by the logged-in checker.
+     * Delegates directly to DAO — no business logic needed here.
+     */
+    @Override
+    public List<OutwardBatch> getVerifiedBatches(Long checkerId) {
+        return reportDao.getVerifiedBatches(checkerId);
+    }
+
+    /**
+     * Generates the Verified Batches PDF for the Checker (Tab 1).
+     *
+     * Receives the already-filtered list from CheckerReportsComposer.
+     * Builds CheckerBatchReportRow beans and fills checkerBatchReport.jrxml.
+     *
+     * Key difference from Maker's generateMyBatchesReport:
+     *   - Uses makerName  (who created the batch)  instead of expectedAmount
+     *   - Uses verifiedAt (when checker approved)   instead of createdAt
+     *   - PDF header says "Checker : <name>"        instead of "Maker : <name>"
+     */
+    @Override
+    public byte[] generateCheckerBatchReport(List<OutwardBatch> batches,
+                                              String             checkerName,
+                                              LocalDate          fromDate,
+                                              LocalDate          toDate,
+                                              String             jrxmlPath) {
+        try {
+            System.out.println("ReportsServiceImpl → generateCheckerBatchReport → "
+                    + batches.size() + " batches for checker=" + checkerName);
+
+            List<CheckerBatchReportRow> dataList = new ArrayList<>();
+            int serialNo = 1;
+
+            for (OutwardBatch batch : batches) {
+
+                // Get maker's full name from the createdBy relationship.
+                // createdBy is @ManyToOne on OutwardBatch — loaded via Hibernate.
+                String makerName = "-";
+                if (batch.getCreatedBy() != null
+                        && batch.getCreatedBy().getFullName() != null) {
+                    makerName = batch.getCreatedBy().getFullName();
+                }
+
+                // Format verifiedAt timestamp
+                String verifiedAt = "-";
+                if (batch.getVerifiedAt() != null) {
+                    verifiedAt = batch.getVerifiedAt().format(DT_FORMAT);
+                }
+
+                dataList.add(new CheckerBatchReportRow(
+                    serialNo++,
+                    nvl(batch.getBatchId(), "-"),
+                    batch.getChequeCount(),
+                    makerName,
+                    batch.getActualAmount() != null ? batch.getActualAmount() : BigDecimal.ZERO,
+                    verifiedAt,
+                    formatStatus(batch.getStatus())
+                ));
+            }
+
+            // Compute grand total of actual amounts across all filtered batches
+            BigDecimal grandTotal = batches.stream()
+                    .filter(b -> b.getActualAmount() != null)
+                    .map(OutwardBatch::getActualAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            String fromLabel = fromDate != null ? fromDate.format(DISPLAY_FORMAT) : "All";
+            String toLabel   = toDate   != null ? toDate.format(DISPLAY_FORMAT)   : "All";
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("reportTitle",  "Verified Batches Report");
+            params.put("checkerName",  checkerName != null ? checkerName : "-");
+            params.put("fromDate",     fromLabel);
+            params.put("toDate",       toLabel);
+            params.put("totalBatches", batches.size());
+            params.put("grandTotal",   grandTotal);
+
+            return renderPdf(jrxmlPath, params, dataList);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
     /**
-     * Calls the DAO method matching the report type.
+     * Returns all REJECTED and REFERRED actions by the logged-in checker.
+     * Delegates directly to DAO — no business logic needed here.
      */
-    private List<?> fetchData(String reportType,
-                               LocalDate fromDate,
-                               LocalDate toDate) {
-        switch (reportType) {
-            case "DAILY_SUMMARY":     return reportsDao.getDailySummary(fromDate, toDate);
-            case "BATCH_DETAIL":      return reportsDao.getBatchDetails(fromDate, toDate);
-            case "CHECKER_ACTION":    return reportsDao.getCheckerActions(fromDate, toDate);
-            case "MAKER_PERFORMANCE": return reportsDao.getMakerPerformance(fromDate, toDate);
-            case "REJECTION":         return reportsDao.getRejections(fromDate, toDate);
-            default:                  return new java.util.ArrayList<>();
+    @Override
+    public List<OutwardCheckerAction> getCheckerActionLog(Long checkerId) {
+        return reportDao.getCheckerActionLog(checkerId);
+    }
+
+    /**
+     * Generates the Cheque Action Log PDF for the Checker (Tab 2).
+     *
+     * Receives the already-filtered list of OutwardCheckerAction objects
+     * from CheckerReportsComposer.
+     *
+     * For each action row, we access:
+     *   action.getOutwardBatch()  → to get the batch ID string
+     *   action.getOutwardCheque() → to get cheque_no, payee_name, amount
+     *
+     * These are lazy-loaded @ManyToOne relationships on OutwardCheckerAction.
+     * They are safe to access here because the DAO returns fully-loaded
+     * objects within the same Hibernate session lifecycle.
+     */
+    @Override
+    public byte[] generateCheckerActionLogReport(List<OutwardCheckerAction> actions,
+                                                  String                     checkerName,
+                                                  LocalDate                  fromDate,
+                                                  LocalDate                  toDate,
+                                                  String                     jrxmlPath) {
+        try {
+            System.out.println("ReportsServiceImpl → generateCheckerActionLogReport → "
+                    + actions.size() + " actions for checker=" + checkerName);
+
+            List<CheckerChequeActionReportRow> dataList = new ArrayList<>();
+            int serialNo = 1;
+
+            for (OutwardCheckerAction action : actions) {
+
+                // Safely read batch ID string
+                String batchId = "-";
+                if (action.getOutwardBatch() != null
+                        && action.getOutwardBatch().getBatchId() != null) {
+                    batchId = action.getOutwardBatch().getBatchId();
+                }
+
+                // Safely read cheque fields
+                String     chequeNo  = "-";
+                String     payeeName = "-";
+                BigDecimal amount    = BigDecimal.ZERO;
+
+                if (action.getOutwardCheque() != null) {
+                    chequeNo  = nvl(action.getOutwardCheque().getChequeNo(),  "-");
+                    payeeName = nvl(action.getOutwardCheque().getPayeeName(), "-");
+                    if (action.getOutwardCheque().getAmount() != null) {
+                        amount = action.getOutwardCheque().getAmount();
+                    }
+                }
+
+                // Format actioned_at timestamp
+                String actionedAt = "-";
+                if (action.getActionedAt() != null) {
+                    actionedAt = action.getActionedAt().format(DT_FORMAT);
+                }
+
+                dataList.add(new CheckerChequeActionReportRow(
+                    serialNo++,
+                    batchId,
+                    chequeNo,
+                    payeeName,
+                    amount,
+                    formatAction(action.getAction()),
+                    nvl(action.getReasonCode(), "-"),
+                    nvl(action.getRemarks(),    "-"),
+                    actionedAt
+                ));
+            }
+
+            String fromLabel = fromDate != null ? fromDate.format(DISPLAY_FORMAT) : "All";
+            String toLabel   = toDate   != null ? toDate.format(DISPLAY_FORMAT)   : "All";
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("reportTitle",  "Cheque Action Log");
+            params.put("checkerName",  checkerName != null ? checkerName : "-");
+            params.put("fromDate",     fromLabel);
+            params.put("toDate",       toLabel);
+            params.put("totalActions", actions.size());
+
+            return renderPdf(jrxmlPath, params, dataList);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  SHARED HELPERS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Compiles the jrxml template, fills it with params + data rows,
+     * and exports to PDF bytes.
+     * Shared by all five report methods above.
+     */
+    private byte[] renderPdf(String              jrxmlPath,
+                              Map<String, Object> params,
+                              List<?>             dataList) throws Exception {
+        System.out.println("ReportsServiceImpl → loading jrxml: " + jrxmlPath);
+
+        try (InputStream jrxmlStream = new FileInputStream(jrxmlPath)) {
+            JasperReport report   = JasperCompileManager.compileReport(jrxmlStream);
+            JasperPrint  print    = JasperFillManager.fillReport(
+                                        report, params,
+                                        new JRBeanCollectionDataSource(dataList));
+            byte[]       pdfBytes = JasperExportManager.exportReportToPdf(print);
+
+            System.out.println("ReportsServiceImpl → PDF generated, size=" + pdfBytes.length);
+            return pdfBytes;
+        }
+    }
+
+    private String formatStatus(String status) {
+        if (status == null) return "-";
+        switch (status) {
+            case "UPLOADED":            return "Uploaded";
+            case "NEEDS_REPAIR":        return "Needs Repair";
+            case "ENTRY_DONE":          return "Entry Done";
+            case "SUBMITTED":           return "Submitted";
+            case "CHECKER_IN_PROGRESS": return "Checker In Progress";
+            case "CHECKER_APPROVED":    return "Checker Approved";
+            case "CHECKER_HOLD":        return "Checker Hold";
+            case "REJECTED":            return "Rejected";
+            case "EXPORTED":            return "Exported";
+            case "CHECKER_PASSED":      return "Passed";
+            case "CHECKER_REJECTED":    return "Rejected";
+            case "CHECKER_REFERRED":    return "Referred";
+            case "REFERRED_BACK":       return "Referred Back";
+            case "PENDING":             return "Pending";
+            default:                    return status;
+        }
+    }
+
+    private String formatRepairStatus(String repairStatus) {
+        if (repairStatus == null) return "-";
+        switch (repairStatus) {
+            case "NOT_REQUIRED": return "Not Required";
+            case "NEEDS_REPAIR": return "Needs Repair";
+            case "REPAIRED":     return "Repaired";
+            case "REJECTED":     return "Rejected";
+            default:             return repairStatus;
+        }
+    }
+
+    private String formatAction(String action) {
+        if (action == null) return "-";
+        switch (action) {
+            case "REJECTED": return "Rejected";
+            case "REFERRED": return "Referred";
+            case "PASSED":   return "Passed";
+            default:         return action;
+        }
+    }
+
+    private String nvl(String val, String fallback) {
+        return (val != null && !val.trim().isEmpty()) ? val : fallback;
     }
 }

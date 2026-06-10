@@ -5,7 +5,7 @@
  */
 
 /* ════ SHELL ════ */
-#shell-layout {
+.shell-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;

@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+              http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="checkerChequeActionReport"
+              pageWidth="842"
+              pageHeight="595"
+              orientation="Landscape"
+              columnWidth="782"
+              leftMargin="30"
+              rightMargin="30"
+              topMargin="20"
+              bottomMargin="20">
+
+    <!-- Parameters passed from ReportsServiceImpl.generateCheckerActionLogReport() -->
+    <parameter name="reportTitle"  class="java.lang.String"/>
+    <parameter name="checkerName"  class="java.lang.String"/>
+    <parameter name="fromDate"     class="java.lang.String"/>
+    <parameter name="toDate"       class="java.lang.String"/>
+    <parameter name="totalActions" class="java.lang.Integer"/>
+
+    <!-- Fields — must match getter names in CheckerChequeActionReportRow.java -->
+    <field name="serialNo"   class="java.lang.Integer"/>
+    <field name="batchId"    class="java.lang.String"/>
+    <field name="chequeNo"   class="java.lang.String"/>
+    <field name="payeeName"  class="java.lang.String"/>
+    <field name="amount"     class="java.math.BigDecimal"/>
+    <field name="action"     class="java.lang.String"/>
+    <field name="reasonCode" class="java.lang.String"/>
+    <field name="remarks"    class="java.lang.String"/>
+    <field name="actionedAt" class="java.lang.String"/>
+
+    <!-- TITLE BAND — printed once at the top of the report -->
+    <title>
+        <band height="110">
+
+            <!-- Report heading -->
+            <staticText>
+                <reportElement x="0" y="0" width="782" height="30"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="16" isBold="true"/>
+                </textElement>
+                <text><![CDATA[ExpressClear CTS — Cheque Action Log]]></text>
+            </staticText>
+
+            <!-- Checker name -->
+            <textField>
+                <reportElement x="0" y="35" width="400" height="20"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Checker : " + $P{checkerName}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Date range label -->
+            <textField>
+                <reportElement x="0" y="55" width="400" height="20"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Date Range : " + $P{fromDate} + "  to  " + $P{toDate}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Total action count -->
+            <textField>
+                <reportElement x="0" y="75" width="400" height="20"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Total Actions (Rejected / Referred) : " + $P{totalActions}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Note: only rejected and referred shown -->
+            <staticText>
+                <reportElement x="400" y="75" width="382" height="20"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isItalic="true"/>
+                </textElement>
+                <text><![CDATA[* Includes REJECTED and REFERRED actions only]]></text>
+            </staticText>
+
+        </band>
+    </title>
+
+    <!-- COLUMN HEADER BAND -->
+    <columnHeader>
+        <band height="30">
+
+            <!-- Sr No -->
+            <staticText>
+                <reportElement x="0" y="0" width="35" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[#]]></text>
+            </staticText>
+
+            <!-- Batch ID -->
+            <staticText>
+                <reportElement x="35" y="0" width="140" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Batch ID]]></text>
+            </staticText>
+
+            <!-- Cheque No -->
+            <staticText>
+                <reportElement x="175" y="0" width="90" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Cheque No]]></text>
+            </staticText>
+
+            <!-- Payee Name -->
+            <staticText>
+                <reportElement x="265" y="0" width="110" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Payee Name]]></text>
+            </staticText>
+
+            <!-- Amount -->
+            <staticText>
+                <reportElement x="375" y="0" width="100" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Amount (Rs.)]]></text>
+            </staticText>
+
+            <!-- Action -->
+            <staticText>
+                <reportElement x="475" y="0" width="72" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Action]]></text>
+            </staticText>
+
+            <!-- Reason Code -->
+            <staticText>
+                <reportElement x="547" y="0" width="55" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Reason]]></text>
+            </staticText>
+
+            <!-- Remarks -->
+            <staticText>
+                <reportElement x="602" y="0" width="060" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Remarks]]></text>
+            </staticText>
+
+            <!-- Actioned At -->
+            <staticText>
+                <reportElement x="662" y="0" width="120" height="30"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Actioned At]]></text>
+            </staticText>
+
+        </band>
+    </columnHeader>
+
+    <!-- DETAIL BAND — one row per checker action -->
+    <detail>
+        <band height="25">
+
+            <!-- Sr No -->
+            <textField>
+                <reportElement x="0" y="0" width="35" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{serialNo}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Batch ID -->
+            <textField>
+                <reportElement x="35" y="0" width="140" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{batchId}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Cheque No -->
+            <textField>
+                <reportElement x="175" y="0" width="90" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{chequeNo}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Payee Name -->
+            <textField>
+                <reportElement x="265" y="0" width="110" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{payeeName}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Amount -->
+            <textField>
+                <reportElement x="375" y="0" width="100" height="25"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Rs. " + $F{amount}.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Action -->
+            <textField>
+                <reportElement x="475" y="0" width="72" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{action}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Reason Code -->
+            <textField>
+                <reportElement x="547" y="0" width="55" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{reasonCode}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Remarks -->
+            <textField isStretchWithOverflow="true">
+                <reportElement x="602" y="0" width="60" height="25"
+                               stretchType="RelativeToBandHeight"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{remarks}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Actioned At -->
+            <textField>
+                <reportElement x="662" y="0" width="120" height="25"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{actionedAt}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Row separator line -->
+            <line>
+                <reportElement x="0" y="24" width="782" height="1"
+                               forecolor="#CCCCCC"/>
+            </line>
+
+        </band>
+    </detail>
+
+    <!-- PAGE FOOTER -->
+    <pageFooter>
+        <band height="20">
+            <textField>
+                <reportElement x="0" y="0" width="782" height="20"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Page " + $V{PAGE_NUMBER}]]>
+                </textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+
+</jasperReport>
