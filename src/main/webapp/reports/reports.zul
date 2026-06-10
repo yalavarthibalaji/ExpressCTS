@@ -1,127 +1,221 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page title="ExpressCTS — Reports"
-      contentType="text/html;charset=UTF-8"?>
-<?link rel="stylesheet" type="text/css"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
+<?page title="Reports — ExpressClear CTS" contentType="text/html;charset=UTF-8"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
-<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
+<?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/reports/reports.css"?>
 
 <!--
     File    : webapp/reports/reports.zul
-    Purpose : Outward Reports — select report, set date range, download PDF
-    Composer: com.iispl.composer.ReportsComposer
+    Purpose : Reports page — filter bar, batch table, pagination, PDF download.
+    Composer: com.iispl.composer.ReportComposer
+
+    FIXES:
+      1. Datebox replaced with native HTML <input type="date"> to fix
+         the calendar popup clipping/z-index issue completely.
+         The native input value is read by a ZK Textbox via client binding.
+      2. Pagination bar added — prevBtn, pageInfoLabel, nextBtn.
+      3. paginationBar div added so composer can show/hide it.
 -->
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
     xmlns:n="native">
 
-<div sclass="shell" apply="com.iispl.composer.ReportsComposer">
+<div sclass="shell-layout" apply="com.iispl.composer.ReportsComposer">
 
-    <div sclass="topbar">
-        <include src="/component/topbar.zul" />
-    </div>
+    <include src="/component/topbar.zul"/>
 
     <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
+        <include src="/component/sidebar.zul"/>
 
         <div sclass="main">
-            <div sclass="dash-main">
+            <include src="/component/breadcrumb.zul"/>
 
-                <!-- Page Header -->
-                <div sclass="page-hdr">
+            <div sclass="page">
+
+                <!-- ══ PAGE HEADER ══════════════════════════════════ -->
+                <div sclass="page-hdr mb16">
                     <div>
-                        <div sclass="page-title">Outward Reports</div>
-                        <div sclass="page-sub">
-                            Select a report, choose a date range, and download as PDF.
+                        <n:div class="page-title">Reports</n:div>
+                        <n:div class="page-sub">
+                            My Batches — filter, view and download as PDF
+                        </n:div>
+                    </div>
+                    <button id="downloadBtn" sclass="btn bp btn-lg">
+                        ⬇ Download PDF
+                    </button>
+                </div>
+
+                <!-- ══ FILTER BAR ════════════════════════════════════
+                     Native HTML date inputs are used here instead of
+                     ZK Datebox. This completely avoids the popup
+                     calendar clipping bug caused by overflow:hidden
+                     on parent containers.
+
+                     How it works:
+                       - n:input type="date" renders a real browser
+                         date picker — no ZK popup involved.
+                       - A hidden ZK Textbox sits next to it and is
+                         kept in sync by the oninput JS handler.
+                       - The composer reads the Textbox value as a
+                         plain yyyy-MM-dd string and parses it.
+                ═══════════════════════════════════════════════════ -->
+                <div sclass="fbar mb14">
+
+                    <!-- From Date -->
+                    <div sclass="fg">
+                        <n:label class="fg-lbl">From Date</n:label>
+                        <div sclass="date-wrap">
+                            <!-- Native browser date picker — always visible,
+                                 no popup clipping issue -->
+                            <n:input type="date"
+                                     id="fromDateNative"
+                                     class="native-date-input"
+                                     oninput="zk.$('$fromDateInput').setValue(this.value);"/>
+                            <!-- Hidden ZK Textbox — composer reads this value -->
+                            <textbox id="fromDateInput"
+                                     sclass="hidden-textbox"
+                                     value=""/>
                         </div>
+                    </div>
+
+                    <!-- To Date -->
+                    <div sclass="fg">
+                        <n:label class="fg-lbl">To Date</n:label>
+                        <div sclass="date-wrap">
+                            <n:input type="date"
+                                     id="toDateNative"
+                                     class="native-date-input"
+                                     oninput="zk.$('$toDateInput').setValue(this.value);"/>
+                            <textbox id="toDateInput"
+                                     sclass="hidden-textbox"
+                                     value=""/>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div sclass="fg">
+                        <n:label class="fg-lbl">Status</n:label>
+                        <listbox id="statusFilter"
+                                 sclass="fs"
+                                 mold="select"
+                                 width="170px">
+                               
+                            <listitem label="All Statuses"        value="ALL" selected="true"/>
+                            <listitem label="Uploaded"            value="UPLOADED"/>
+                            <listitem label="Needs Repair"        value="NEEDS_REPAIR"/>
+                            <listitem label="Entry Done"          value="ENTRY_DONE"/>
+                            <listitem label="Submitted"           value="SUBMITTED"/>
+                            <listitem label="Checker In Progress" value="CHECKER_IN_PROGRESS"/>
+                            <listitem label="Checker Approved"    value="CHECKER_APPROVED"/>
+                            <listitem label="Checker Hold"        value="CHECKER_HOLD"/>
+                            <listitem label="Rejected"            value="REJECTED"/>
+                        </listbox>
+                    </div>
+
+                    <!-- Batch ID Search -->
+                    <div sclass="fg flex1">
+                        <n:label class="fg-lbl">Search Batch ID</n:label>
+                        <textbox id="searchBox"
+                                 sclass="fi w100"
+                                 placeholder="e.g. B-2026-0606-001"
+                                 instant="true"/>
+                    </div>
+
+                    <button id="applyFilterBtn" sclass="btn bp">Apply</button>
+                    <button id="clearFilterBtn" sclass="btn bo">Clear</button>
+
+                </div>
+
+                <!-- Error / validation message -->
+                <label id="errorLabel" sclass="report-error" value=""/>
+
+                <!-- ══ SUMMARY STRIP ══════════════════════════════════ -->
+                <div sclass="report-summary mb12">
+                    <n:span class="rs-lbl">Showing</n:span>
+                    <label id="rowCountLabel"    sclass="rs-count"  value="0"/>
+                    <n:span class="rs-lbl">batches</n:span>
+                    <n:span class="rs-sep">·</n:span>
+                    <n:span class="rs-lbl">Total Amount</n:span>
+                    <label id="totalAmountLabel" sclass="rs-amount" value="₹ 0.00"/>
+                </div>
+
+                <!-- ══ BATCH TABLE ════════════════════════════════════ -->
+                <div sclass="tbl-wrap">
+                    <grid id="batchGrid" sclass="rpt-grid" width="100%">
+                        <columns sclass="rpt-col-hdr">
+                            <column label="#"
+                                    width="44px"
+                                    sclass="col-sno"/>
+                            <column label="Batch ID"
+                                    width="165px"/>
+                            <column label="Cheques"
+                                    width="120px"
+                                    align="center"/>
+                            <column label="Exp. Amount (₹)"
+                                    width="160px"
+                                    align="right"/>
+                            <column label="Act. Amount (₹)"
+                                    width="160px"
+                                    align="right"/>
+                            <column label="Status"
+                                    width="155px"/>
+                            <column label="Created At"/>
+                            <column label="PDF"
+                                    width="80px"
+                                    align="center"/>
+                        </columns>
+                        <rows id="batchRows"/>
+                    </grid>
+
+                    <!-- Empty state -->
+                    <div id="emptyState" sclass="rpt-empty" visible="false">
+                        <n:div class="rpt-empty-icon">📋</n:div>
+                        <n:div class="rpt-empty-txt">
+                            No batches found for the selected filters.
+                        </n:div>
                     </div>
                 </div>
 
-                <!-- Two-column layout: report list (left) + config panel (right) -->
-                <div sclass="rpt-grid">
+                <!-- ══ PAGINATION BAR ═════════════════════════════════
+                     Shown/hidden by composer.
+                     prevBtn and nextBtn are disabled by composer
+                     when on first/last page.
+                ═══════════════════════════════════════════════════ -->
+                <div id="paginationBar" sclass="pagination-bar mt12" visible="false">
+                    <button id="prevBtn"
+                            sclass="btn bo btn-sm pg-btn"
+                            label="← Prev"
+                            disabled="true"/>
+                    <label id="pageInfoLabel"
+                           sclass="pg-info"
+                           value="Page 1 of 1"/>
+                    <button id="nextBtn"
+                            sclass="btn bp btn-sm pg-btn"
+                            label="Next →"
+                            disabled="true"/>
+                </div>
 
-                    <!-- ───── LEFT: Report Type List ───── -->
-                    <div sclass="card rpt-list-card">
-                        <div sclass="card-hdr">
-                            <div sclass="card-title">Available Reports</div>
-                        </div>
-                        <div sclass="card-body" style="padding:0;">
-                            <listbox id="reportTypeList"
-                                     sclass="rpt-list"
-                                     vflex="1">
-                                <listitem label="📊 Daily Outward Summary"
-                                          value="DAILY_SUMMARY"/>
-                                <listitem label="📋 Batch-wise Detail Report"
-                                          value="BATCH_DETAIL"/>
-                                <listitem label="✅ Checker Action Report"
-                                          value="CHECKER_ACTION"/>
-                                <listitem label="👤 Maker Performance Report"
-                                          value="MAKER_PERFORMANCE"/>
-                                <listitem label="❌ Rejection Report"
-                                          value="REJECTION"/>
-                            </listbox>
-                        </div>
-                    </div>
-
-                    <!-- ───── RIGHT: Date Range + Generate ───── -->
-                    <div sclass="card rpt-config-card">
-                        <div sclass="card-hdr">
-                            <div sclass="card-title">Report Configuration</div>
-                        </div>
-                        <div sclass="card-body">
-
-                            <!-- Selected report info -->
-                            <div sclass="rpt-info">
-                                <label id="selectedReportTitle"
-                                       sclass="rpt-info-title"
-                                       value="Select a report from the left"/>
-                                <label id="selectedReportDesc"
-                                       sclass="rpt-info-desc"
-                                       value=""/>
-                            </div>
-
-                            <!-- Date range -->
-                            <div sclass="frow c2 mt16">
-                                <div sclass="fg">
-                                    <n:label class="fg-lbl">From Date</n:label>
-                                    <datebox id="fromDate"
-                                             sclass="fi"
-                                             format="dd/MM/yyyy"
-                                             width="100%"/>
-                                </div>
-                                <div sclass="fg">
-                                    <n:label class="fg-lbl">To Date</n:label>
-                                    <datebox id="toDate"
-                                             sclass="fi"
-                                             format="dd/MM/yyyy"
-                                             width="100%"/>
-                                </div>
-                            </div>
-
-                            <!-- Generate button row -->
-                            <div sclass="rpt-actions">
-                                <button id="generateBtn"
-                                        sclass="btn bp btn-lg"
-                                        label="Generate PDF"/>
-                            </div>
-
-                            <!-- Status area (success/warn/error messages) -->
-                            <div id="statusArea"
-                                 sclass="status-pane note info"
-                                 visible="false">
-                                <label id="statusMessage" value=""/>
-                            </div>
-
-                        </div>
-                    </div>
-
+                <!-- PDF note -->
+                <div sclass="note info mt12">
+                    <n:span>ℹ</n:span>
+                    <n:span>
+                        <n:strong>Download PDF</n:strong>
+                        (header button) downloads a report of
+                        <n:strong>all currently filtered batches</n:strong>
+                        shown in the table — applies date, status, and search filters.
+                        The per-row <n:strong>⬇ PDF</n:strong>
+                        button downloads a
+                        <n:strong>Cheque Detail report</n:strong>
+                        listing every cheque under that batch.
+                    </n:span>
                 </div>
 
             </div>
         </div>
     </div>
+
+    <include src="/component/statusbar.zul"/>
 
 </div>
 </zk>

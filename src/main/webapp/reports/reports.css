@@ -1,134 +1,219 @@
-/* ════════════════════════════════════════════════════
-   reports.css
-   Page-specific styles ONLY.
-   Shared styles come from: global.css → components.css → layout.css
-   ════════════════════════════════════════════════════ */
+/*
+ * File: reports/reports.css
+ * Purpose: Page-specific styles for the Reports page.
+ *          Builds on global.css + layout.css + components.css.
+ */
 
-/* ════════════════════════════════════════════════════
-   TWO-COLUMN GRID — report list (left) + config panel (right)
-   ════════════════════════════════════════════════════ */
-.rpt-grid {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 16px;
-    align-items: start;
-}
-
-/* ════════════════════════════════════════════════════
-   LEFT — REPORT LIST
-   ════════════════════════════════════════════════════ */
-.rpt-list-card {
-    min-height: 380px;
-}
-
-.rpt-list {
-    border: none !important;
-    width: 100% !important;
-}
-
-.rpt-list .z-listbox-body {
-    border: none !important;
-}
-
-.rpt-list .z-listitem {
-    padding: 12px 16px !important;
-    border-bottom: 1px solid var(--border) !important;
-    cursor: pointer;
-    font-size: 13px !important;
-    color: var(--t1) !important;
-    border-left: 3px solid transparent !important;
-}
-
-.rpt-list .z-listitem:hover {
-    background: var(--alt) !important;
-}
-
-.rpt-list .z-listitem.z-listitem-selected,
-.rpt-list .z-listitem-selected {
-    background: var(--primary-bg) !important;
-    color: var(--primary) !important;
-    border-left: 3px solid var(--primary) !important;
+/* ── Filter bar labels ── */
+.fbar .fg-lbl {
+    font-size: 11px;
     font-weight: 600;
-}
-
-.rpt-list .z-listitem:last-child {
-    border-bottom: none !important;
-}
-
-/* ════════════════════════════════════════════════════
-   RIGHT — CONFIG PANEL
-   ════════════════════════════════════════════════════ */
-.rpt-config-card {
-    min-height: 380px;
-}
-
-/* Report info block at top of config */
-.rpt-info {
-    padding: 14px 16px;
-    background: var(--alt);
-    border: 1px solid var(--border);
-    border-radius: var(--r4);
-}
-.rpt-info-title {
+    color: var(--t2);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
     display: block;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--t1);
-    margin-bottom: 6px;
-}
-.rpt-info-desc {
-    display: block;
-    font-size: 12px;
-    color: var(--tm);
-    line-height: 1.5;
+    margin-bottom: 4px;
 }
 
-/* Generate button row */
-.rpt-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 20px;
+/* ══════════════════════════════════════════════════════════════════
+   GRID COLUMN HEADER FIX
+   ZK renders column headers inside .z-columns > .z-column.
+   The dark background + white text must be forced at every selector
+   level because ZK's default theme injects its own background and
+   text color via multiple selectors.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Primary rule — targets the <th>-equivalent cell */
+.rpt-grid .z-columns .z-column,
+.rpt-grid .z-columns .z-column-cnt {
+    background-color: #2C3E50 !important;
+    background-image: none     !important;
+    border-bottom: 2px solid #1a252f !important;
+    border-right:  1px solid #3d5166 !important;
+    font-size:     11px        !important;
+    font-weight:   700         !important;
+    color:         #FFFFFF     !important;
+    text-transform: uppercase  !important;
+    letter-spacing: 0.5px      !important;
+    padding:       0 12px      !important;
+    height:        36px        !important;
+    line-height:   36px        !important;
+    white-space:   nowrap      !important;
 }
 
-/* Status pane below the generate button */
-.status-pane {
-    margin-top: 14px;
-    padding: 10px 14px;
-    border-radius: var(--r4);
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid var(--border);
+/* ZK wraps the label text inside a <div class="z-column-cnt"> and
+   further inside a <span> — force white on all of them */
+.rpt-grid .z-columns .z-column .z-column-cnt,
+.rpt-grid .z-columns .z-column .z-column-cnt > span,
+.rpt-grid .z-columns .z-column .z-label,
+.rpt-grid .z-columns .z-column span {
+    color:       #FFFFFF !important;
+    background:  transparent !important;
 }
 
-/* ZK Datebox styled like a normal .fi field */
-.z-datebox.fi {
-    width: 100% !important;
-    height: 32px !important;
-    border: 1px solid var(--border) !important;
+/* Sort icon (if any) — keep white */
+.rpt-grid .z-columns .z-column .z-sorticon {
+    color: #FFFFFF !important;
+}
+
+/* Remove ZK's default hover/focus tint on header */
+.rpt-grid .z-columns .z-column:hover {
+    background-color: #2C3E50 !important;
+}
+
+/* Ensure header text is never clipped by inner overflow:hidden */
+.rpt-grid .z-columns .z-column .z-column-cnt {
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+/* Center the # column */
+.rpt-grid .z-columns .z-column.col-sno,
+.rpt-grid .z-columns .z-column.col-sno .z-column-cnt {
+    text-align: center !important;
+}
+
+/* ── Grid rows ── */
+.rpt-grid .z-cell {
+    border-bottom: 1px solid var(--border) !important;
+    padding:       0 12px !important;
+    height:        38px   !important;
+    vertical-align: middle !important;
+    font-size:     13px   !important;
+    color:         var(--t1) !important;
+}
+.rpt-grid .z-row:nth-child(even) .z-cell { background: #F7F9FC !important; }
+.rpt-grid .z-row:hover           .z-cell { background: #eef3fa !important; }
+
+/* ── Remove ZK grid outer chrome ── */
+.rpt-grid,
+.rpt-grid .z-grid-body {
+    border:     none !important;
+    box-shadow: none !important;
+}
+
+/* ── Per-row download button ── */
+.rpt-dl-btn.z-button {
+    font-size:    11px   !important;
+    height:       26px   !important;
+    padding:      0 8px  !important;
     border-radius: var(--r4) !important;
-    background: #fff !important;
+    border:       1px solid var(--border) !important;
+    background:   #fff   !important;
+    color:        var(--primary) !important;
+    font-weight:  600    !important;
+    cursor:       pointer !important;
+    display:      inline-flex !important;
+    align-items:  center !important;
+    gap:          3px    !important;
+    white-space:  nowrap !important;
 }
-.z-datebox.fi input {
-    height: 30px !important;
-    padding: 0 10px !important;
-    font-size: 13px !important;
-    font-family: var(--font) !important;
-    color: var(--t1) !important;
-    border: none !important;
-    outline: none !important;
-    background: transparent !important;
-    width: 100% !important;
-}
-.z-datebox.fi:focus-within {
+.rpt-dl-btn.z-button:hover {
+    background:   var(--info-bg) !important;
     border-color: var(--primary-light) !important;
-    box-shadow: 0 0 0 2px rgba(43, 91, 168, .1) !important;
+    color:        var(--primary) !important;
 }
 
-/* ════════════════════════════════════════════════════
-   RESPONSIVE — stack columns on small screens
-   ════════════════════════════════════════════════════ */
-@media (max-width: 900px) {
-    .rpt-grid {
-        grid-template-columns: 1fr;
-    }
+/* ── Amount cells ── */
+.amt-cell {
+    display:     block;
+    text-align:  right;
+    font-family: var(--mono);
+    font-size:   12px;
+}
+
+/* ── Serial number cell ── */
+.sno-cell {
+    display:      block;
+    text-align:   right;
+    color:        var(--tm);
+    font-size:    12px;
+    padding-right: 4px;
+}
+
+/* ── Results summary strip ── */
+.report-summary {
+    display:     flex;
+    align-items: center;
+    gap:         6px;
+    font-size:   13px;
+}
+.rs-lbl    { color: var(--tm); }
+.rs-count  { font-size: 14px; font-weight: 700; color: var(--primary); }
+.rs-sep    { color: var(--border-s); padding: 0 4px; }
+.rs-amount { font-weight: 700; color: var(--success); font-family: var(--mono); font-size: 13px; }
+
+/* ── Error label ── */
+.report-error {
+    display:       block;
+    font-size:     12px;
+    font-weight:   600;
+    color:         var(--danger);
+    min-height:    18px;
+    margin-bottom: 8px;
+}
+
+/* ── Empty state ── */
+.rpt-empty {
+    padding:    52px 20px;
+    text-align: center;
+    background: #fff;
+    border-top: 1px solid var(--border);
+}
+.rpt-empty-icon { font-size: 36px; margin-bottom: 10px; }
+.rpt-empty-txt  { font-size: 13px; color: var(--tm); }
+
+/* ── Native date input ── */
+.native-date-input {
+    border:        1px solid #cccccc;
+    border-radius: 4px;
+    padding:       6px 10px;
+    font-size:     13px;
+    height:        34px;
+    color:         #333333;
+    background:    #ffffff;
+    cursor:        pointer;
+    width:         160px;
+}
+.native-date-input:focus {
+    border-color: #2C3E50;
+    outline:      none;
+}
+
+/* Hidden ZK textbox — invisible but exists in DOM for value binding */
+.hidden-textbox {
+    display: none !important;
+}
+
+/* date-wrap: only the native input is visible */
+.date-wrap {
+    display:        flex;
+    flex-direction: column;
+}
+
+/* ── Pagination bar ── */
+.pagination-bar {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             16px;
+    padding:         12px 0;
+    border-top:      1px solid #e0e0e0;
+}
+.pg-btn  { min-width: 80px; }
+.pg-info {
+    font-size:  13px;
+    color:      #555555;
+    min-width:  180px;
+    text-align: center;
+}
+
+/* ── Datebox legacy rules (kept for safety) ── */
+.rpt-datebox .z-datebox-icon        { display: none !important; }
+.rpt-datebox input.z-datebox-input  {
+    border: none !important; padding: 0 !important;
+    height: 100% !important; width: 100% !important;
+    font-size: 13px !important; font-family: var(--mono) !important;
+    color: var(--t1) !important; background: transparent !important;
+    outline: none !important;
 }

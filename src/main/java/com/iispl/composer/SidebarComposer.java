@@ -72,14 +72,17 @@ public class SidebarComposer extends SelectorComposer<Component> {
         addNavItem("MICR Repair",  "/outward/micrRepair/micrRepair.zul");
         addNavItem("Data Entry",   "/outward/acctAmount/acctAmount.zul");
         addNavItem("View Batches", "/outward/viewBatches/viewBatches.zul");
+        addNavItem("Reports",      "/reports/reports.zul");
     }
 
     private void renderCheckerOutwardNav() {
         addSectionTitle("OUTWARD");
+        // FIX: All three items previously had null (disabled).
+        // Now correctly wired to their ZUL paths.
         addNavItem("Dashboard",           "/dashboard/checkerOutward/checkerOutwardDashboard.zul");
         addNavItem("Verification Queue",  "/outward/checkerQueue/checkerQueue.zul");
-        addNavItem("DEM Export",          "/outward/demExport/demExport.zul");
-        addNavItem("Reports",             "/reports/reports.zul");
+        addNavItem("DEM Export",          null);  // Not yet implemented — remains disabled
+        addNavItem("Reports",             "/reports/checkerReports.zul");  // Not yet implemented — remains disabled
     }
 
     private void renderMakerInwardNav() {

@@ -1,29 +1,72 @@
 package com.iispl.dao;
 
-import com.iispl.dto.reports.*;
-
+import com.iispl.entity.outward.OutwardBatch;
+import com.iispl.entity.outward.OutwardCheque;
+import com.iispl.entity.outward.OutwardCheckerAction;
 import java.time.LocalDate;
 import java.util.List;
 
 /**
  * File    : com/iispl/dao/ReportsDao.java
- * Purpose : Read-only DAO for the 5 Outward Reports.
- *           Uses native SQL with date-range filters; returns DTOs (not entities).
+ * Purpose : DAO interface for all report queries — Maker and Checker.
  */
 public interface ReportsDao {
 
-    /** Aggregated batch stats per day in the given date range (inclusive). */
-    List<DailySummaryDto> getDailySummary(LocalDate fromDate, LocalDate toDate);
+    // ════════════════════════════════════════════════════════════════
+    //  MAKER REPORTS  (existing — do not modify)
+    // ════════════════════════════════════════════════════════════════
 
-    /** Every batch created in the date range, with maker + checker names joined in. */
-    List<BatchDetailDto> getBatchDetails(LocalDate fromDate, LocalDate toDate);
+    /**
+     * Returns all batches created by a specific maker
+     * between the given from and to dates (inclusive).
+     */
+    List<OutwardBatch> getMyBatchesReport(Long makerId,
+                                           LocalDate fromDate,
+                                           LocalDate toDate);
 
-    /** Per-checker Pass/Reject/Refer counts from outward_checker_actions audit. */
-    List<CheckerActionDto> getCheckerActions(LocalDate fromDate, LocalDate toDate);
+    /**
+     * Returns all cheques belonging to a specific batch,
+     * ordered by seq_no ASC. Used for per-batch cheque detail PDF.
+     *
+     * @param batchDbId  DB primary key of the outward_batch row
+     * @return list of OutwardCheque ordered by seq_no
+     */
+    List<OutwardCheque> getChequesByBatch(Long batchDbId);
 
-    /** Per-maker batch and cheque upload counts. */
-    List<MakerPerformanceDto> getMakerPerformance(LocalDate fromDate, LocalDate toDate);
+    // ════════════════════════════════════════════════════════════════
+    //  CHECKER REPORTS  (new)
+    // ════════════════════════════════════════════════════════════════
 
-    /** Every rejected cheque in the date range (both MAKER + CHECKER rejections). */
-    List<RejectionDto> getRejections(LocalDate fromDate, LocalDate toDate);
+    /**
+     * Returns all batches verified by a specific checker.
+     *
+     * Fetches batches where:
+     *   verified_by = checkerId
+     *   AND status IN ('CHECKER_APPROVED', 'EXPORTED')
+     *
+     * Ordered by verified_at DESC (most recently verified first).
+     *
+     * Used by: CheckerReportsComposer → Tab 1 (Verified Batches table).
+     *
+     * @param checkerId  DB primary key of the logged-in checker user
+     * @return list of OutwardBatch, never null (empty list if none)
+     */
+    List<OutwardBatch> getVerifiedBatches(Long checkerId);
+
+    /**
+     * Returns all REJECTED and REFERRED checker actions taken by a
+     * specific checker, across all batches.
+     *
+     * Fetches rows from outward_checker_actions where:
+     *   checker_id = checkerId
+     *   AND action IN ('REJECTED', 'REFERRED')
+     *
+     * Ordered by actioned_at DESC (most recent first).
+     *
+     * Used by: CheckerReportsComposer → Tab 2 (Cheque Action Log table).
+     *
+     * @param checkerId  DB primary key of the logged-in checker user
+     * @return list of OutwardCheckerAction, never null (empty list if none)
+     */
+    List<OutwardCheckerAction> getCheckerActionLog(Long checkerId);
 }

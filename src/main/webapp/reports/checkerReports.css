@@ -1,0 +1,84 @@
+/*
+ * File: reports/checkerReports.css
+ * Purpose: Extra styles specific to the Checker Outward Reports page.
+ *          Builds on top of reports.css (already loaded by checkerReports.zul).
+ *          Only rules that reports.css does NOT already cover are added here.
+ */
+
+/* ══════════════════════════════════════════════════════════════════
+   TAB STRIP
+   Two plain clickable divs at the top of the content area.
+   Active tab gets a bottom border + primary colour text.
+   ══════════════════════════════════════════════════════════════════ */
+
+.cr-tabs {
+    display:       flex;
+    border-bottom: 1.5px solid var(--border);
+    gap:           0;
+}
+
+.cr-tab {
+    padding:        7px 18px;
+    font-size:      13px;
+    font-weight:    500;
+    color:          var(--tm);
+    cursor:         pointer;
+    border-bottom:  2px solid transparent;
+    margin-bottom:  -1.5px;      /* overlap the cr-tabs border-bottom */
+    user-select:    none;
+    transition:     color 0.15s, border-color 0.15s;
+}
+
+.cr-tab:hover {
+    color: var(--primary);
+}
+
+.cr-tab-active {
+    color:        var(--primary) !important;
+    border-bottom-color: var(--primary) !important;
+    font-weight:  600 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PANEL HEADER ROW
+   "Batches you approved…" label on the left,
+   "⬇ Download PDF" button on the right.
+   ══════════════════════════════════════════════════════════════════ */
+
+.cr-panel-hdr {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+}
+
+.cr-panel-sub {
+    font-size:  12px;
+    color:      var(--tm);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CHIP — Reason code pill (R-04, R-07, …)
+   ══════════════════════════════════════════════════════════════════ */
+
+.chip {
+    display:       inline-flex;
+    align-items:   center;
+    padding:       2px 8px;
+    border-radius: 100px;
+    background:    var(--bg-2);
+    border:        0.5px solid var(--border);
+    font-size:     11px;
+    color:         var(--tm);
+    font-family:   var(--mono);
+}
+
+/* Force the batch grid to fill its container width */
+#bBatchGrid.z-grid {
+    width: 100% !important;
+}
+
+/* Remove the extra empty column ZK adds when total column widths
+   are less than the grid width */
+#bBatchGrid .z-grid-body col:last-child {
+    width: 0 !important;
+}
