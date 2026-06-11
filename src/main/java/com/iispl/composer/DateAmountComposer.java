@@ -220,8 +220,23 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     }
 
     private void showSplitReview(int idx) {
-        reviewList = (allCheques != null) ? allCheques : Collections.emptyList();
-        reviewIdx  = Math.max(0, Math.min(reviewList.size() - 1, idx));
+    	 // reviewList should only contain NEEDS_REPAIR and REFERRED_DATEAMOUNT
+        // so Prev/Next arrows only navigate through cheques that need work
+        reviewList = allCheques.stream()
+                .filter(c -> {
+                    String s = c.getRepairStatus();
+                    return s == null
+                            || "NEEDS_REPAIR".equalsIgnoreCase(s)
+                            || "REFERRED_DATEAMOUNT".equalsIgnoreCase(s);
+                })
+                .collect(Collectors.toList());
+
+        // Find position of clicked cheque within reviewList
+        // idx passed in is the allCheques index — translate to reviewList index
+        InwardCheque clicked = allCheques.get(idx);
+        reviewIdx = reviewList.indexOf(clicked);
+        if (reviewIdx < 0) reviewIdx = 0;
+
         setVis(listPanel,        false);
         setVis(reviewSplitPanel, true);
         loadReviewRecord();
@@ -447,7 +462,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
 
         // FIX 1: Use "REPAIRED" to match what saveStep2Repair() writes to DB,
         // so isPending() correctly excludes this cheque when scanning for the next one.
-        selectedCheque.setRepairStatus("REPAIRED");
+        
 
         service.saveStep2Repair(selectedCheque);
 
@@ -578,12 +593,20 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private List<InwardCheque> getFilteredList() {
-        if (allCheques == null) return Collections.emptyList();
+    	if (allCheques == null) return Collections.emptyList();
         final String filterVal =
                 (cmbFilter != null && cmbFilter.getSelectedItem() != null
                  && cmbFilter.getSelectedItem().getValue() != null)
                         ? cmbFilter.getSelectedItem().getValue().toString() : "";
         return allCheques.stream()
+                // Base filter — only show cheques that still need work
+                .filter(c -> {
+                    String s = c.getRepairStatus();
+                    return s == null
+                            || "NEEDS_REPAIR".equalsIgnoreCase(s)
+                            || "REFERRED_DATEAMOUNT".equalsIgnoreCase(s);
+                })
+                // Combobox filter on top
                 .filter(c -> filterVal.isEmpty()
                         || filterVal.equalsIgnoreCase(
                                 c.getRepairStatus() != null ? c.getRepairStatus() : ""))

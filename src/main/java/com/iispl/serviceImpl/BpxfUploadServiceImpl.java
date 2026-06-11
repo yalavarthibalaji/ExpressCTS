@@ -130,6 +130,7 @@ public class BpxfUploadServiceImpl implements BpxfUploadService {
                 cheque.setAccountBalance(bpxf.getAccountBalance());
                 cheque.setIsAccountValid(bpxf.getIsAccountValid());
                 cheque.setIsBankMatched(bpxf.getIsBankMatched());
+                cheque.setDateAmountError(bpxf.isDateAmountError());
                 cheque.setPayeeName(bpxf.getPayeeName());
                 cheque.setIqaStatus(bpxf.getIqaStatus());
                 cheque.setFrontImagePath(bpxf.getFrontImagePath()); // already resolved

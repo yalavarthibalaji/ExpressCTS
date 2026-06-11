@@ -41,8 +41,17 @@ public class BpxfCheque {
 
     @XmlElement(name = "IsMicrError")
     private boolean isMicrError;
+    
+    @XmlElement(name = "IsDateAmountError")
+    private boolean isDateAmountError;
 
-    @XmlElement(name = "CityCode")
+    public boolean isDateAmountError() {
+		return isDateAmountError;
+	}
+	public void setDateAmountError(boolean isDateAmountError) {
+		this.isDateAmountError = isDateAmountError;
+	}
+	@XmlElement(name = "CityCode")
     private String cityCode;
 
     @XmlElement(name = "BankCode")

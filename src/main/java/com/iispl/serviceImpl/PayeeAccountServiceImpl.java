@@ -138,9 +138,7 @@ public class PayeeAccountServiceImpl implements PayeeAccountService {
     public long countPending(List<InwardCheque> cheques) {
         if (cheques == null) return 0;
         return cheques.stream()
-                .filter(c -> !STATUS_REFERRED_BACK.equalsIgnoreCase(c.getRepairStatus()))
-                .filter(c -> isBlank(c.getPayeeName())
-                          || isBlank(c.getDraweeAccountNumber()))
+                .filter(c -> !"ENTRY_DONE".equalsIgnoreCase(c.getRepairStatus()))
                 .count();
     }
 

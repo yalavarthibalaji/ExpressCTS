@@ -71,6 +71,17 @@ public class InwardCheque {
 
 	@Column(name = "is_micr_error", nullable = false)
 	private boolean isMicrError = false;
+	
+	@Column(name = "is_dateamount_error", nullable = false)
+	private boolean isDateAmountError = false;
+
+	public boolean isDateAmountError() {
+		return isDateAmountError;
+	}
+
+	public void setDateAmountError(boolean isDateAmountError) {
+		this.isDateAmountError = isDateAmountError;
+	}
 
 	@Column(name = "presenting_bank_code", length = 10)
 	private String presentingBankCode;

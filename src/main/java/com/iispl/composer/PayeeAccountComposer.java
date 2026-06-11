@@ -482,11 +482,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 
 	private boolean isPending(InwardCheque c) {
 		String status = c.getRepairStatus();
-		if ("REFERRED_PAYEEACCOUNT".equalsIgnoreCase(status))
-			return false;
-		if ("ENTRY_DONE".equalsIgnoreCase(status))
-			return false;
-		return true;
+		return !"ENTRY_DONE".equalsIgnoreCase(status);
 	}
 
 	// ══════════════════════════════════════════════════════════════════════
@@ -536,20 +532,19 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	// ══════════════════════════════════════════════════════════════════════
 
 	private List<InwardCheque> getFilteredList() {
-		if (allCheques == null)
-			return Collections.emptyList();
+		if(allCheques == null) return Collections.emptyList();
 		final String filterVal = selectedFilterValue();
-		if (filterVal.isEmpty())
-			return allCheques;
-		return allCheques.stream().filter(c -> {
-			String rs = c.getRepairStatus() != null ? c.getRepairStatus() : "";
-			// "NEEDS_ENTRY" filter matches blank / null / unrecognised status
-			if ("NEEDS_ENTRY".equalsIgnoreCase(filterVal)) {
-				return rs.isEmpty()
-						|| (!rs.equalsIgnoreCase("ENTRY_DONE") && !rs.equalsIgnoreCase("REFERRED_PAYEEACCOUNT"));
-			}
-			return rs.equalsIgnoreCase(filterVal);
-		}).collect(Collectors.toList());
+		return allCheques.stream()
+				.filter(c->!"ENTRY_DONE".equalsIgnoreCase(c.getRepairStatus()))
+				.filter(c -> {
+					if(filterVal.isEmpty()) return true;
+					String rs = c.getRepairStatus() != null ? c.getRepairStatus() : "";
+					if("NEEDS_ENTRY".equalsIgnoreCase(filterVal)) {
+						return !rs.equalsIgnoreCase("REFERRED_PAYEEACCOUNT");
+					}
+					return rs.equalsIgnoreCase(filterVal);
+				})
+				.collect(Collectors.toList());
 	}
 
 	private String selectedFilterValue() {
@@ -640,7 +635,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		if (s == null || s.isBlank())
 			return "NEEDS ENTRY";
 		return switch (s.toUpperCase()) {
-		case "ENTRY_DONE" -> "COMPLETED";
+		
 		case "REFERRED_PAYEEACCOUNT" -> "REFERRED PAYEEACCOUNT";
 		default -> "NEEDS ENTRY";
 		};
