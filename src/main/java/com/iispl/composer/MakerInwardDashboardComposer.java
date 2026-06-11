@@ -31,7 +31,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
     private static final long serialVersionUID = 1L;
 
     private static final DateTimeFormatter DISPLAY_FMT =
-            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+            DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     // ── Wired Components ──────────────────────────────────────────────────
 

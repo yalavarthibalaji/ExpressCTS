@@ -109,15 +109,15 @@
                                  emptyMessage="No cheques found."
                                  height="380px">
                             <listhead>
-                                <listheader label="SNO"            width="70px"  align="center" sclass="cheque-table-header"/>
-                                <listheader label="CHEQUE NO."   width="150px"                sclass="cheque-table-header"/>
-                                <listheader label="BANK"         width="150px"                   sclass="cheque-table-header"/>
-                                <listheader label="PROCESSED DATE"   width="250px"                sclass="cheque-table-header"/>
-                                <listheader label="RECIEVED DATE"    width="250px"                sclass="cheque-table-header"/>
-                                <listheader label="PROCESSED AMOUNT"    width="200px" align="right"  sclass="cheque-table-header"/>
-                                <listheader label="RECIEVED AMOUNT"     width="200px" align="right"  sclass="cheque-table-header"/>
-                                <listheader label="STATUS"       width="140px" align="center" sclass="cheque-table-header"/>
-                                <listheader label="ACTION"       width="170px" align="center" sclass="cheque-table-header"/>
+                                <listheader label="SNO"              width="70px"  align="center" sclass="cheque-table-header"/>
+                                <listheader label="CHEQUE NO."       width="150px"     sclass="cheque-table-header"/>
+                                <listheader label="BANK"             width="150px"                   sclass="cheque-table-header"/>
+                                <listheader label="PROCESSED DATE"   width="200px"                sclass="cheque-table-header"/>
+                                <listheader label="RECIEVED DATE"    width="180px"                sclass="cheque-table-header"/>
+                                <listheader label="PROCESSED AMOUNT" width="220px" align="right"  sclass="cheque-table-header"/>
+                                <listheader label="RECIEVED AMOUNT"  width="200px" align="right"  sclass="cheque-table-header"/>
+                                <listheader label="STATUS"           width="140px" align="center" sclass="cheque-table-header"/>
+                                <listheader label="ACTION"           width="170px" align="center" sclass="cheque-table-header"/>
                             </listhead>
                             <!-- Rows rendered by DateAmountComposer -->
                         </listbox>
@@ -219,19 +219,9 @@
 
                                 </div>
 
-                                <div sclass="ocr-warning-bar" id="ocrWarningBar">
-                                    <label value="⚠ OCR could not read MICR fields — enter correct values from physical cheque" />
-                                </div>
-
                             </div>
 
-                            <div sclass="image-footer-legend">
-                                <span sclass="legend-dot blue-dot" />
-                                <label value="Blue = OCR-filled" />
-                                <label sclass="legend-sep" value="·" />
-                                <span sclass="legend-dot yellow-dot" />
-                                <label value="Yellow = Error field" />
-                            </div>
+                         
                               <div sclass="split-left-footer">
                                 <span sclass="legend-dot green-dot" />
                                 <label value="Green = values match" />
@@ -354,7 +344,7 @@
             <div sclass="fg">
                 <label value="Reject Reason *" sclass="field-label" />
                 <combobox id="cmbRejectReason"
-                          sclass="fi"
+                          sclass=""
                           readonly="true"
                           width="100%"
                           placeholder="Select a reason...">

@@ -104,14 +104,14 @@
                              sclass="pa-listbox"
                              style="width:100%; border:none;">
                         <listhead sclass="pa-listhead cheque-table-header">
-                            <listheader label="SNO"            width="52px"  sclass="pa-lh cheque-table-header"/>
-                            <listheader label="CHEQUE NO."   width="180px" sclass="pa-lh cheque-table-header"/>
-                            <listheader label="BANK"         width="180px" sclass="pa-lh cheque-table-header"/>
-                            <listheader label="AMOUNT"       width="190px" sclass="pa-lh pa-lh-right cheque-table-header"/>
+                            <listheader label="SNO"            width="80px"  sclass="pa-lh cheque-table-header"/>
+                            <listheader label="CHEQUE NO."   width="150px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="BANK"         width="160px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="AMOUNT"       width="150px" sclass="pa-lh pa-lh-right cheque-table-header"/>
                             <listheader label="PAYEE NAME"   width="190px" sclass="pa-lh cheque-table-header"/>
-                            <listheader label="ACCOUNT NO."  width="175px" sclass="pa-lh cheque-table-header"/>
-                            <listheader label="STATUS"       width="150px" sclass="pa-lh pa-lh-center cheque-table-header"/>
-                            <listheader label="ACTION"       width="110px" sclass="pa-lh pa-lh-center cheque-table-header"/>
+                            <listheader label="ACCOUNT NO."  width="165px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="STATUS"       width="130px" sclass="pa-lh pa-lh-center cheque-table-header"/>
+                            <listheader label="ACTION"       width="135px" sclass="pa-lh pa-lh-center cheque-table-header"/>
                         </listhead>
                     </listbox>
                 </div>

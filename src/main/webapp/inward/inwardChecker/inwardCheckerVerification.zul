@@ -160,7 +160,7 @@
                                     <listhead sizable="true">
                                         <listheader label="BATCH ID"        hflex="2" align="left" />
                                         <listheader label="CHEQUE NO"       hflex="2" align="left" />
-                                        <listheader label="AMOUNT"          hflex="2" align="right" />
+                                        <listheader label="AMOUNT"          hflex="2" align="center" />
                                         <listheader label="PRESENTING BANK" hflex="3" align="left" />
                                         <listheader label="RETURN REASON"   hflex="3" align="left" />
                                         <listheader label="RETURNED BY"     hflex="2" align="center" />

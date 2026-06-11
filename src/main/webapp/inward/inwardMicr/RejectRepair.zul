@@ -130,7 +130,7 @@
                                             sclass="cheque-table-header" />
                                 <listheader label="AMOUNT"
                                             width="190px"
-                                            align="right"
+                                            align="center"
                                             sclass="cheque-table-header" />
                                 <listheader label="REPAIR STATUS"
                                             width="170px"

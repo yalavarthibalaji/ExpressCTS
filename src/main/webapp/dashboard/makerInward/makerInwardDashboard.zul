@@ -176,17 +176,17 @@
 								sclass="batch-listbox" height="320px">
 								<listhead>
 									<listheader label="Batch ID"
-										width="160px" sclass="batch-listbox" />
+										width="190px" sclass="batch-listbox" />
 									<listheader label="No. of Cheques"
-										width="140px" align="center" sclass="batch-listbox" />
+										width="190px" align="center" sclass="batch-listbox" />
 									<listheader label="MICR Error Count"
-										width="150px" align="center" sclass="batch-listbox" />
+										width="190px" align="center" sclass="batch-listbox" />
 									<listheader label="Parsed At"
-										hflex="1" sclass="batch-listbox" />
+										width="190px" sclass="batch-listbox" />
 									<listheader label="Status"
-										width="130px" align="center" sclass="batch-listbox" />
+										width="190px" align="center" sclass="batch-listbox" />
 									<listheader label="Action"
-										width="110px" align="center" sclass="batch-listbox" />
+										width="190px" align="center" sclass="batch-listbox" />
 								</listhead>
 							</listbox>
 
