@@ -12,7 +12,11 @@ import org.zkoss.zul.Window;
 
 import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.DateAmountService;
+import com.iispl.service.PayeeAccountService;
+import com.iispl.service.RejectRepairService;
 import com.iispl.serviceImpl.DateAmountServiceImpl;
+import com.iispl.serviceImpl.PayeeAccountServiceImpl;
+import com.iispl.serviceImpl.RejectRepairServiceImpl;
 
 public class EntryDialogComposer extends SelectorComposer<Component> {
 
@@ -37,7 +41,9 @@ public class EntryDialogComposer extends SelectorComposer<Component> {
     private Textbox tbxAccountNo;
 
     private InwardCheque cheque;
+    private final PayeeAccountService payeeAccountService = new PayeeAccountServiceImpl();
     private final DateAmountService service = new DateAmountServiceImpl();
+    private final RejectRepairService rejectRepairService = new RejectRepairServiceImpl();
 
     @Override
     public void doAfterCompose(Component comp) throws Exception {
@@ -98,7 +104,7 @@ public class EntryDialogComposer extends SelectorComposer<Component> {
         cheque.setPayeeName(payeeName.trim());
         cheque.setDraweeAccountNumber(accountNo.trim());
 
-        boolean saved = service.savePayeeAndAccount(cheque);
+        boolean saved = payeeAccountService.savePayeeAndAccount(cheque);
         if (saved) {
             Messagebox.show("Saved successfully.", "Success",
                     Messagebox.OK, Messagebox.INFORMATION,

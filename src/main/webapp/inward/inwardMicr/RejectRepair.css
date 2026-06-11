@@ -316,13 +316,17 @@
 
  color: #fff !important;
 
- font-size: 11px !important;
+ font-size: 8px !important;
 
  font-weight: 700 !important;
 
  letter-spacing: 0.5px !important;
 
  text-transform: uppercase !important;
+ 
+ align-items:center;
+ 
+ justify-content:center;
 
 }
 
@@ -2873,7 +2877,7 @@
 /* Two-column split */
 .pa-split-container {
     display: grid;
-    grid-template-columns: 55% 45%;
+    grid-template-columns: 50% 50%;
     gap: 18px;
     min-height: calc(100vh - 300px);
 }

@@ -1,99 +1,180 @@
 package com.iispl.serviceImpl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import com.iispl.dao.InwardBatchDao;
 import com.iispl.dao.InwardChequeDao;
+import com.iispl.daoImpl.InwardBatchDaoImpl;
 import com.iispl.daoImpl.InwardChequeDaoImpl;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.DateAmountService;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * DateAmountServiceImpl
  *
- * Business layer for:
- *   Step 2 — Date & Amount Repair  (save / reject / referBack)
- *   Step 3 — Payee Name & Account Entry  (savePayeeAndAccount)
- *   Batch submission to Checker  (submitBatchToChecker)
- *
- * Uses InwardChequeDao exclusively — ChequeRepairDao and DateAmountDao
- * have been removed. ChequeRepairServiceImpl and PayeeAccountServiceImpl
- * have been deleted; their responsibilities are covered here.
- *
- * NOTE: Batch-level operations (findBatchById, updateBatchStatus) are
- * handled by RejectRepairServiceImpl via InwardBatchDao.
- * This service is purely cheque-level.
+ * Business layer for Step 2 — Date & Amount Repair only.
+ * Logic is copied from RejectRepairServiceImpl's Step 2 section
+ * and adjusted:
+ *   saveStep2Repair → STATUS_REPAIRED          (was DATE_AMT_REPAIRED)
+ *   referStep2      → STATUS_REFERRED_DATEAMOUNT (was REFERRED_MICR)
  */
 public class DateAmountServiceImpl implements DateAmountService {
 
     private static final Logger LOG =
             Logger.getLogger(DateAmountServiceImpl.class.getName());
 
+    // ── Status constants ──────────────────────────────────────────────────
+    private static final String STATUS_REPAIRED             = "REPAIRED";
+    private static final String STATUS_REJECTED             = "REJECTED";
+    private static final String STATUS_REFERRED_DATEAMOUNT  = "REFERRED_DATEAMOUNT";
+
+    // ── DAOs ──────────────────────────────────────────────────────────────
     private final InwardChequeDao chequeDao;
+    private final InwardBatchDao  batchDao;
 
     // ── Constructors ──────────────────────────────────────────────────────
 
-    /** Default — creates its own DAO (non-Spring). */
+    /** Default — creates its own DAOs (non-Spring). */
     public DateAmountServiceImpl() {
         this.chequeDao = new InwardChequeDaoImpl();
+        this.batchDao  = new InwardBatchDaoImpl();
     }
 
     /** Injectable constructor for testing. */
-    public DateAmountServiceImpl(InwardChequeDao chequeDao) {
+    public DateAmountServiceImpl(InwardChequeDao chequeDao, InwardBatchDao batchDao) {
         this.chequeDao = chequeDao;
+        this.batchDao  = batchDao;
     }
 
-    // ═════════════════════════════════════════════════════════════════════
-    //  QUERIES
-    // ═════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════════════
+    //  BATCH RESOLUTION
+    // ══════════════════════════════════════════════════════════════════════
 
-    /**
-     * Fetch all cheques in a batch by numeric batch PK.
-     * Used by both Step 2 and Step 3 composers.
-     *
-     * @param batchId numeric PK of the parent InwardBatch row
-     */
-    public List<InwardCheque> getChequesByBatchId(Long batchId) {
-        if (batchId == null) {
-            LOG.warning("getChequesByBatchId: null batchId");
+    @Override
+    public InwardBatch getBatchById(String batchId) {
+        if (isBlank(batchId)) return null;
+        try {
+            return batchDao.findByBatchId(batchId.trim());
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "getBatchById failed, batchId=" + batchId, e);
+            return null;
+        }
+    }
+
+    @Override
+    public List<InwardBatch> getRepairEligibleBatches() {
+        try {
+            List<InwardBatch> list = batchDao.findRepairEligibleBatches();
+            return list != null ? list : new ArrayList<>();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "getRepairEligibleBatches failed", e);
             return new ArrayList<>();
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  QUERIES
+    // ══════════════════════════════════════════════════════════════════════
+
+    @Override
+    public List<InwardCheque> getStep2ChequesByBatchId(Long batchId) {
+        if (batchId == null) return new ArrayList<>();
         try {
             List<InwardCheque> list = chequeDao.findByBatchId(batchId);
             return list != null ? list : new ArrayList<>();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "getChequesByBatchId failed, batchId=" + batchId, e);
+            LOG.log(Level.SEVERE,
+                    "getStep2ChequesByBatchId failed, batchId=" + batchId, e);
             return new ArrayList<>();
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  STEP 2 — DATE & AMOUNT REPAIR
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Persist corrected date and amount.
+     * Sets repairStatus = REPAIRED.
+     * Same logic as RejectRepairServiceImpl.saveStep2Repair()
+     * but uses REPAIRED instead of DATE_AMT_REPAIRED.
+     */
+    @Override
+    public void saveStep2Repair(InwardCheque cheque) {
+        if (cheque == null) return;
+        try {
+            cheque.setRepairStatus(STATUS_REPAIRED);
+            chequeDao.updateCheque(cheque);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE,
+                    "saveStep2Repair failed, chequeId=" + cheque.getId(), e);
+            throw new RuntimeException("Step 2 save failed", e);
+        }
+    }
+    
+    @Override
+    public boolean saveRepairDateAndAmount(InwardCheque cheque) {
+        if (cheque == null || cheque.getId() == null) {
+            LOG.warning("saveRepairDateAndAmount: null cheque or id");
+            return false;
+        }
+        try {
+            cheque.setRepairStatus(STATUS_REPAIRED);
+            int rows = chequeDao.updateDateAndAmount(cheque);
+            if (rows != 1)
+                LOG.warning("saveRepairDateAndAmount: expected 1 row, got " + rows
+                        + " for chequeId=" + cheque.getId());
+            return rows == 1;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE,
+                    "saveRepairDateAndAmount failed, chequeId=" + cheque.getId(), e);
+            return false;
+        }
+    }
+    /**
+     * Reject a cheque at Step 2.
+     * Sets repairStatus = REJECTED.
+     * Exact same logic as RejectRepairServiceImpl.rejectStep2().
+     */
+    @Override
+    public void rejectStep2(InwardCheque cheque, String rejectReason) {
+        if (cheque == null) return;
+        try {
+            cheque.setRepairStatus(STATUS_REJECTED);
+            if (!isBlank(rejectReason)) cheque.setRemarks(rejectReason.trim());
+            chequeDao.updateCheque(cheque);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE,
+                    "rejectStep2 failed, chequeId=" + cheque.getId(), e);
+            throw new RuntimeException("Step 2 reject failed", e);
         }
     }
 
     /**
-     * Fetch cheques in a batch filtered by repairStatus.
-     *
-     * @param batchId      numeric PK of the parent InwardBatch row
-     * @param repairStatus e.g. "NEEDS_REPAIR", "REPAIRED", "REFERRED_BACK"
+     * Refer a cheque back from Step 2.
+     * Sets repairStatus = REFERRED_DATEAMOUNT.
+     * Same logic as RejectRepairServiceImpl.referStep2()
+     * but uses REFERRED_DATEAMOUNT instead of REFERRED_MICR.
      */
-    public List<InwardCheque> getChequesByBatchIdAndStatus(
-            Long batchId, String repairStatus) {
-
-        if (batchId == null || isBlank(repairStatus)) {
-            LOG.warning("getChequesByBatchIdAndStatus: null/blank argument");
-            return new ArrayList<>();
-        }
+    @Override
+    public void referStep2(InwardCheque cheque, String referReason) {
+        if (cheque == null) return;
         try {
-            List<InwardCheque> list =
-                    chequeDao.findByBatchIdAndRepairStatus(batchId, repairStatus.trim());
-            return list != null ? list : new ArrayList<>();
+            cheque.setRepairStatus(STATUS_REFERRED_DATEAMOUNT);
+            if (!isBlank(referReason)) cheque.setRemarks(referReason.trim());
+            chequeDao.updateCheque(cheque);
         } catch (Exception e) {
             LOG.log(Level.SEVERE,
-                    "getChequesByBatchIdAndStatus failed, batchId=" + batchId, e);
-            return new ArrayList<>();
+                    "referStep2 failed, chequeId=" + cheque.getId(), e);
+            throw new RuntimeException("Step 2 refer failed", e);
         }
     }
 
+    @Override
     public InwardCheque getChequeById(Long chequeId) {
         if (chequeId == null) {
             LOG.warning("getChequeById: null chequeId");
@@ -106,187 +187,6 @@ public class DateAmountServiceImpl implements DateAmountService {
             return null;
         }
     }
-
-    /**
-     * Count cheques still pending repair in a batch.
-     * Absorbed from the deleted PayeeAccountServiceImpl.countPending().
-     * Uses the DAO count query (single DB round-trip) instead of loading
-     * the full list and streaming.
-     *
-     * @param batchId numeric PK of the parent InwardBatch row
-     */
-    public long countPendingRepairs(Long batchId) {
-        if (batchId == null) return 0;
-        try {
-            return chequeDao.countPendingRepairsByBatchId(batchId);
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE,
-                    "countPendingRepairs failed, batchId=" + batchId, e);
-            return 0;
-        }
-    }
-
-    /**
-     * Count Step-3 cheques still awaiting payee/account entry.
-     * A cheque is pending when payeeName or draweeAccountNumber is blank
-     * AND it is not REFERRED_BACK (those are intentionally skipped).
-     *
-     * Absorbed from the deleted PayeeAccountServiceImpl.countPending(List).
-     */
-    public long countPendingStep3(List<InwardCheque> cheques) {
-        if (cheques == null) return 0;
-        return cheques.stream()
-                .filter(c -> !"REFERRED_BACK".equalsIgnoreCase(c.getRepairStatus()))
-                .filter(c -> isBlank(c.getPayeeName())
-                          || isBlank(c.getDraweeAccountNumber()))
-                .count();
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    //  STEP 2 — DATE & AMOUNT REPAIR
-    // ═════════════════════════════════════════════════════════════════════
-
-    /**
-     * Persist corrected OCR date and amount.
-     * Caller sets chequeDateOcr, amountOcr, and optionally repairStatus
-     * on the entity before calling. Defaults to "REPAIRED" if null.
-     *
-     * @return true if exactly one row was updated
-     */
-    @Override
-    public boolean saveRepairDateAndAmount(InwardCheque cheque) {
-        if (cheque == null || cheque.getId() == null) {
-            LOG.warning("saveRepairDateAndAmount: null cheque or id");
-            return false;
-        }
-        try {
-            if (cheque.getRepairStatus() == null) {
-                cheque.setRepairStatus("REPAIRED");
-            }
-            int rows = chequeDao.updateDateAndAmount(cheque);
-            if (rows != 1)
-                LOG.warning("saveRepairDateAndAmount: expected 1 row, got " + rows
-                        + " for chequeId=" + cheque.getId());
-            return rows == 1;
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE,
-                    "saveRepairDateAndAmount failed, chequeId=" + cheque.getId(), e);
-            return false;
-        }
-    }
-
-    /**
-     * Reject a cheque.
-     * DAO sets repairStatus = 'REJECTED', status = 'RETURNED'.
-     *
-     * @return true if exactly one row was updated
-     */
-    @Override
-    public boolean rejectCheque(Long chequeId, String rejectReason, String remarks) {
-        if (chequeId == null) {
-            LOG.warning("rejectCheque: null chequeId");
-            return false;
-        }
-        if (isBlank(rejectReason)) {
-            LOG.warning("rejectCheque: blank rejectReason for chequeId=" + chequeId);
-            return false;
-        }
-        try {
-            int rows = chequeDao.rejectCheque(
-                    chequeId,
-                    rejectReason.trim(),
-                    remarks != null ? remarks.trim() : "");
-            return rows == 1;
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE,
-                    "rejectCheque failed, chequeId=" + chequeId, e);
-            return false;
-        }
-    }
-
-    /**
-     * Refer a cheque back for clarification.
-     * DAO sets repairStatus = 'REFERRED_BACK'.
-     *
-     * @return true if exactly one row was updated
-     */
-    @Override
-    public boolean referChequeBack(Long chequeId, String referReason, String remarks) {
-        if (chequeId == null) {
-            LOG.warning("referChequeBack: null chequeId");
-            return false;
-        }
-        try {
-            int rows = chequeDao.referChequeBack(
-                    chequeId,
-                    referReason != null ? referReason.trim() : "REFER",
-                    remarks     != null ? remarks.trim()     : "");
-            return rows == 1;
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE,
-                    "referChequeBack failed, chequeId=" + chequeId, e);
-            return false;
-        }
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    //  STEP 3 — PAYEE NAME & ACCOUNT ENTRY
-    // ═════════════════════════════════════════════════════════════════════
-
-    /**
-     * Persist payeeName and draweeAccountNumber.
-     * DAO sets repairStatus = 'ENTRY_DONE'.
-     *
-     * @return true if exactly one row was updated
-     */
-    @Override
-    public boolean savePayeeAndAccount(InwardCheque cheque) {
-        if (cheque == null || cheque.getId() == null) {
-            LOG.warning("savePayeeAndAccount: null cheque or id");
-            return false;
-        }
-        try {
-            int rows = chequeDao.updatePayeeAndAccount(cheque);
-            if (rows != 1)
-                LOG.warning("savePayeeAndAccount: expected 1 row, got " + rows
-                        + " for chequeId=" + cheque.getId());
-            return rows == 1;
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE,
-                    "savePayeeAndAccount failed, chequeId=" + cheque.getId(), e);
-            return false;
-        }
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    //  BATCH SUBMISSION
-    // ═════════════════════════════════════════════════════════════════════
-
-    /**
-     * Mark all cheques in a batch as submitted to the checker.
-     * Sets repairStatus = 'SUBMITTED_TO_CHECKER', status = 'SUBMITTED'.
-     *
-     * @param batchId string batchId on InwardBatch
-     * @return number of cheque rows updated
-     */
-    @Override
-    public int submitBatchToChecker(String batchId) {
-        if (isBlank(batchId)) {
-            LOG.warning("submitBatchToChecker: blank batchId");
-            return 0;
-        }
-        try {
-            int rows = chequeDao.submitBatchToChecker(batchId.trim());
-            LOG.info("submitBatchToChecker: " + rows
-                    + " cheques submitted for batch=" + batchId);
-            return rows;
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE,
-                    "submitBatchToChecker failed, batchId=" + batchId, e);
-            return 0;
-        }
-    }
-
     // ─────────────────────────────────────────────────────────────────────
     //  Private helpers
     // ─────────────────────────────────────────────────────────────────────

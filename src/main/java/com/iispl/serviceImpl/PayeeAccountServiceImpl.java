@@ -19,7 +19,7 @@ public class PayeeAccountServiceImpl implements PayeeAccountService {
             Logger.getLogger(PayeeAccountServiceImpl.class.getName());
 
     private static final String STATUS_ENTRY_DONE    = "ENTRY_DONE";
-    private static final String STATUS_REFERRED_BACK = "REFERRED_BACK";
+    private static final String STATUS_REFERRED_BACK = "REFERRED_PAYEEACCOUNT";
     private static final String BATCH_STATUS_CHECKER = "MakerVerified";
     private static final String BATCH_REPAIR_STEP3_DONE = "STEP3_COMPLETE";
 
@@ -93,6 +93,26 @@ public class PayeeAccountServiceImpl implements PayeeAccountService {
             throw new RuntimeException("Step 3 refer-back failed", e);
         }
     }
+    
+    @Override
+    public boolean savePayeeAndAccount(InwardCheque cheque) {
+        if (cheque == null || cheque.getId() == null) {
+            LOG.warning("savePayeeAndAccount: null cheque or id");
+            return false;
+        }
+        try {
+            int rows = chequeDao.updatePayeeAndAccount(cheque);
+            if (rows != 1)
+                LOG.warning("savePayeeAndAccount: expected 1 row, got " + rows
+                        + " for chequeId=" + cheque.getId());
+            return rows == 1;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE,
+                    "savePayeeAndAccount failed, chequeId=" + cheque.getId(), e);
+            return false;
+        }
+    }
+
 
     @Override
     public boolean proceedToInwardChecker(String batchId) {

@@ -50,7 +50,8 @@ public interface PayeeAccountService {
      * @return true if the batch was advanced successfully.
      */
     boolean proceedToInwardChecker(String batchId);
-
+    
+    boolean savePayeeAndAccount(InwardCheque cheque);
     /**
      * Count how many cheques in the given list still need an entry
      * (payeeName or draweeAccountNumber is null / blank AND status

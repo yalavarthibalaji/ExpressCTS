@@ -39,7 +39,7 @@ public class RejectRepairServiceImpl implements RejectRepairService {
     private static final String STATUS_REPAIR_COMPLETE   = "REPAIR_COMPLETE";
     private static final String STATUS_DATE_AMT_REPAIRED = "DATE_AMT_REPAIRED";
     private static final String STATUS_REJECTED          = "REJECTED";
-    private static final String STATUS_REFERRED_STEP2    = "REFERRED_STEP2";
+    private static final String STATUS_REFERRED_STEP2    = "REFERRED_MICR";
 
     // ── DAOs ──────────────────────────────────────────────────────────────
     private final InwardChequeDao chequeDao;

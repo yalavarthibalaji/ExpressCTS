@@ -93,7 +93,7 @@
                             <comboitem label="All"           value=""/>
                             <comboitem label="Needs Entry"   value="NEEDS_ENTRY"/>
                             <comboitem label="Completed"     value="ENTRY_DONE"/>
-                            <comboitem label="Referred Back" value="REFERRED_BACK"/>
+                            <comboitem label="Referred Back" value="REFERRED_PAYEEACCOUNT"/>
                         </combobox>
                     </div>
                 </div>
@@ -103,15 +103,15 @@
                     <listbox id="chequeListbox" mold="paging" autopaging="false"
                              sclass="pa-listbox"
                              style="width:100%; border:none;">
-                        <listhead sclass="pa-listhead">
-                            <listheader label="#"            width="52px"  sclass="pa-lh"/>
-                            <listheader label="CHEQUE NO."   width="130px" sclass="pa-lh"/>
-                            <listheader label="BANK"                       sclass="pa-lh"/>
-                            <listheader label="AMOUNT"       width="150px" sclass="pa-lh pa-lh-right"/>
-                            <listheader label="PAYEE NAME"   width="190px" sclass="pa-lh"/>
-                            <listheader label="ACCOUNT NO."  width="175px" sclass="pa-lh"/>
-                            <listheader label="STATUS"       width="150px" sclass="pa-lh pa-lh-center"/>
-                            <listheader label="ACTION"       width="110px" sclass="pa-lh pa-lh-center"/>
+                        <listhead sclass="pa-listhead cheque-table-header">
+                            <listheader label="SNO"            width="52px"  sclass="pa-lh cheque-table-header"/>
+                            <listheader label="CHEQUE NO."   width="180px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="BANK"         width="180px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="AMOUNT"       width="190px" sclass="pa-lh pa-lh-right cheque-table-header"/>
+                            <listheader label="PAYEE NAME"   width="190px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="ACCOUNT NO."  width="175px" sclass="pa-lh cheque-table-header"/>
+                            <listheader label="STATUS"       width="150px" sclass="pa-lh pa-lh-center cheque-table-header"/>
+                            <listheader label="ACTION"       width="110px" sclass="pa-lh pa-lh-center cheque-table-header"/>
                         </listhead>
                     </listbox>
                 </div>
@@ -144,10 +144,10 @@
                 </div>
 
                 <!-- Two-column split -->
-                <div sclass="pa-split-container">
+              
 
                     
-                    <div sclass="split-container">
+                    <div sclass="pa-split-container">
 
                         <!-- LEFT: Image Viewer -->
                         <div sclass="split-left">
@@ -292,9 +292,7 @@
                                 <button id="btnSaveEntry"  sclass="btn-save-entry">
                                     💾 Save Entry
                                 </button>
-                                <button id="btnReferEntry" sclass="btn-refer-back">
-                                    ← Refer Back
-                                </button>
+                              
                             </div>
 
                         </div><!-- /pa-form-body -->
@@ -305,7 +303,7 @@
 
             </div><!-- /detailPanel -->
 
-        </div><!-- /pa-content -->
+        
     </div><!-- /pa-layout -->
 
 

@@ -108,13 +108,13 @@
                              emptyMessage="No files uploaded yet. Upload a file above to begin.">
                         <listhead sclass="listhead-row">
                             
-                            <listheader label="BATCH ID"      width="150px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="FILE NAME"     width="200px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="TOTAL CHEQUES" width="200px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="MICR ERRORS"   width="140px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="PARSED AT"     width="160px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="STATUS"        width="110px" style="color:black;font-weight:700;font-size:12px;"/>
-                            <listheader label="Action"        width="220px" style="color:black;font-weight:700;font-size:12px;"/>
+                            <listheader label="BATCH ID"      width="150px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
+                            <listheader label="FILE NAME"     width="200px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
+                            <listheader label="TOTAL CHEQUES" width="200px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
+                            <listheader label="MICR ERRORS"   width="140px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
+                            <listheader label="PARSED AT"     width="160px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
+                            <listheader label="STATUS"        width="110px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
+                            <listheader label="Action"        width="220px" style="color:white;font-weight:700;font-size:12px;background:#1a2340"/>
                         </listhead>
                     </listbox>
                 </div>

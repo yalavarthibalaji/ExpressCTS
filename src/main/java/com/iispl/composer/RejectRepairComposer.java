@@ -42,7 +42,6 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
     private static final String PAGE_STEP2 = "/inward/inwardMicr/DateAmount.zul";
     private static final String PAGE_STEP3 = "/inward/inwardMicr/PayeeAccount.zul";
     private static final String PAGE_FILE  = "/inward/bpxfUpload/bpxfUpload.zul";
-    private static final String PAGE_BATCH = "/inward/inwardMicr/batchSelect.zul";
 
     private static final int PAGE_SIZE = 10;
 
@@ -75,7 +74,6 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
     @Wire("#cmbFilter")            private Combobox cmbFilter;
     @Wire("#txtSearch")            private Textbox  txtSearch;
     @Wire("#btnGoToFileProcessing")private Button   btnGoToFileProcessing;
-    @Wire("#btnBackToBatches")     private Button   btnBackToBatches;
     @Wire("#btnNextStep2")         private Button   btnNextStep2;
     @Wire("#btnPrevPage")          private Button   btnPrevPage;
     @Wire("#btnNextPage")          private Button   btnNextPage;
@@ -249,7 +247,7 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         repairList = allCheques.stream()
                 .filter(c -> c.isMicrError()
                         || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
-                        || "REFERRED_BACK".equalsIgnoreCase(c.getRepairStatus()))
+                        || "REFERRED_MICR".equalsIgnoreCase(c.getRepairStatus()))
                 .collect(Collectors.toList());
 
         showList();
@@ -428,10 +426,6 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         showImagePanel("front");
         resetZoom();
 
-        if (lblMicrBandStrip != null)
-            lblMicrBandStrip.setValue(
-                    "⑆ " + nvl(c.getChequeNo()) + " ⑆  "
-                    + nvl(c.getMicrCodeRaw()) + " ⑈  ⑉29⑉");
 
         if (ocrWarningBar != null) ocrWarningBar.setVisible(true);
 
@@ -774,11 +768,6 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         Executions.getCurrent().sendRedirect(PAGE_FILE);
     }
 
-    @Listen("onClick=#btnBackToBatches")
-    public void onBackToBatches() {
-        Sessions.getCurrent().removeAttribute(SESSION_BATCH_ID);
-        Executions.getCurrent().sendRedirect(PAGE_BATCH);
-    }
 
     @Listen("onClick=#btnNextStep2")
     public void onNextStep2() {

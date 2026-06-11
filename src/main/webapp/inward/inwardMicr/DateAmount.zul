@@ -94,7 +94,7 @@
                                   placeholder="Filter by status">
                             <comboitem label="All"           value=""              />
                             <comboitem label="Needs Repair"  value="NEEDS_REPAIR"  />
-                            <comboitem label="Referred Back" value="REFERRED_BACK" />
+                            <comboitem label="Referred Back" value="REFERRED_DATEAMOUNT" />
                             <comboitem label="Repaired"      value="REPAIRED"      />
                             <comboitem label="Rejected"      value="REJECTED"      />
                         </combobox>
@@ -109,15 +109,15 @@
                                  emptyMessage="No cheques found."
                                  height="380px">
                             <listhead>
-                                <listheader label="#"            width="50px"  align="center" sclass="cheque-table-header"/>
-                                <listheader label="CHEQUE NO."   width="120px"                sclass="cheque-table-header"/>
-                                <listheader label="BANK"         hflex="1"                    sclass="cheque-table-header"/>
-                                <listheader label="PROC. DATE"   width="120px"                sclass="cheque-table-header"/>
-                                <listheader label="RCVD DATE"    width="120px"                sclass="cheque-table-header"/>
-                                <listheader label="PROC. AMT"    width="130px" align="right"  sclass="cheque-table-header"/>
-                                <listheader label="RCVD AMT"     width="130px" align="right"  sclass="cheque-table-header"/>
+                                <listheader label="SNO"            width="70px"  align="center" sclass="cheque-table-header"/>
+                                <listheader label="CHEQUE NO."   width="150px"                sclass="cheque-table-header"/>
+                                <listheader label="BANK"         width="150px"                   sclass="cheque-table-header"/>
+                                <listheader label="PROCESSED DATE"   width="250px"                sclass="cheque-table-header"/>
+                                <listheader label="RECIEVED DATE"    width="250px"                sclass="cheque-table-header"/>
+                                <listheader label="PROCESSED AMOUNT"    width="200px" align="right"  sclass="cheque-table-header"/>
+                                <listheader label="RECIEVED AMOUNT"     width="200px" align="right"  sclass="cheque-table-header"/>
                                 <listheader label="STATUS"       width="140px" align="center" sclass="cheque-table-header"/>
-                                <listheader label="ACTION"       width="100px" align="center" sclass="cheque-table-header"/>
+                                <listheader label="ACTION"       width="170px" align="center" sclass="cheque-table-header"/>
                             </listhead>
                             <!-- Rows rendered by DateAmountComposer -->
                         </listbox>
@@ -319,7 +319,7 @@
                                 <div sclass="da-action-row">
                                     <button id="btnAccept"      sclass="btn-da-accept"  label="✓ Accept" />
                                     <button id="btnReject"      sclass="btn-da-reject"  label="✗ Reject" />
-                                    <button id="btnRefer"       sclass="btn-da-refer"   label="↩ Refer" />
+                                   
                                     <button id="btnBackToList2" sclass="btn-back"       label="← Back" />
                                 </div>
 

@@ -1,9 +1,12 @@
 package com.iispl.composer;
 
-import com.iispl.entity.inward.InwardBatch;
-import com.iispl.entity.inward.InwardCheque;
-import com.iispl.service.RejectRepairService;
-import com.iispl.serviceImpl.RejectRepairServiceImpl;
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Executions;
@@ -12,15 +15,24 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
-import org.zkoss.zul.*;
+import org.zkoss.zul.Button;
+import org.zkoss.zul.Combobox;
+import org.zkoss.zul.Datebox;
+import org.zkoss.zul.Div;
+import org.zkoss.zul.Doublebox;
+import org.zkoss.zul.Image;
+import org.zkoss.zul.Label;
+import org.zkoss.zul.Listbox;
+import org.zkoss.zul.Listcell;
+import org.zkoss.zul.Listitem;
+import org.zkoss.zul.Messagebox;
+import org.zkoss.zul.Textbox;
+import org.zkoss.zul.Window;
 
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.net.URLEncoder;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.iispl.entity.inward.InwardBatch;
+import com.iispl.entity.inward.InwardCheque;
+import com.iispl.service.DateAmountService;
+import com.iispl.serviceImpl.DateAmountServiceImpl;
 
 public class DateAmountComposer extends SelectorComposer<Component> {
 
@@ -100,7 +112,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     @Wire("#txtRemarks")       private Textbox  txtRemarks;
     @Wire("#btnAccept")        private Button   btnAccept;
     @Wire("#btnReject")        private Button   btnReject;
-    @Wire("#btnRefer")         private Button   btnRefer;
+   
     @Wire("#btnBackToList2")   private Button   btnBackToList2;
 
     // ── Reject reason popup ───────────────────────────────────────────────
@@ -113,8 +125,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     @Wire("#btnCancelReject")   private Button   btnCancelReject;
 
     // ── Service & state ───────────────────────────────────────────────────
-    private final RejectRepairService service = new RejectRepairServiceImpl();
-
+    private final DateAmountService service = new DateAmountServiceImpl();
     private String             currentBatchId;
     private List<InwardCheque> allCheques;
     private List<InwardCheque> reviewList;
@@ -189,7 +200,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
 
         addEvt(btnAccept,      Events.ON_CLICK, e -> doAccept());
         addEvt(btnReject,      Events.ON_CLICK, e -> openRejectPopup());
-        addEvt(btnRefer,       Events.ON_CLICK, e -> doRefer());
+      
         addEvt(btnBackToList2, Events.ON_CLICK, e -> showList());
 
         addEvt(btnConfirmReject, Events.ON_CLICK, e -> doConfirmReject());
@@ -431,15 +442,20 @@ public class DateAmountComposer extends SelectorComposer<Component> {
             selectedCheque.setAmountOcr(
                     BigDecimal.valueOf(numCorrectedAmt.getValue()));
         }
-        // Status is owned by the service — set to DATE_AMT_REPAIRED via saveStep2Repair
-        selectedCheque.setRepairStatus("DATE_AMT_REPAIRED");
         if (txtRemarks != null)
             selectedCheque.setRemarks(txtRemarks.getValue());
 
+        // FIX 1: Use "REPAIRED" to match what saveStep2Repair() writes to DB,
+        // so isPending() correctly excludes this cheque when scanning for the next one.
+        selectedCheque.setRepairStatus("REPAIRED");
+
         service.saveStep2Repair(selectedCheque);
 
-        Messagebox.show("Cheque " + selectedCheque.getChequeNo() + " accepted ✓",
-                "Success", Messagebox.OK, Messagebox.INFORMATION);
+        // FIX 2: Removed the blocking "accepted ✓" Messagebox that was here.
+        // That dialog's OK callback let moveToNextPending() fire *after* the user
+        // dismissed it — making it appear as if Accept jumped straight to PayeeAccount.
+        // Now we advance silently: update the pending badge and move immediately.
+        updatePendingBadge();
 
         moveToNextPending();
     }
@@ -478,8 +494,11 @@ public class DateAmountComposer extends SelectorComposer<Component> {
                 reason + (remarks.isBlank() ? "" : " | " + remarks));
 
         if (rejectReasonPopup != null) rejectReasonPopup.setVisible(false);
-        Messagebox.show("Cheque " + selectedCheque.getChequeNo() + " rejected.",
-                "Info", Messagebox.OK, Messagebox.INFORMATION);
+
+        // FIX: same pattern as doAccept() — no blocking Messagebox before moveToNextPending().
+        // Set in-memory status to match what rejectStep2() wrote, then advance silently.
+        selectedCheque.setRepairStatus("REJECTED");
+        updatePendingBadge();
 
         moveToNextPending();
     }
@@ -488,37 +507,27 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     // Was: service.saveStep2Repair() → sets DATE_AMT_REPAIRED, wrong for refer
     // Now: service.referStep2()      → sets REFERRED_STEP2 correctly inside the service
 
-    private void doRefer() {
-        if (selectedCheque == null) return;
-
-        String remarks = (txtRemarks != null && !txtRemarks.getValue().isBlank())
-                ? txtRemarks.getValue() : "";
-
-        // FIX: referStep2() owns the REFERRED_STEP2 status — do not set it manually here
-        service.referStep2(selectedCheque, remarks);
-
-        Messagebox.show("Cheque " + selectedCheque.getChequeNo() + " referred back.",
-                "Info", Messagebox.OK, Messagebox.INFORMATION);
-
-        moveToNextPending();
-    }
+  
 
     // ── Move to next pending after action ─────────────────────────────────
 
     private void moveToNextPending() {
         if (reviewList == null) { showList(); return; }
 
+        // Scan forward from the cheque after the current one
         for (int i = reviewIdx + 1; i < reviewList.size(); i++) {
             if (isPending(reviewList.get(i))) {
                 reviewIdx = i; loadReviewRecord(); return;
             }
         }
+        // Wrap around and scan from the beginning up to (not including) current
         for (int i = 0; i < reviewIdx; i++) {
             if (isPending(reviewList.get(i))) {
                 reviewIdx = i; loadReviewRecord(); return;
             }
         }
 
+        // No pending cheques remain — prompt to proceed to Step 3
         Messagebox.show(
                 "All Date & Amount reviews completed.\nProceed to Step 3: Payee & Account?",
                 "Step 2 Complete", Messagebox.YES | Messagebox.NO, Messagebox.QUESTION,
@@ -536,7 +545,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         String s = c.getRepairStatus();
         return s == null
                 || "NEEDS_REPAIR".equalsIgnoreCase(s)
-                || "REFERRED_BACK".equalsIgnoreCase(s);
+                || "REFERRED_DATEAMOUNT".equalsIgnoreCase(s);
     }
 
     // ── Wizard navigation ─────────────────────────────────────────────────
@@ -627,7 +636,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         if (s == null || s.isEmpty()) return "NEEDS REPAIR";
         return switch (s.toUpperCase()) {
             case "REPAIRED"           -> "REPAIRED";
-            case "REFERRED_BACK"      -> "REFERRED BACK";
+            case "REFERRED_DATEAMOUNT"      -> "REFERRED (DATE/AMOUNT)";
             case "REJECTED"           -> "REJECTED";
             case "DATE_AMT_REPAIRED"  -> "DATE & AMT REPAIRED";
             default                   -> "NEEDS REPAIR";
@@ -638,7 +647,7 @@ public class DateAmountComposer extends SelectorComposer<Component> {
         if (s == null || s.isEmpty()) return "badge-needs-repair";
         return switch (s.toUpperCase()) {
             case "REPAIRED"          -> "badge-repaired";
-            case "REFERRED_BACK"     -> "badge-referred";
+            case "REFERRED_DATEAMOUNT"     -> "badge-referred";
             case "REJECTED"          -> "badge-fail";
             case "DATE_AMT_REPAIRED" -> "badge-repaired";
             default                  -> "badge-needs-repair";

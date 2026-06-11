@@ -85,9 +85,6 @@
                 <div id="batchListPanel" visible="false">
 
                     <div sclass="list-toolbar">
-                        <button sclass="btn-back"
-                                id="btnBackToBatches"
-                                label="← Back to Batches" />
                         <label sclass="badge-batch"
                                id="lblBatchBadge"
                                value="BATCH: —" />
@@ -126,13 +123,13 @@
                                             width="130px"
                                             sclass="cheque-table-header" />
                                 <listheader label="PRESENTING BANK"
-                                            hflex="1"
+                                            width="250px"
                                             sclass="cheque-table-header" />
                                 <listheader label="MICR CODE (RAW)"
                                             width="190px"
                                             sclass="cheque-table-header" />
                                 <listheader label="AMOUNT"
-                                            width="140px"
+                                            width="190px"
                                             align="right"
                                             sclass="cheque-table-header" />
                                 <listheader label="REPAIR STATUS"
