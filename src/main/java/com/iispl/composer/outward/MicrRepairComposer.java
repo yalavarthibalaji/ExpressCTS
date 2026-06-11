@@ -15,6 +15,9 @@ import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.util.Clients;
+import org.zkoss.zul.Messagebox;
+import com.iispl.service.MakerOutwardService;
+import com.iispl.serviceImpl.MakerOutwardServiceImpl;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Image;
@@ -94,8 +97,8 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     @Wire private Button tabBackBtn;
     @Wire private Image  frontImage;
     @Wire private Image  backImage;
-    @Wire private Label  termChqNo;
-    @Wire private Label  termMicrCode;
+//    @Wire private Label  termChqNo;
+//    @Wire private Label  termMicrCode;
 
     // ── Navigation buttons — wired to control disabled state ──
     @Wire private Button prevBtn;
@@ -124,6 +127,9 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     private OutwardBatch        currentBatch;
     private String              batchId;
     private Long                currentMakerId;
+    private String              currentMakerName;
+    private final MakerOutwardService makerOutwardService = new MakerOutwardServiceImpl();
+    
     private boolean             cameFromSidebar = false;
 
     // Tracks whether the current cheque has any yellow (wrong) fields.
@@ -152,6 +158,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         userName.setValue(dto.getFullName());
         userRole.setValue("Maker — Outward");
         currentMakerId = dto.getUserId();
+        currentMakerName = dto.getFullName();
 
         showView("none");
 
@@ -353,8 +360,8 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         loadChequeImages(cheque);
 
         String micr = safe(cheque.getMicrCode());
-        termChqNo.setValue(safe(cheque.getChequeNo()));
-        termMicrCode.setValue(micr.length() > 6 ? micr.substring(6) : micr);
+//        termChqNo.setValue(safe(cheque.getChequeNo()));
+//        termMicrCode.setValue(micr.length() > 6 ? micr.substring(6) : micr);
 
         chqFront.setVisible(true);
         chqBack.setVisible(false);
@@ -752,13 +759,20 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                     "All MICR repairs complete. Batch ready for Account Entry.",
                     "info", null, "top_center", 3000);
             } else {
-                Clients.showNotification(
-                    "All referred MICR cheques fixed. Go to View Batches "
-                  + "to re-submit this batch to the Checker.",
-                    "info", null, "top_center", 4000);
-                System.out.println("MicrRepairComposer → REFER_BACK batch "
-                    + currentBatch.getBatchId()
-                    + " — all MICR referrals fixed, awaiting maker re-submit.");
+                // REFER_BACK: check if ALL referred cheques across ALL modules are done
+                int remaining = makerOutwardService.countActiveReferrals(currentBatch.getId());
+                if (remaining == 0) {
+                    // Last referred cheque fixed — show resubmit popup
+                   // goBackToList();
+                    showResubmitPopup();
+                } else {
+                    // Other modules still have referred cheques pending
+                    Clients.showNotification(
+                        remaining + " referred cheque(s) still pending in Data Entry module.",
+                        "info", null, "top_center", 3000);
+                    goBackToList();
+                }
+                return;
             }
             goBackToList();
             return;
@@ -831,13 +845,17 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                     "All repairs complete. Batch ready for Account Entry.",
                     "info", null, "top_center", 3000);
             } else {
-                Clients.showNotification(
-                    "All referred MICR cheques resolved. Go to View Batches "
-                  + "to re-submit this batch to the Checker.",
-                    "info", null, "top_center", 4000);
-                System.out.println("MicrRepairComposer → REFER_BACK batch "
-                    + currentBatch.getBatchId()
-                    + " — all MICR referrals resolved, awaiting maker re-submit.");
+                // REFER_BACK: check if ALL referred cheques across ALL modules are done
+                int remaining = makerOutwardService.countActiveReferrals(currentBatch.getId());
+                if (remaining == 0) {
+                    //goBackToList();
+                    showResubmitPopup();
+                    return;
+                } else {
+                    Clients.showNotification(
+                        remaining + " referred cheque(s) still pending in other module.",
+                        "info", null, "top_center", 3000);
+                }
             }
         }
 
@@ -876,4 +894,45 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     private String  safe(String s)    { return s != null ? s.trim() : ""; }
     private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
     private int     len(String s)     { return s != null ? s.trim().length() : 0; }
+ // ════════════════════════════════════════════════════════════════
+    //  Resubmit popup — shown when all referred cheques are fixed
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Shows a YES/NO popup asking the maker to resubmit the batch to Checker.
+     * Called only when countActiveReferrals() returns 0 for a REFER_BACK batch.
+     * Case: if cheques were split across MICR and Data Entry modules,
+     * this popup fires only when the LAST cheque across ALL modules is done.
+     */
+    private void showResubmitPopup() {
+        String batchId = currentBatch != null ? currentBatch.getBatchId() : "";
+        Messagebox.show(
+            "All referred cheques in batch " + batchId + " have been fixed.\n\n"
+            + "Resubmit to Checker now?",
+            "Resubmit to Checker",
+            Messagebox.YES | Messagebox.NO,
+            Messagebox.QUESTION,
+            event -> {
+                if (Messagebox.ON_YES.equals(event.getName())) {
+                    doResubmit();
+                }
+            }
+        );
+    }
+
+    private void doResubmit() {
+        if (currentBatch == null) return;
+        boolean ok = makerOutwardService.resubmitBatch(
+                currentBatch.getId(), currentMakerId, currentMakerName);
+        if (ok) {
+            Clients.showNotification(
+                "Batch " + currentBatch.getBatchId() + " resubmitted to Checker.",
+                "info", null, "top_center", 3000);
+        } else {
+            Clients.showNotification(
+                "Resubmit failed. Please try from View Batches.",
+                "error", null, "top_center", 3000);
+        }
+        goBackToList();
+    }
 }

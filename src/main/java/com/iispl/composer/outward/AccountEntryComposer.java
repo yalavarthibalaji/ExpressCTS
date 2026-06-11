@@ -21,6 +21,7 @@ import org.zkoss.zul.Div;
 import org.zkoss.zul.Image;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Listbox;
+import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Row;
 import org.zkoss.zul.Rows;
 import org.zkoss.zul.Textbox;
@@ -31,8 +32,10 @@ import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.service.AccountEntryService;
 import com.iispl.service.CbsService;
+import com.iispl.service.MakerOutwardService;
 import com.iispl.serviceImpl.AccountEntryServiceImpl;
 import com.iispl.serviceImpl.CbsServiceImpl;
+import com.iispl.serviceImpl.MakerOutwardServiceImpl;
 import com.iispl.util.AmountToWords;
 import com.iispl.util.SessionUtil;
 
@@ -91,6 +94,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     // ── Right Panel — Account & CBS Validation ──
     @Wire private Textbox accountNoBox;
     @Wire private Button  validateBtn;
+    @Wire private Button saveNextBtn;
     @Wire private Div     valResultDiv;
     @Wire private Label   valMessageLabel;  // success / warning / error message
     @Wire private Div     valDetailsDiv;    // account details panel
@@ -119,6 +123,8 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     private OutwardBatch        currentBatch;
     private String              batchId;
     private Long                currentMakerId;
+    private String              currentMakerName;
+    private final MakerOutwardService makerOutwardService = new MakerOutwardServiceImpl();
     private boolean             cameFromSidebar = false;
     private int                 totalCheques    = 0;
 
@@ -147,6 +153,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         userName.setValue(dto.getFullName());
         userRole.setValue("Maker — Outward");
         currentMakerId = dto.getUserId();
+        currentMakerName = dto.getFullName();
 
         showView("none");
 
@@ -302,6 +309,13 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     private void loadChequeForm(OutwardCheque cheque) {
         navLabel.setValue((currentIndex + 1) + " of " + pendingList.size());
+
+        // Last cheque — no "next" to go to, show "Save" only
+        if (pendingList.size() == 1) {
+            saveNextBtn.setLabel("Save");
+        } else {
+            saveNextBtn.setLabel("Save and Next");
+        }
 
         entryStatusBadge.setValue("Pending");
         entryStatusBadge.setSclass("badge b-pend");
@@ -689,13 +703,20 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
                     + " submitted to Checker queue.",
                     "info", null, "top_center", 4000);
             } else {
-                Clients.showNotification(
-                    "All referred data-entry cheques fixed. Go to View Batches "
-                  + "to re-submit this batch to the Checker.",
-                    "info", null, "top_center", 4000);
-                System.out.println("AccountEntryComposer → REFER_BACK batch "
-                    + currentBatch.getBatchId()
-                    + " — all data-entry referrals fixed, awaiting maker re-submit.");
+                // REFER_BACK: check ALL modules, not just Data Entry
+                int remaining = makerOutwardService.countActiveReferrals(currentBatch.getId());
+                if (remaining == 0) {
+                    // Last referred cheque across all modules — show resubmit popup
+                   // showBatchSubmittedState();
+                    showResubmitPopup();
+                } else {
+                    // MICR module still has referred cheques pending
+                    Clients.showNotification(
+                        remaining + " referred cheque(s) still pending in MICR Repair module.",
+                        "info", null, "top_center", 3000);
+                    showBatchSubmittedState();
+                }
+                return;
             }
             showBatchSubmittedState();
             return;
@@ -773,9 +794,13 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
             	entryService.submitBatch(currentBatch.getId(), currentMakerId);
             } else {
+            	int remAfterReject = makerOutwardService.countActiveReferrals(currentBatch.getId());
+                if (remAfterReject == 0) {
+                    showResubmitPopup();
+                }
                 System.out.println("AccountEntryComposer → REFER_BACK batch "
                     + currentBatch.getBatchId()
-                    + " — all entries resolved, awaiting maker re-submit.");
+                    + " — referred cheque rejected, remaining=" + remAfterReject);
             }
             showBatchSubmittedState();
             return;
@@ -811,4 +836,46 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     private String  safe(String s)    { return s != null ? s.trim() : ""; }
     private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
+ // ════════════════════════════════════════════════════════════════
+    //  Resubmit popup — shown when all referred cheques are fixed
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Shows a YES/NO popup asking the maker to resubmit the batch to Checker.
+     * Fires only when countActiveReferrals() == 0 for a REFER_BACK batch.
+     * If both MICR and Data Entry modules had referred cheques, this popup
+     * only appears when the LAST cheque across BOTH modules is completed.
+     */
+    private void showResubmitPopup() {
+        String batchId = currentBatch != null ? currentBatch.getBatchId() : "";
+        Messagebox.show(
+            "All referred cheques in batch " + batchId + " have been fixed.\n\n"
+            + "Resubmit to Checker now?",
+            "Resubmit to Checker",
+            Messagebox.YES | Messagebox.NO,
+            Messagebox.QUESTION,
+            event -> {
+                if (Messagebox.ON_YES.equals(event.getName())) {
+                    doResubmit();
+                }
+            }
+        );
+    }
+
+    private void doResubmit() {
+        if (currentBatch == null) return;
+        boolean ok = makerOutwardService.resubmitBatch(
+                currentBatch.getId(), currentMakerId, currentMakerName);
+        if (ok) {
+            Clients.showNotification(
+                "Batch " + currentBatch.getBatchId() + " resubmitted to Checker.",
+                "info", null, "top_center", 3000);
+        } else {
+            Clients.showNotification(
+                "Resubmit failed. Please try from View Batches.",
+                "error", null, "top_center", 3000);
+        }
+        // Navigate away AFTER popup interaction — not before
+        showBatchSubmittedState();
+    }
 }

@@ -122,7 +122,7 @@
                             <n:div class="od-action-badge od-badge-amber">Repair</n:div>
                         </n:div>
                         <n:div class="od-action-title">MICR Repair</n:div>
-                        <n:div class="od-action-desc">Fix MICR and IQA errors in uploaded batches</n:div>
+                      <n:div class="od-action-desc">Fix MICR errors in uploaded batches</n:div>
                         <button sclass="od-action-btn od-btn-amber"
                                 label="Go to MICR Repair"
                                 id="gotoMicrRepair"/>

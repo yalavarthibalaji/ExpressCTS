@@ -69,7 +69,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
 
     // Cheque filter bar
     @Wire private Textbox chqSearchBox;
-    @Wire private Listbox iqaFilterBox;
+  //  @Wire private Listbox iqaFilterBox;
     @Wire private Listbox chqStatusFilter;
 
     // Left panel — cheque list
@@ -285,7 +285,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
 
         // Reset cheque filters
         chqSearchBox.setValue("");
-        if (iqaFilterBox.getItemCount() > 0)   iqaFilterBox.setSelectedIndex(0);
+      //  if (iqaFilterBox.getItemCount() > 0)   iqaFilterBox.setSelectedIndex(0);
         if (chqStatusFilter.getItemCount() > 0) chqStatusFilter.setSelectedIndex(0);
 
         // Reset detail panel to empty state
@@ -319,7 +319,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
 
     private List<OutwardCheque> applyChequeFilters() {
         String search    = safe(chqSearchBox.getValue()).toLowerCase();
-        String iqaFilter = getSelected(iqaFilterBox);
+     //   String iqaFilter = getSelected(iqaFilterBox);
         String statusF   = getSelected(chqStatusFilter);
 
         List<OutwardCheque> result = new ArrayList<>();
@@ -333,11 +333,11 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             }
             // IQA filter — isMicrError() = true means FAIL
             // FIX: use c.isMicrError() — the correct getter name
-            if (!iqaFilter.isEmpty()) {
-                boolean isFail = c.isMicrError();
-                if ("FAIL".equals(iqaFilter) && !isFail) continue;
-                if ("PASS".equals(iqaFilter) &&  isFail) continue;
-            }
+//            if (!iqaFilter.isEmpty()) {
+//                boolean isFail = c.isMicrError();
+//                if ("FAIL".equals(iqaFilter) && !isFail) continue;
+//                if ("PASS".equals(iqaFilter) &&  isFail) continue;
+//            }
             // Status filter — MICR Error or Normal
             if (!statusF.isEmpty()) {
                 boolean hasMicrError = c.isMicrError();
@@ -366,16 +366,16 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             ? "₹" + moneyFmt.format(cheque.getAmount()) : "—"));
 
         // IQA badge — FIX: c.isMicrError() not c.getIsMicrError()
-        boolean isMicrError = cheque.isMicrError();
-        Label iqaBadge = new Label(isMicrError ? "FAIL" : "PASS");
-        iqaBadge.setSclass(isMicrError ? "badge b-fail" : "badge b-pass");
-        row.appendChild(iqaBadge);
+//        boolean isMicrError = cheque.isMicrError();
+//        Label iqaBadge = new Label(isMicrError ? "FAIL" : "PASS");
+//        iqaBadge.setSclass(isMicrError ? "badge b-fail" : "badge b-pass");
+//        row.appendChild(iqaBadge);
 
-        // Status badge
+     // Status badge
+        boolean isMicrError = cheque.isMicrError();
         Label statusBadge = new Label(isMicrError ? "MICR Error" : "Normal");
         statusBadge.setSclass(isMicrError ? "badge b-pend" : "badge b-pass");
         row.appendChild(statusBadge);
-
         // Row click → load detail
         row.addEventListener(Events.ON_CLICK,
             new EventListener<Event>() {
@@ -404,10 +404,10 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         if (batchCheques != null) renderChequeTable();
     }
 
-    @Listen("onChange = #iqaFilterBox")
-    public void onIqaFilterChange() {
-        if (batchCheques != null) renderChequeTable();
-    }
+//    @Listen("onChange = #iqaFilterBox")
+//    public void onIqaFilterChange() {
+//        if (batchCheques != null) renderChequeTable();
+//    }
 
     @Listen("onChange = #chqStatusFilter")
     public void onChqStatusFilterChange() {
@@ -556,11 +556,11 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             getStatusBadgeClass(cheque.getStatus())));
 
         // IQA status — FIX: use isMicrError()
-        boolean isFail = cheque.isMicrError();
-        vs.appendChild(buildVrBadge(
-            "IQA",
-            isFail ? "FAIL" : "PASS",
-            isFail ? "badge b-fail" : "badge b-pass"));
+//        boolean isFail = cheque.isMicrError();
+//        vs.appendChild(buildVrBadge(
+//            "IQA",
+//            isFail ? "FAIL" : "PASS",
+//            isFail ? "badge b-fail" : "badge b-pass"));
 
         return vs;
     }

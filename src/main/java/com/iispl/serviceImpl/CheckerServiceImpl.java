@@ -505,7 +505,7 @@ public class CheckerServiceImpl implements CheckerService {
             case "14": return "Account Blocked / Frozen / Under Attachment";
             case "15": return "Not Drawn on Us (Wrong Bank — Cheque Not Issued by This Bank)";
             case "16": return "MICR Band Damaged / Unreadable / Missing";
-            case "17": return "Image Not Clear / Poor Image Quality (IQA Failure)";
+            case "17": return "Image Not Clear / Poor Image Quality";
             case "18": return "Non-CTS 2010 Compliant Instrument";
             case "19": return "Instrument Mutilated / Torn — Cannot be Processed";
             case "20": return "Other Reason (Specify in Remarks)";
