@@ -152,16 +152,7 @@
                                      placeholder="Search cheque no. or bank..."
                                      instant="true"/>
                         </div>
-                        <div sclass="fg">
-                            <n:label class="fg-lbl">IQA</n:label>
-                            <listbox id="iqaFilterBox"
-                                     sclass="fs"
-                                     mold="select">
-                                <listitem label="All"  value=""/>
-                                <listitem label="PASS" value="PASS"/>
-                                <listitem label="FAIL" value="FAIL"/>
-                            </listbox>
-                        </div>
+                      
                         <div sclass="fg">
                             <n:label class="fg-lbl">Type</n:label>
                             <listbox id="chqStatusFilter"
@@ -194,7 +185,7 @@
                                         <column label="Cheque No." width="100px"/>
                                         <column label="Bank"       width="65px"/>
                                         <column label="Amount"     width="105px"/>
-                                        <column label="IQA"        width="65px"/>
+                                    
                                         <column label="Status"     width="95px"/>
                                     </columns>
                                     <rows id="chequeRows"/>

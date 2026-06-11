@@ -321,9 +321,9 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
     public List<OutwardBatch> findCheckerQueueBatches() {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT * FROM outward_batch "
-                       + "WHERE status IN ('SUBMITTED', 'CHECKER_IN_PROGRESS', 'CHECKER_HOLD') "
-                       + "ORDER BY created_at ASC";
+        	String sql = "SELECT * FROM outward_batch "
+                    + "WHERE status IN ('SUBMITTED', 'CHECKER_IN_PROGRESS', 'CHECKER_HOLD', 'REFER_BACK') "
+                    + "ORDER BY created_at ASC";
             NativeQuery<OutwardBatch> q =
                     session.createNativeQuery(sql, OutwardBatch.class);
             List<OutwardBatch> results = q.list();

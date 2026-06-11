@@ -82,7 +82,8 @@
                                 <listitem label="All Status"      value=""/>
                                 <listitem label="Pending"         value="SUBMITTED"/>
                                 <listitem label="In Progress"     value="CHECKER_IN_PROGRESS"/>
-                                <listitem label="Hold"            value="CHECKER_HOLD"/>
+                              <listitem label="Hold"            value="CHECKER_HOLD"/>
+                                <listitem label="With Maker"      value="REFER_BACK"/>
                                 <listitem label="Ready to Export" value="CHECKER_APPROVED"/>
                             </listbox>
                         </div>
@@ -105,7 +106,8 @@
                         <div sclass="note warn cq-legend-item">
                             <n:span>⏸</n:span>
                             <n:span>
-                                <n:b>Hold</n:b> — Cheques referred back to Maker for correction
+                            <n:b>Hold</n:b> — Cheques referred back to Maker for correction
+                            <n:b>With Maker</n:b> — Batch sent back to Maker, waiting for re-submission
                             </n:span>
                         </div>
                         <div sclass="note suc cq-legend-item">
@@ -279,10 +281,7 @@
                                         <n:span class="vl">Account Holder</n:span>
                                         <label id="cqDetailHolder" sclass="vvn">—</label>
                                     </div>
-                                    <div sclass="vr">
-                                        <n:span class="vl">IQA Status</n:span>
-                                        <label id="cqDetailIqa" sclass="badge b-pass">PASS</label>
-                                    </div>
+                                  
                                     <div sclass="vr">
                                         <n:span class="vl">MICR Repaired</n:span>
                                         <label id="cqDetailMicrRepaired"

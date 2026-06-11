@@ -265,19 +265,7 @@
                                            style="width:100%;height:auto;max-height:260px;object-fit:contain;display:block"/>
                                 </div>
 
-                                <!-- Terminal MICR band — dark green display -->
-                                <div sclass="micr-terminal">
-                                    <label sclass="mono" value="⑆"/>
-                                    <label id="termChqNo"
-                                           sclass="mono"
-                                           value="?"/>
-                                    <label sclass="mono" value="⑆  "/>
-                                    <label id="termMicrCode"
-                                           sclass="mono"
-                                           value="?"/>
-                                    <label sclass="mono"
-                                           value="⑈  ⑉29⑉"/>
-                                </div>
+                             
 
                             </div>
                             <!-- end split-body -->

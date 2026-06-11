@@ -93,7 +93,7 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
     @Wire private Label   cqDetailChequeNo;
     @Wire private Label   cqDetailAmount;
     @Wire private Label   cqDetailHolder;
-    @Wire private Label   cqDetailIqa;
+  //  @Wire private Label   cqDetailIqa;
     @Wire private Label   cqDetailMicrRepaired;
 
     @Wire private Textbox cqDeAccNo;
@@ -266,6 +266,11 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
         } else if ("CHECKER_HOLD".equals(status)) {
             Label lbl = new Label("Waiting for Maker");
             lbl.setStyle("font-size:12px; color:var(--tm);");
+            return lbl;
+        } else if ("REFER_BACK".equals(status)) {
+            // Batch is with Maker for corrections — visible but not actionable
+            Label lbl = new Label("With Maker");
+            lbl.setStyle("font-size:12px; color:var(--warn);");
             return lbl;
         } else if ("CHECKER_APPROVED".equals(status)) {
             Button btn = new Button("📤 Export");
@@ -444,9 +449,9 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
         cqDetailAmount.setValue(amtDisplay);
         cqDetailHolder.setValue(nvl(cheque.getAccountHolder()));
 
-        boolean iqaFail = "FAIL".equalsIgnoreCase(cheque.getIqaStatus());
-        cqDetailIqa.setValue(iqaFail ? "FAIL" : "PASS");
-        cqDetailIqa.setSclass(iqaFail ? "badge b-iqa-fail" : "badge b-iqa-pass");
+//        boolean iqaFail = "FAIL".equalsIgnoreCase(cheque.getIqaStatus());
+//        cqDetailIqa.setValue(iqaFail ? "FAIL" : "PASS");
+//        cqDetailIqa.setSclass(iqaFail ? "badge b-iqa-fail" : "badge b-iqa-pass");
 
         boolean wasRepaired = !repairs.isEmpty();
         cqDetailMicrRepaired.setValue(wasRepaired ? "Yes — Fields Changed" : "No Repair");
@@ -876,6 +881,7 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
             case "SUBMITTED":           return "Pending";
             case "CHECKER_IN_PROGRESS": return "In Progress";
             case "CHECKER_HOLD":        return "Hold";
+            case "REFER_BACK":          return "On Hold — With Maker";
             case "CHECKER_APPROVED":    return "Ready to Export";
             case "CHECKER_PASSED":      return "Passed";
             case "CHECKER_REJECTED":    return "Rejected";
@@ -890,6 +896,7 @@ public class CheckerQueueComposer extends SelectorComposer<Component> {
             case "SUBMITTED":           return "b-pend";
             case "CHECKER_IN_PROGRESS": return "b-info";
             case "CHECKER_HOLD":        return "b-ref";
+            case "REFER_BACK":          return "b-warn";
             case "CHECKER_APPROVED":    return "b-pass";
             case "CHECKER_PASSED":      return "b-pass";
             case "CHECKER_REJECTED":    return "b-fail";
