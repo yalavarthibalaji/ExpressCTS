@@ -65,6 +65,10 @@
   padding: 0;
 }
 
+.batch-table-header{
+	background:#1a2340
+	
+}
 html, body {
   height: 100%;
   font-family: var(--font);

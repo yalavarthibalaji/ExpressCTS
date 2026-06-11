@@ -51,10 +51,6 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
     private final BatchUploadService service  = new BatchUploadServiceImpl();
     private final DecimalFormat      moneyFmt = new DecimalFormat("#,##0.00");
 
-    // ── Topbar ──
-    @Wire private Label  userAvatar;
-    @Wire private Label  userName;
-    @Wire private Label  userRole;
 
     // ── Form ──
     @Wire private Decimalbox expectedAmountBox;
@@ -103,9 +99,7 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
             return;
         }
 
-        userAvatar.setValue(dto.getInitials());
-        userName.setValue(dto.getFullName());
-        userRole.setValue("Maker — Outward");
+    
         currentMakerId = dto.getUserId();
 
         formErrorLabel.setVisible(false);
@@ -133,19 +127,12 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
         }
 
         batchResultSection.setVisible(true);
-        pagerInfo.setValue("Showing " + list.size() + " batch(es)");
-        batchNoteLabel.setValue("✓ " + list.size() + " batch(es) found.");
+        pagerInfo.setValue("Showing " + list.size() + " batches");
+        batchNoteLabel.setValue("✓ " + list.size() + " batches found.");
         batchNoteLabel.setSclass("note suc mb12");
     }
 
-    // ════════════════════════════════════════════════════
-    //  Topbar
-    // ════════════════════════════════════════════════════
-
-    @Listen("onClick = #logoutBtn")
-    public void doLogout() {
-        SessionUtil.logout();
-    }
+    
 
     // ════════════════════════════════════════════════════
     //  File Upload
@@ -507,7 +494,7 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
             row.setVisible(show);
             if (show) visible++;
         }
-        pagerInfo.setValue("Showing " + visible + " batch(es)");
+        pagerInfo.setValue("Showing " + visible + " batches");
     }
 
     // ════════════════════════════════════════════════════
@@ -529,7 +516,7 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
     }
 
     private void refreshPager() {
-        pagerInfo.setValue("Showing " + batchRows.getChildren().size() + " batch(es)");
+        pagerInfo.setValue("Showing " + batchRows.getChildren().size() + " batches");
     }
 
     private void showError(String msg) {

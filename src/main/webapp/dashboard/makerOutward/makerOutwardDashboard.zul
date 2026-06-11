@@ -34,10 +34,7 @@
                             <n:i class="fa-regular fa-calendar"/>
                             <label id="lblTodayDate" sclass="od-date-text" value=""/>
                         </n:div>
-                        <n:div class="od-session-pill">
-                            <n:i class="fa-solid fa-circle od-session-dot"/>
-                            <label id="lblClearingSession" sclass="od-session-text" value=""/>
-                        </n:div>
+                       
                     </n:div>
                 </n:div>
 
@@ -51,26 +48,6 @@
                         <n:div class="od-kpi-body">
                             <label id="kpiTotalBatches" sclass="od-kpi-value" value="0"/>
                             <n:span class="od-kpi-label">Total Batches</n:span>
-                        </n:div>
-                    </n:div>
-
-                    <n:div class="od-kpi-card od-kpi-micr">
-                        <n:div class="od-kpi-icon-wrap od-kpi-icon-amber">
-                            <n:i class="fa-solid fa-wrench"/>
-                        </n:div>
-                        <n:div class="od-kpi-body">
-                            <label id="kpiMicrPending" sclass="od-kpi-value" value="0"/>
-                            <n:span class="od-kpi-label">Pending MICR Repair</n:span>
-                        </n:div>
-                    </n:div>
-
-                    <n:div class="od-kpi-card od-kpi-entry">
-                        <n:div class="od-kpi-icon-wrap od-kpi-icon-teal">
-                            <n:i class="fa-solid fa-keyboard"/>
-                        </n:div>
-                        <n:div class="od-kpi-body">
-                            <label id="kpiEntryPending" sclass="od-kpi-value" value="0"/>
-                            <n:span class="od-kpi-label">Pending Data Entry</n:span>
                         </n:div>
                     </n:div>
 
@@ -234,8 +211,8 @@
                              visible="false">
                         <listhead sclass="od-listhead">
                             <listheader label="Batch ID"    width="250px"/>
-                            <listheader label="Cheques"     width="130px"/>
-                            <listheader label="Amount (₹)"  width="200px"/>
+                            <listheader label="Cheques"     width="140px"/>
+                            <listheader label="Amount (₹)"  width="220px"/>
                             <listheader label="Uploaded At" width="180px"/>
                             <listheader label="Status"/>
                         </listhead>
@@ -247,20 +224,24 @@
                            sclass="od-empty-msg"
                            visible="true"/>
 
-                    <!-- ── PAGINATION BAR ── -->
-                    <div id="batchPager" sclass="od-pager" visible="false">
-                        <button id="btnPrevPage"
-                                sclass="btn bo btn-sm"
-                                label="← Prev"
-                                disabled="true"/>
-                        <label  id="pagerInfo"
-                                sclass="od-pager-info"
-                                value="Page 1 of 1"/>
-                        <button id="btnNextPage"
-                                sclass="btn bo btn-sm"
-                                label="Next →"
-                                disabled="true"/>
-                    </div>
+                <!-- ── PAGINATION BAR ── -->
+            <div id="batchPager" sclass="pager" visible="false">
+    			<button id="btnPrevPage"
+           		 sclass="btn bo btn-sm"
+           		 label="← Prev"
+          	      disabled="true"/>
+    			<label  id="pagerInfo"
+           		 sclass="pager-info"
+                 value="Page 1 of 1"/>
+                <button id="btnNextPage"
+                sclass="btn bo btn-sm"
+                 label="Next →"
+               disabled="true"/>
+            </div>
+                
+                
+             
+
 
                 </n:div>
                 <!-- end od-recent-panel -->

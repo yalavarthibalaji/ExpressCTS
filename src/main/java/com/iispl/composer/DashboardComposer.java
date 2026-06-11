@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,21 +34,24 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
     // ── KPI Labels ──
     @Wire private Label kpiTotalBatches;
-    @Wire private Label kpiMicrPending;
-    @Wire private Label kpiEntryPending;
     @Wire private Label kpiSubmitted;
     @Wire private Label kpiTotalCheques;
 
+    // ── Pagination ──
+    @Wire private Div    batchPager;
+    @Wire private Button btnPrevPage;
+    @Wire private Button btnNextPage;
+    @Wire private Label  pagerInfo;
+
     // ── Header pills ──
     @Wire private Label lblTodayDate;
-    @Wire private Label lblClearingSession;
 
     // ── Topbar ──
     @Wire private Label userAvatar;
     @Wire private Label userName;
     @Wire private Label userRole;
-    
- // ── Module Picker Popup (for REFER_BACK with cheques in both modules) ──
+
+    // ── Module Picker Popup (for REFER_BACK with cheques in both modules) ──
     @Wire private Div    modulePickerModal;
     @Wire private Label  pickerBatchId;
     @Wire private Label  pickerMicrCount;
@@ -58,8 +62,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
     // ── State for popup (which batch is currently being routed) ──
     private OutwardBatch pickerCurrentBatch;
-    
-    
+
     // ── Recent batches table ──
     @Wire private Listbox recentBatchList;
     @Wire private Label   emptyBatchesMsg;
@@ -74,6 +77,11 @@ public class DashboardComposer extends SelectorComposer<Component> {
     private final BatchUploadService batchUploadService = new BatchUploadServiceImpl();
     private Long                     currentMakerId;
     private List<OutwardBatch>       allBatches;
+
+    // ── Pagination State ──
+    private static final int    PAGE_SIZE          = 2;
+    private int                 currentPage        = 0;
+    private List<OutwardBatch>  currentDisplayList = new ArrayList<>();
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -94,8 +102,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
         if (lblTodayDate       != null)
             lblTodayDate.setValue(LocalDate.now().format(DATE_FMT));
-        if (lblClearingSession != null)
-            lblClearingSession.setValue(resolveSession());
 
         allBatches = batchUploadService.getMyBatches(currentMakerId);
         loadKpis(allBatches);
@@ -109,37 +115,17 @@ public class DashboardComposer extends SelectorComposer<Component> {
     private void loadKpis(List<OutwardBatch> batches) {
         try {
             long totalBatches = batches.size();
-            long micrPending  = 0;
-            long entryPending = 0;
-            long referBack    = 0;
             long submitted    = 0;
             long totalCheques = 0;
 
             for (OutwardBatch b : batches) {
                 String status = b.getStatus() != null ? b.getStatus() : "";
 
-                // MICR Pending — batch has MICR errors waiting for repair
-                // FIX: uses batch status (not repairStatus which never gets cleared)
-                if ("NEEDS_REPAIR".equals(status))  micrPending++;
-
-                // Entry Pending — MICR done, ready for data entry
-                // FIX: was checking ENTRY_DONE (ghost status, never set).
-                //      Now correctly checks ENTRY_PENDING.
-                if ("ENTRY_PENDING".equals(status)) entryPending++;
-
-                // Refer Back — checker sent batch back to maker
-                if ("REFER_BACK".equals(status))    referBack++;
-
                 if ("SUBMITTED".equals(status))     submitted++;
-
                 if (b.getChequeCount() > 0)         totalCheques += b.getChequeCount();
             }
 
             setValue(kpiTotalBatches, totalBatches);
-            setValue(kpiMicrPending,  micrPending);
-            // Entry Pending KPI = ENTRY_PENDING + REFER_BACK
-            // Both need maker attention at the data entry step
-            setValue(kpiEntryPending, entryPending + referBack);
             setValue(kpiSubmitted,    submitted);
             setValue(kpiTotalCheques, totalCheques);
 
@@ -149,29 +135,48 @@ public class DashboardComposer extends SelectorComposer<Component> {
         }
     }
 
+    // ════════════════════════════════════════════════════
+    //  Render Table — saves list and resets to page 1
+    // ════════════════════════════════════════════════════
+
     private void renderTable(List<OutwardBatch> batches) {
+        currentDisplayList = (batches != null) ? batches : new ArrayList<>();
+        currentPage = 0;
+        renderCurrentPage();
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Render Current Page
+    // ════════════════════════════════════════════════════
+
+    private void renderCurrentPage() {
+        // Clear existing rows
         List<Component> toRemove = recentBatchList.getChildren().stream()
                 .filter(c -> c instanceof Listitem)
                 .collect(Collectors.toList());
         toRemove.forEach(recentBatchList::removeChild);
 
-        if (batches == null || batches.isEmpty()) {
+        if (currentDisplayList == null || currentDisplayList.isEmpty()) {
             recentBatchList.setVisible(false);
             emptyBatchesMsg.setVisible(true);
+            batchPager.setVisible(false);
             return;
         }
 
-        int start = Math.max(0, batches.size() - 10);
-        List<OutwardBatch> recent = batches.subList(start, batches.size());
+        int totalItems = currentDisplayList.size();
+        int totalPages = (int) Math.ceil((double) totalItems / PAGE_SIZE);
 
-        for (int i = recent.size() - 1; i >= 0; i--) {
-            final OutwardBatch b = recent.get(i);
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+        if (currentPage < 0)           currentPage = 0;
+
+        int fromIndex = currentPage * PAGE_SIZE;
+        int toIndex   = Math.min(fromIndex + PAGE_SIZE, totalItems);
+
+        List<OutwardBatch> pageData = currentDisplayList.subList(fromIndex, toIndex);
+
+        for (OutwardBatch b : pageData) {
             Listitem item = new Listitem();
-
-            // Store the batch object on the listitem so the onSelect handler
-            // can read it without doing another lookup.
             item.setValue(b);
-            // Make it visually obvious the row is clickable
             item.setStyle("cursor: pointer;");
 
             item.appendChild(new Listcell(nvl(b.getBatchId())));
@@ -194,7 +199,39 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
         recentBatchList.setVisible(true);
         emptyBatchesMsg.setVisible(false);
+
+        // Show pager only when more than one page exists
+        batchPager.setVisible(totalPages > 1);
+        pagerInfo.setValue("Page " + (currentPage + 1) + " of " + totalPages
+                + "  (" + totalItems + " batches)");
+        btnPrevPage.setDisabled(currentPage == 0);
+        btnNextPage.setDisabled(currentPage >= totalPages - 1);
     }
+
+    // ════════════════════════════════════════════════════
+    //  Pagination Listeners
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #btnPrevPage")
+    public void onPrevPage() {
+        if (currentPage > 0) {
+            currentPage--;
+            renderCurrentPage();
+        }
+    }
+
+    @Listen("onClick = #btnNextPage")
+    public void onNextPage() {
+        if (currentDisplayList != null) {
+            int totalPages = (int) Math.ceil(
+                    (double) currentDisplayList.size() / PAGE_SIZE);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                renderCurrentPage();
+            }
+        }
+    }
+
     // ════════════════════════════════════════════════════
     //  Filters
     // ════════════════════════════════════════════════════
@@ -311,38 +348,24 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
     private String nvl(String s) { return s != null ? s : "-"; }
 
-    private String resolveSession() {
-        return LocalTime.now().isBefore(LocalTime.NOON)
-            ? "Morning Clearing" : "Afternoon Clearing";
-    }
-    
-    /**
-     * Human-readable label for each batch status.
-     * Covers full workflow including post-submission checker statuses
-     * because a maker sees their own batches even after they move to checker.
-     */
+
+
     private String formatStatusLabel(String status) {
         if (status == null) return "-";
         switch (status.toUpperCase()) {
-            // ── Maker-side ──
             case "NEEDS_REPAIR":         return "Needs MICR Repair";
             case "ENTRY_PENDING":        return "Pending Data Entry";
             case "SUBMITTED":            return "Submitted";
             case "REFER_BACK":           return "Referred Back";
-            // ── Checker-side (read-only for maker) ──
             case "CHECKER_IN_PROGRESS":  return "Checker In Progress";
             case "CHECKER_HOLD":         return "On Hold";
             case "CHECKER_APPROVED":     return "Approved";
             case "EXPORTED":             return "Exported";
-            // ── Final ──
             case "REJECTED":             return "Rejected";
             default:                     return status;
         }
     }
 
-    /**
-     * CSS class for status badge in dashboard table.
-     */
     private String resolveStatusSclass(String status) {
         if (status == null) return "status-badge";
         switch (status.toUpperCase()) {
@@ -358,7 +381,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
             default:                     return "status-badge";
         }
     }
-   
 
     private String formatRole(String code) {
         if (code == null) return "";
@@ -371,155 +393,137 @@ public class DashboardComposer extends SelectorComposer<Component> {
             default:                return code;
         }
     }
-    
- // ════════════════════════════════════════════════════════════════
-//  Row Click — route by status
-// ════════════════════════════════════════════════════════════════
 
-@Listen("onSelect = #recentBatchList")
-public void onBatchRowSelect() {
-    Listitem sel = recentBatchList.getSelectedItem();
-    if (sel == null) return;
+    // ════════════════════════════════════════════════════════════════
+    //  Row Click — route by status
+    // ════════════════════════════════════════════════════════════════
 
-    OutwardBatch batch = (OutwardBatch) sel.getValue();
-    if (batch == null) return;
+    @Listen("onSelect = #recentBatchList")
+    public void onBatchRowSelect() {
+        Listitem sel = recentBatchList.getSelectedItem();
+        if (sel == null) return;
 
-    // Always clear selection after handling so the same row can be clicked again
-    recentBatchList.clearSelection();
+        OutwardBatch batch = (OutwardBatch) sel.getValue();
+        if (batch == null) return;
 
-    routeByStatus(batch);
-}
-
-/**
- * Decides where to send the user based on the batch status.
- * For REFER_BACK with cheques in both fixable modules, shows the
- * module-picker popup; otherwise navigates directly.
- */
-private void routeByStatus(OutwardBatch batch) {
-    String status  = batch.getStatus();
-    String batchId = batch.getBatchId();
-
-    if (status == null) {
-        Clients.showNotification("Batch has no status — cannot route.",
-                "warning", null, "top_center", 2000);
-        return;
+        recentBatchList.clearSelection();
+        routeByStatus(batch);
     }
 
-    switch (status) {
-        case "NEEDS_REPAIR":
+    private void routeByStatus(OutwardBatch batch) {
+        String status  = batch.getStatus();
+        String batchId = batch.getBatchId();
+
+        if (status == null) {
+            Clients.showNotification("Batch has no status — cannot route.",
+                    "warning", null, "top_center", 2000);
+            return;
+        }
+
+        switch (status) {
+            case "NEEDS_REPAIR":
+                Executions.sendRedirect(
+                    "/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
+                return;
+
+            case "ENTRY_PENDING":
+                Executions.sendRedirect(
+                    "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
+                return;
+
+            case "REFER_BACK":
+                handleReferBackClick(batch);
+                return;
+
+            case "SUBMITTED":
+            case "CHECKER_IN_PROGRESS":
+            case "CHECKER_HOLD":
+            case "CHECKER_APPROVED":
+            case "EXPORTED":
+            case "REJECTED":
+                Executions.sendRedirect(
+                    "/outward/viewBatches/viewBatches.zul?batchId=" + batchId);
+                return;
+
+            default:
+                Clients.showNotification("No action defined for status: " + status,
+                        "info", null, "top_center", 2000);
+        }
+    }
+
+    private void handleReferBackClick(OutwardBatch batch) {
+        int[] counts = makerOutwardService.getReferralCounts(batch.getId());
+        int micrCount = counts[0];
+        int dataCount = counts[1];
+
+        if (micrCount == 0 && dataCount == 0) {
+            Clients.showNotification(
+                    "Batch is in Refer Back but has no referred cheques. "
+                  + "Check the batch in View Batches.",
+                    "warning", null, "top_center", 3000);
             Executions.sendRedirect(
-                "/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
+                "/outward/viewBatches/viewBatches.zul?batchId=" + batch.getBatchId());
             return;
+        }
 
-        case "ENTRY_PENDING":
+        if (micrCount > 0 && dataCount == 0) {
             Executions.sendRedirect(
-                "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
+                "/outward/micrRepair/micrRepair.zul?batchId=" + batch.getBatchId());
             return;
+        }
 
-        case "REFER_BACK":
-            handleReferBackClick(batch);
-            return;
-
-        // Statuses where the batch is OUT OF the maker's hands —
-        // open View Batches (read-only) so they can inspect details.
-        case "SUBMITTED":
-        case "CHECKER_IN_PROGRESS":
-        case "CHECKER_HOLD":
-        case "CHECKER_APPROVED":
-        case "EXPORTED":
-        case "REJECTED":
+        if (dataCount > 0 && micrCount == 0) {
             Executions.sendRedirect(
-                "/outward/viewBatches/viewBatches.zul?batchId=" + batchId);
+                "/outward/acctAmount/acctAmount.zul?batchId=" + batch.getBatchId());
             return;
+        }
 
-        default:
-            Clients.showNotification("No action defined for status: " + status,
-                    "info", null, "top_center", 2000);
-    }
-}
-
-/**
- * REFER_BACK click:
- *   - Lookup how many cheques are referred to each module
- *   - 0 + 0 → shouldn't happen (REFER_BACK means at least 1 referred); show warning
- *   - X + 0 → navigate to MICR Repair
- *   - 0 + Y → navigate to Account Entry
- *   - X + Y → show module-picker popup
- */
-private void handleReferBackClick(OutwardBatch batch) {
-    int[] counts = makerOutwardService.getReferralCounts(batch.getId());
-    int micrCount = counts[0];
-    int dataCount = counts[1];
-
-    if (micrCount == 0 && dataCount == 0) {
-        Clients.showNotification(
-                "Batch is in Refer Back but has no referred cheques. "
-              + "Check the batch in View Batches.",
-                "warning", null, "top_center", 3000);
-        Executions.sendRedirect(
-            "/outward/viewBatches/viewBatches.zul?batchId=" + batch.getBatchId());
-        return;
+        showModulePicker(batch, micrCount, dataCount);
     }
 
-    if (micrCount > 0 && dataCount == 0) {
-        Executions.sendRedirect(
-            "/outward/micrRepair/micrRepair.zul?batchId=" + batch.getBatchId());
-        return;
+    // ════════════════════════════════════════════════════════════════
+    //  Module Picker Popup
+    // ════════════════════════════════════════════════════════════════
+
+    private void showModulePicker(OutwardBatch batch, int micrCount, int dataCount) {
+        pickerCurrentBatch = batch;
+        pickerBatchId.setValue(batch.getBatchId());
+        pickerMicrCount.setValue(String.valueOf(micrCount));
+        pickerDataCount.setValue(String.valueOf(dataCount));
+        modulePickerModal.setSclass("modal-ov open");
     }
 
-    if (dataCount > 0 && micrCount == 0) {
-        Executions.sendRedirect(
-            "/outward/acctAmount/acctAmount.zul?batchId=" + batch.getBatchId());
-        return;
+    private void hideModulePicker() {
+        modulePickerModal.setSclass("modal-ov");
+        pickerCurrentBatch = null;
     }
 
-    // Both > 0 → show the picker popup
-    showModulePicker(batch, micrCount, dataCount);
-}
-
-// ════════════════════════════════════════════════════════════════
-//  Module Picker Popup
-// ════════════════════════════════════════════════════════════════
-
-private void showModulePicker(OutwardBatch batch, int micrCount, int dataCount) {
-    pickerCurrentBatch = batch;
-    pickerBatchId.setValue(batch.getBatchId());
-    pickerMicrCount.setValue(String.valueOf(micrCount));
-    pickerDataCount.setValue(String.valueOf(dataCount));
-    modulePickerModal.setSclass("modal-ov open");
-}
-
-private void hideModulePicker() {
-    modulePickerModal.setSclass("modal-ov");
-    pickerCurrentBatch = null;
-}
-
-@Listen("onClick = #modulePickerCloseBtn, #pickerCancelBtn")
-public void onPickerClose() {
-    hideModulePicker();
-}
-
-@Listen("onClick = #pickerGoMicrBtn")
-public void onPickerGoMicr() {
-    if (pickerCurrentBatch == null) {
+    @Listen("onClick = #modulePickerCloseBtn, #pickerCancelBtn")
+    public void onPickerClose() {
         hideModulePicker();
-        return;
     }
-    String batchId = pickerCurrentBatch.getBatchId();
-    hideModulePicker();
-    Executions.sendRedirect(
-        "/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
-}
 
-@Listen("onClick = #pickerGoDataBtn")
-public void onPickerGoData() {
-    if (pickerCurrentBatch == null) {
+    @Listen("onClick = #pickerGoMicrBtn")
+    public void onPickerGoMicr() {
+        if (pickerCurrentBatch == null) {
+            hideModulePicker();
+            return;
+        }
+        String batchId = pickerCurrentBatch.getBatchId();
         hideModulePicker();
-        return;
+        Executions.sendRedirect(
+            "/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
     }
-    String batchId = pickerCurrentBatch.getBatchId();
-    hideModulePicker();
-    Executions.sendRedirect(
-        "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
-}
+
+    @Listen("onClick = #pickerGoDataBtn")
+    public void onPickerGoData() {
+        if (pickerCurrentBatch == null) {
+            hideModulePicker();
+            return;
+        }
+        String batchId = pickerCurrentBatch.getBatchId();
+        hideModulePicker();
+        Executions.sendRedirect(
+            "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
+    }
 }

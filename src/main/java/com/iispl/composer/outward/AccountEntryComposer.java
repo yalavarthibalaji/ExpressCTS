@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.zkoss.zk.ui.Component;
@@ -60,10 +61,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     private final CbsService          cbsService   = new CbsServiceImpl();
     private final DecimalFormat        moneyFmt     = new DecimalFormat("#,##0.00");
 
-    // ── Topbar ──
-    @Wire private Label  userAvatar;
-    @Wire private Label  userName;
-    @Wire private Label  userRole;
 
     // ── Three views ──
     @Wire private Div emptyStateView;
@@ -72,6 +69,14 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     // ── Batch Select View ──
     @Wire private Rows batchSelectRows;
+    
+    
+    
+ // ── Pagination ──
+    @Wire private Div    batchPager;
+    @Wire private Button btnPrevPage;
+    @Wire private Button btnNextPage;
+    @Wire private Label  batchPagerInfo;
 
     // ── Entry View — Stats bar ──
     @Wire private Label statsBatchId;
@@ -127,6 +132,12 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     private final MakerOutwardService makerOutwardService = new MakerOutwardServiceImpl();
     private boolean             cameFromSidebar = false;
     private int                 totalCheques    = 0;
+    
+    
+ // ── Pagination State ──
+    private static final int    PAGE_SIZE        = 1;
+    private int                 batchPage        = 0;
+    private List<OutwardBatch>  batchDisplayList = new ArrayList<>();
 
     // ── CBS Validation State (reset per cheque) ──
     private boolean             isValidated   = false;
@@ -149,9 +160,6 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             return;
         }
 
-        userAvatar.setValue(dto.getInitials());
-        userName.setValue(dto.getFullName());
-        userRole.setValue("Maker — Outward");
         currentMakerId = dto.getUserId();
         currentMakerName = dto.getFullName();
 
@@ -187,15 +195,10 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         emptyStateView.setVisible("empty".equals(view));
         batchSelectView.setVisible("batchSelect".equals(view));
         entryView.setVisible("entry".equals(view));
-    }
-
-    // ════════════════════════════════════════════════════
-    //  Topbar
-    // ════════════════════════════════════════════════════
-
-    @Listen("onClick = #logoutBtn")
-    public void doLogout() {
-        SessionUtil.logout();
+        // Hide pager when leaving batch select
+        if (!"batchSelect".equals(view)) {
+            batchPager.setVisible(false);
+        }
     }
 
     // ════════════════════════════════════════════════════
@@ -220,13 +223,57 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             return;
         }
 
+        batchDisplayList = batches;
+        batchPage = 0;
         showView("batchSelect");
+        renderBatchPage();
+    }
+
+    private void renderBatchPage() {
         batchSelectRows.getChildren().clear();
-        int idx = 1;
-        for (OutwardBatch b : batches) {
+
+        int totalItems = batchDisplayList.size();
+        int totalPages = (int) Math.ceil((double) totalItems / PAGE_SIZE);
+
+        if (batchPage >= totalPages) batchPage = totalPages - 1;
+        if (batchPage < 0)           batchPage = 0;
+
+        int fromIndex = batchPage * PAGE_SIZE;
+        int toIndex   = Math.min(fromIndex + PAGE_SIZE, totalItems);
+
+        List<OutwardBatch> pageData = batchDisplayList.subList(fromIndex, toIndex);
+
+        int idx = fromIndex + 1;
+        for (OutwardBatch b : pageData) {
             batchSelectRows.appendChild(buildBatchSelectRow(idx++, b));
         }
-    }
+
+        batchPager.setVisible(totalPages > 1);
+        batchPagerInfo.setValue("Page " + (batchPage + 1) + " of " + totalPages
+                + "  (" + totalItems + " batches)");
+        btnPrevPage.setDisabled(batchPage == 0);
+        btnNextPage.setDisabled(batchPage >= totalPages - 1);
+    }                                           // ← renderBatchPage() closes HERE
+
+    @Listen("onClick = #btnPrevPage")
+    public void onPrevPage() {
+        if (batchPage > 0) {
+            batchPage--;
+            renderBatchPage();
+        }
+    }                                           // ← onPrevPage() closes HERE
+
+    @Listen("onClick = #btnNextPage")
+    public void onNextPage() {
+        if (batchDisplayList != null) {
+            int totalPages = (int) Math.ceil(
+                    (double) batchDisplayList.size() / PAGE_SIZE);
+            if (batchPage < totalPages - 1) {
+                batchPage++;
+                renderBatchPage();
+            }
+        }
+    }                                           // ← onNextPage() closes HERE}
 
     private Row buildBatchSelectRow(int idx, final OutwardBatch b) {
         Row row = new Row();

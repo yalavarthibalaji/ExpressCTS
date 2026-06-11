@@ -713,15 +713,15 @@ img.z-image.chq-img-actual,
 
 /* ZK Grid → reference table.dt look */
 .dt-grid .z-grid-header .z-grid-hd {
-  background: var(--alt) !important;
-  border-bottom: 2px solid var(--border-s) !important;
+  background: var(--alt) !important;              
+  border-bottom: 2px solid var(--border-s) !important; 
   padding: 0 12px !important;
   height: auto !important;
   min-height: 36px !important;
   text-align: left !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  color: var(--t2) !important;
+  color: var(--t2) !important;                    
   text-transform: uppercase !important;
   letter-spacing: .4px !important;
   white-space: nowrap !important;
@@ -729,6 +729,8 @@ img.z-image.chq-img-actual,
   padding-top: 8px !important;
   padding-bottom: 6px !important;
 }
+
+
 .dt-grid .z-row td,
 .dt-grid .z-row .z-row-cnt td {
   border-bottom: 1px solid var(--border) !important;

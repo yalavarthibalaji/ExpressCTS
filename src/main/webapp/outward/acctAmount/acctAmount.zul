@@ -15,22 +15,8 @@
      sclass="shell">
 
     <!-- TOPBAR -->
-    <div sclass="topbar">
-        <div sclass="logo">
-            <n:div class="logo-box">EC</n:div>
-            <n:div class="logo-txt">
-                Express<n:span style="color:var(--accent)">Clear</n:span> CTS
-            </n:div>
-        </div>
-        <div sclass="topbar-right">
-            <label id="userAvatar" sclass="uavatar" value="--"/>
-            <div>
-                <label id="userName" sclass="uname"  value="—"/>
-                <label id="userRole"  sclass="urole"  value="—"/>
-            </div>
-            <button id="logoutBtn" sclass="logbtn">↩ Logout</button>
-        </div>
-    </div>
+    <include src="/component/topbar.zul"/>
+   
 
     <!-- BODY ROW -->
     <div sclass="body-row">
@@ -99,14 +85,14 @@
                         <div sclass="tbl-wrap">
                             <grid sclass="dt-grid">
                                 <columns>
-                                    <column label="S.No"           width="55px"/>
-                                    <column label="Batch ID"       width="170px"/>
-                                    <column label="Cheque Count"   width="120px"/>
-                                    <column label="Total Amount (₹)" width="155px"/>
-                                    <column label="Pending"        width="100px"/>
-                                    <column label="Done"           width="80px"/>
-                                    <column label="Status"         width="120px"/>
-                                    <column label="Action"         width="110px"/>
+                                    <column label="S.No"           width="70px" sclass="batch-table-header"/>
+                                    <column label="Batch ID"       width="170px" sclass="batch-table-header"/>
+                                    <column label="Cheque Count"   width="150px" sclass="batch-table-header"/>
+                                    <column label="Total Amount (₹)" width="165px" sclass="batch-table-header"/>
+                                    <column label="Pending"        width="120px" sclass="batch-table-header"/>
+                                    <column label="Done"           width="100px" sclass="batch-table-header"/>
+                                    <column label="Status"         width="130px" sclass="batch-table-header"/>
+                                    <column label="Action"         width="140px" sclass="batch-table-header"/>
                                 </columns>
                                 <rows id="batchSelectRows"/>
                             </grid>
@@ -114,6 +100,13 @@
                     </div>
                 </div>
 
+				
+				<!-- ── PAGINATION BAR ── -->
+				<div id="batchPager" sclass="pager" visible="false">
+				    <button id="btnPrevPage" sclass="btn bo btn-sm" label="← Prev" disabled="true"/>
+				    <label  id="batchPagerInfo" sclass="pager-info" value="Page 1 of 1"/>
+				    <button id="btnNextPage" sclass="btn bo btn-sm" label="Next →" disabled="true"/>
+				</div>
                 <!-- ══════════════════════════════════════
                      VIEW 3: ENTRY VIEW (split screen)
                 ══════════════════════════════════════ -->
@@ -453,11 +446,6 @@
     <!-- end body-row -->
 
     <!-- STATUSBAR -->
-    <div sclass="statusbar" style="justify-content:flex-end">
-        <n:div class="sitem" style="opacity:.5;font-size:10px">
-            ExpressClear CTS · IISPL
-        </n:div>
-    </div>
-
+    <include src="/component/statusbar.zul"/>
 </div>
 </zk>

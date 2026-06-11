@@ -10,9 +10,7 @@
 <div sclass="dash-shell" apply="com.iispl.composer.DashboardComposer">
 
     <!-- Topbar -->
-    <div sclass="topbar">
-       <include src="/component/topbar.zul" />
-    </div>
+    <include src="/component/topbar.zul"/>
 
     <!-- Body: Sidebar + Main -->
     <div sclass="body-row">

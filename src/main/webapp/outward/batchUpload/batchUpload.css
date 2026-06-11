@@ -17,6 +17,10 @@
   margin-top: 8px;
 }
 
+
+
+
+
 /* ── Read-only file name input (looks like an input field) ── */
 .fi-ro {
   background: var(--alt);
@@ -91,4 +95,5 @@
 
 .mm-lbl { font-weight: 500; color: var(--t1); }
 .mm-exp { text-align: center; color: var(--tm);     font-family: var(--mono); font-weight: 600; }
+.mm-got { text-align: center; color: var(--danger); font-family: var(--mono); font-weight: 600; }
 .mm-got { text-align: center; color: var(--danger); font-family: var(--mono); font-weight: 600; }

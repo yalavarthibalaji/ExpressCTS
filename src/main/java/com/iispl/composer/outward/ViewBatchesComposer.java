@@ -35,33 +35,26 @@ import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheque;
 import com.iispl.util.SessionUtil;
 
-/**
- * File    : com/iispl/composer/outward/ViewBatchesComposer.java
- * Purpose : Read-only monitoring screen for outward batches.
- *
- * Two sections in one page:
- *   SECTION 1 — Batch List  : filter bar + batch table
- *   SECTION 2 — Cheque View : split (cheque list | cheque detail panel)
- *
- * Role behaviour:
- *   MAKER_OUTWARD → shows only their own batches
- *   ADMIN         → shows ALL batches in the system
- */
 public class ViewBatchesComposer extends SelectorComposer<Component> {
 
     private final OutwardBatchDao  batchDao  = new OutwardBatchDaoImpl();
     private final OutwardChequeDao chequeDao = new OutwardChequeDaoImpl();
     private final DecimalFormat    moneyFmt  = new DecimalFormat("#,##0.00");
 
-
     // ── Section 1: Batch List ──
-    @Wire private Div    batchSection;
+    @Wire private Div     batchSection;
     @Wire private Textbox searchBox;
     @Wire private Listbox statusFilter;
     @Wire private Textbox fromDateBox;
     @Wire private Textbox toDateBox;
-    @Wire private Rows   batchRows;
-    @Wire private Label  batchCountBadge;
+    @Wire private Rows    batchRows;
+    @Wire private Label   batchCountBadge;
+
+    // ── Pagination ──
+    @Wire private Div    batchPager;
+    @Wire private Button btnPrevPage;
+    @Wire private Button btnNextPage;
+    @Wire private Label  batchPagerInfo;
 
     // ── Section 2: Cheque Split View ──
     @Wire private Div    chequeSection;
@@ -69,25 +62,24 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
 
     // Cheque filter bar
     @Wire private Textbox chqSearchBox;
-  //  @Wire private Listbox iqaFilterBox;
     @Wire private Listbox chqStatusFilter;
 
     // Left panel — cheque list
-    @Wire private Rows   chequeRows;
-    @Wire private Label  chequeCountBadge;
+    @Wire private Rows  chequeRows;
+    @Wire private Label chequeCountBadge;
 
     // Right panel — detail
-    @Wire private Label  detailStatusBadge;
-    @Wire private Div    detailEmpty;
-    @Wire private Div    detailBody;
+    @Wire private Label detailStatusBadge;
+    @Wire private Div   detailEmpty;
+    @Wire private Div   detailBody;
 
-    // ── Re-submit Panel (visible only for REFER_BACK batches) ──
+    // ── Re-submit Panel ──
     @Wire private Div    resubmitPanel;
     @Wire private Div    resubmitNoteBox;
     @Wire private Label  resubmitNote;
     @Wire private Button resubmitBtn;
 
-    // ── Maker Outward Service for re-submit logic ──
+    // ── Service ──
     private final MakerOutwardService makerOutwardService = new MakerOutwardServiceImpl();
 
     // ── State ──
@@ -97,6 +89,11 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     private Long                currentUserId;
     private String              currentRole;
     private String              currentUserName;
+
+    // ── Pagination State ──
+    private static final int    PAGE_SIZE          = 1;
+    private int                 currentPage        = 0;
+    private List<OutwardBatch>  currentDisplayList = new ArrayList<>();
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -109,30 +106,21 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         LoginDTO dto = SessionUtil.requireLogin();
         if (dto == null) return;
 
-        
         currentUserId   = dto.getUserId();
         currentRole     = dto.getRoleCode();
         currentUserName = dto.getFullName();
 
-        // Load batches based on role
         if ("ADMIN".equals(currentRole)) {
             allBatches = batchDao.findAll();
         } else {
             allBatches = batchDao.findByCreatedBy(currentUserId);
         }
 
-        // Default: show batch section
         batchSection.setVisible(true);
         chequeSection.setVisible(false);
 
         renderBatchTable();
     }
-
-    // ════════════════════════════════════════════════════
-    //  Topbar
-    // ════════════════════════════════════════════════════
-
-    
 
     // ════════════════════════════════════════════════════
     //  Section Toggle
@@ -141,31 +129,87 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     private void showSection(String section) {
         batchSection.setVisible("batch".equals(section));
         chequeSection.setVisible("cheque".equals(section));
+        // Hide pager when switching to cheque view
+        if ("cheque".equals(section)) {
+            batchPager.setVisible(false);
+        }
     }
 
     // ════════════════════════════════════════════════════
-    //  SECTION 1: Batch Table
+    //  SECTION 1: Batch Table — with pagination
     // ════════════════════════════════════════════════════
 
     private void renderBatchTable() {
         List<OutwardBatch> filtered = applyBatchFilters();
+        currentDisplayList = filtered;
+        currentPage = 0;
         batchCountBadge.setValue(filtered.size() + " Batches");
+        renderCurrentPage();
+    }
+
+    private void renderCurrentPage() {
         batchRows.getChildren().clear();
 
-        if (filtered.isEmpty()) {
+        if (currentDisplayList == null || currentDisplayList.isEmpty()) {
             Row emptyRow = new Row();
             Label emptyLabel = new Label("No batches found.");
             emptyLabel.setSclass("txt-muted");
             emptyRow.appendChild(emptyLabel);
             batchRows.appendChild(emptyRow);
+            batchPager.setVisible(false);
             return;
         }
 
-        int idx = 1;
-        for (OutwardBatch b : filtered) {
+        int totalItems = currentDisplayList.size();
+        int totalPages = (int) Math.ceil((double) totalItems / PAGE_SIZE);
+
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+        if (currentPage < 0)           currentPage = 0;
+
+        int fromIndex = currentPage * PAGE_SIZE;
+        int toIndex   = Math.min(fromIndex + PAGE_SIZE, totalItems);
+
+        List<OutwardBatch> pageData = currentDisplayList.subList(fromIndex, toIndex);
+
+        int idx = fromIndex + 1;
+        for (OutwardBatch b : pageData) {
             batchRows.appendChild(buildBatchRow(idx++, b));
         }
+
+        batchPager.setVisible(totalPages > 1);
+        batchPagerInfo.setValue("Page " + (currentPage + 1) + " of " + totalPages
+                + "  (" + totalItems + " batches)");
+        btnPrevPage.setDisabled(currentPage == 0);
+        btnNextPage.setDisabled(currentPage >= totalPages - 1);
     }
+
+    // ════════════════════════════════════════════════════
+    //  Pagination Listeners
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #btnPrevPage")
+    public void onPrevPage() {
+        if (currentPage > 0) {
+            currentPage--;
+            renderCurrentPage();
+        }
+    }
+
+    @Listen("onClick = #btnNextPage")
+    public void onNextPage() {
+        if (currentDisplayList != null) {
+            int totalPages = (int) Math.ceil(
+                    (double) currentDisplayList.size() / PAGE_SIZE);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                renderCurrentPage();
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Filters
+    // ════════════════════════════════════════════════════
 
     private List<OutwardBatch> applyBatchFilters() {
         String search    = safe(searchBox.getValue()).toLowerCase();
@@ -175,27 +219,19 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
 
         List<OutwardBatch> result = new ArrayList<>();
         for (OutwardBatch b : allBatches) {
-            // Search by Batch ID
             if (!search.isEmpty()
                     && !safe(b.getBatchId()).toLowerCase().contains(search)) {
                 continue;
             }
-            // Status filter
             if (!statusVal.isEmpty()
                     && !statusVal.equalsIgnoreCase(safe(b.getStatus()))) {
                 continue;
             }
-            // From date
             if (!from.isEmpty() && b.getCreatedAt() != null) {
-                if (b.getCreatedAt().toLocalDate().toString().compareTo(from) < 0) {
-                    continue;
-                }
+                if (b.getCreatedAt().toLocalDate().toString().compareTo(from) < 0) continue;
             }
-            // To date
             if (!to.isEmpty() && b.getCreatedAt() != null) {
-                if (b.getCreatedAt().toLocalDate().toString().compareTo(to) > 0) {
-                    continue;
-                }
+                if (b.getCreatedAt().toLocalDate().toString().compareTo(to) > 0) continue;
             }
             result.add(b);
         }
@@ -217,7 +253,6 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             b.getActualAmount() != null
             ? "₹" + moneyFmt.format(b.getActualAmount()) : "—"));
 
-        // Pending count — cheques still in PENDING status
         int pending   = chequeDao.countPendingEntries(b.getId());
         int processed = b.getChequeCount() - pending;
 
@@ -229,12 +264,10 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         processedLbl.setSclass(processed > 0 ? "txt-success fw6" : "txt-muted");
         row.appendChild(processedLbl);
 
-        // Status badge
         Label statusBadge = new Label(getStatusLabel(b.getStatus()));
         statusBadge.setSclass(getStatusBadgeClass(b.getStatus()));
         row.appendChild(statusBadge);
 
-        // View button
         Button viewBtn = new Button("View");
         viewBtn.setSclass("btn bo btn-sm");
         viewBtn.addEventListener(Events.ON_CLICK,
@@ -248,27 +281,19 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         return row;
     }
 
-    // ── Batch filter listeners ──
+    // ── Filter listeners ──
 
     @Listen("onChanging = #searchBox; onChange = #searchBox")
-    public void onSearchChange() {
-        renderBatchTable();
-    }
+    public void onSearchChange() { renderBatchTable(); }
 
     @Listen("onChange = #statusFilter")
-    public void onStatusFilterChange() {
-        renderBatchTable();
-    }
+    public void onStatusFilterChange() { renderBatchTable(); }
 
     @Listen("onChange = #fromDateBox; onChanging = #fromDateBox")
-    public void onFromDateChange() {
-        renderBatchTable();
-    }
+    public void onFromDateChange() { renderBatchTable(); }
 
     @Listen("onChange = #toDateBox; onChanging = #toDateBox")
-    public void onToDateChange() {
-        renderBatchTable();
-    }
+    public void onToDateChange() { renderBatchTable(); }
 
     // ════════════════════════════════════════════════════
     //  SECTION 2: Cheque Split View
@@ -279,16 +304,11 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         batchCheques  = chequeDao.findByBatchId(batch.getId());
 
         curBatchBadge.setValue(safe(batch.getBatchId()));
-
-        // Update the re-submit panel visibility + enabled state
         updateResubmitPanel(batch);
 
-        // Reset cheque filters
         chqSearchBox.setValue("");
-      //  if (iqaFilterBox.getItemCount() > 0)   iqaFilterBox.setSelectedIndex(0);
         if (chqStatusFilter.getItemCount() > 0) chqStatusFilter.setSelectedIndex(0);
 
-        // Reset detail panel to empty state
         detailStatusBadge.setValue("Select a cheque");
         detailStatusBadge.setSclass("badge b-grey");
         detailEmpty.setVisible(true);
@@ -318,27 +338,17 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     }
 
     private List<OutwardCheque> applyChequeFilters() {
-        String search    = safe(chqSearchBox.getValue()).toLowerCase();
-     //   String iqaFilter = getSelected(iqaFilterBox);
-        String statusF   = getSelected(chqStatusFilter);
+        String search  = safe(chqSearchBox.getValue()).toLowerCase();
+        String statusF = getSelected(chqStatusFilter);
 
         List<OutwardCheque> result = new ArrayList<>();
         for (OutwardCheque c : batchCheques) {
-            // Search by cheque no or bank code
             if (!search.isEmpty()) {
                 boolean matches =
                     safe(c.getChequeNo()).toLowerCase().contains(search)
                     || safe(c.getBankCode()).toLowerCase().contains(search);
                 if (!matches) continue;
             }
-            // IQA filter — isMicrError() = true means FAIL
-            // FIX: use c.isMicrError() — the correct getter name
-//            if (!iqaFilter.isEmpty()) {
-//                boolean isFail = c.isMicrError();
-//                if ("FAIL".equals(iqaFilter) && !isFail) continue;
-//                if ("PASS".equals(iqaFilter) &&  isFail) continue;
-//            }
-            // Status filter — MICR Error or Normal
             if (!statusF.isEmpty()) {
                 boolean hasMicrError = c.isMicrError();
                 if ("MICR_ERROR".equals(statusF) && !hasMicrError) continue;
@@ -365,18 +375,11 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             cheque.getAmount() != null
             ? "₹" + moneyFmt.format(cheque.getAmount()) : "—"));
 
-        // IQA badge — FIX: c.isMicrError() not c.getIsMicrError()
-//        boolean isMicrError = cheque.isMicrError();
-//        Label iqaBadge = new Label(isMicrError ? "FAIL" : "PASS");
-//        iqaBadge.setSclass(isMicrError ? "badge b-fail" : "badge b-pass");
-//        row.appendChild(iqaBadge);
-
-     // Status badge
         boolean isMicrError = cheque.isMicrError();
         Label statusBadge = new Label(isMicrError ? "MICR Error" : "Normal");
         statusBadge.setSclass(isMicrError ? "badge b-pend" : "badge b-pass");
         row.appendChild(statusBadge);
-        // Row click → load detail
+
         row.addEventListener(Events.ON_CLICK,
             new EventListener<Event>() {
                 @Override public void onEvent(Event e) {
@@ -397,17 +400,10 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         selected.setStyle("cursor:pointer;background:#E8F0FE");
     }
 
-    // ── Cheque filter listeners ──
-
     @Listen("onChanging = #chqSearchBox; onChange = #chqSearchBox")
     public void onChqSearchChange() {
         if (batchCheques != null) renderChequeTable();
     }
-
-//    @Listen("onChange = #iqaFilterBox")
-//    public void onIqaFilterChange() {
-//        if (batchCheques != null) renderChequeTable();
-//    }
 
     @Listen("onChange = #chqStatusFilter")
     public void onChqStatusFilterChange() {
@@ -423,17 +419,14 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  Detail Panel — builds right panel dynamically
+    //  Detail Panel
     // ════════════════════════════════════════════════════
 
     private void buildDetailPanel(OutwardCheque cheque) {
-        // Update header badge
         boolean isMicrError = cheque.isMicrError();
         detailStatusBadge.setValue(isMicrError ? "MICR Error" : "Normal");
-        detailStatusBadge.setSclass(
-            isMicrError ? "badge b-pend" : "badge b-pass");
+        detailStatusBadge.setSclass(isMicrError ? "badge b-pend" : "badge b-pass");
 
-        // Switch to detail content
         detailEmpty.setVisible(false);
         detailBody.getChildren().clear();
         detailBody.setVisible(true);
@@ -444,8 +437,6 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         detailBody.appendChild(buildMicrRepairSection(cheque));
     }
 
-    // ── Cheque Image Section ──
-
     private Div buildImageSection(final OutwardCheque cheque) {
         Div wrapper = new Div();
         wrapper.setSclass("detail-img-wrapper");
@@ -454,10 +445,8 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         sectionLbl.setSclass("detail-section-lbl");
         wrapper.appendChild(sectionLbl);
 
-        // Tab buttons
         Div tabs = new Div();
         tabs.setSclass("chq-tabs");
-
         final Button frontTab = new Button("Front");
         frontTab.setSclass("chq-tab active");
         final Button backTab = new Button("Back");
@@ -466,106 +455,70 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         tabs.appendChild(backTab);
         wrapper.appendChild(tabs);
 
-        // Front image
         final Div frontPanel = new Div();
         frontPanel.setSclass("chq-img-panel");
         final Image frontImg = new Image();
         frontImg.setSclass("chq-img-actual");
-        frontImg.setStyle(
-            "width:100%;height:auto;max-height:200px;"
-            + "object-fit:contain;display:block");
+        frontImg.setStyle("width:100%;height:auto;max-height:200px;object-fit:contain;display:block");
         setImageSrc(frontImg, cheque.getFrontImagePath());
         frontPanel.appendChild(frontImg);
         wrapper.appendChild(frontPanel);
 
-        // Back image (hidden)
         final Div backPanel = new Div();
         backPanel.setSclass("chq-img-panel");
         backPanel.setVisible(false);
         final Image backImg = new Image();
         backImg.setSclass("chq-img-actual");
-        backImg.setStyle(
-            "width:100%;height:auto;max-height:200px;"
-            + "object-fit:contain;display:block");
+        backImg.setStyle("width:100%;height:auto;max-height:200px;object-fit:contain;display:block");
         setImageSrc(backImg, cheque.getBackImagePath());
         backPanel.appendChild(backImg);
         wrapper.appendChild(backPanel);
 
-        // Tab events
-        frontTab.addEventListener(Events.ON_CLICK,
-            new EventListener<Event>() {
-                @Override public void onEvent(Event e) {
-                    frontPanel.setVisible(true);
-                    backPanel.setVisible(false);
-                    frontTab.setSclass("chq-tab active");
-                    backTab.setSclass("chq-tab");
-                }
-            });
-
-        backTab.addEventListener(Events.ON_CLICK,
-            new EventListener<Event>() {
-                @Override public void onEvent(Event e) {
-                    frontPanel.setVisible(false);
-                    backPanel.setVisible(true);
-                    frontTab.setSclass("chq-tab");
-                    backTab.setSclass("chq-tab active");
-                }
-            });
+        frontTab.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+            @Override public void onEvent(Event e) {
+                frontPanel.setVisible(true);  backPanel.setVisible(false);
+                frontTab.setSclass("chq-tab active"); backTab.setSclass("chq-tab");
+            }
+        });
+        backTab.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+            @Override public void onEvent(Event e) {
+                frontPanel.setVisible(false); backPanel.setVisible(true);
+                frontTab.setSclass("chq-tab"); backTab.setSclass("chq-tab active");
+            }
+        });
 
         return wrapper;
     }
 
-    // ── Key Cheque Information Section ──
-
     private Div buildKeyInfoSection(OutwardCheque cheque) {
         String[][] rows = {
-            { "Cheque No.",     safe(cheque.getChequeNo()),    "vv mono" },
-            { "Bank Code",      safe(cheque.getBankCode()),    "vv"      },
+            { "Cheque No.",      safe(cheque.getChequeNo()),      "vv mono" },
+            { "Bank Code",       safe(cheque.getBankCode()),      "vv"      },
             { "Amount",
               cheque.getAmount() != null
-              ? "₹" + moneyFmt.format(cheque.getAmount()) : "—",
-              "vv fw6" },
-            { "Amount in Words",safe(cheque.getAmountInWords()), "vvn"   },
-            { "Payee Name",     safe(cheque.getPayeeName()),   "vvn"     },
-            { "Account No.",    safe(cheque.getAccountNo()),   "vv mono" },
-            { "Account Holder", safe(cheque.getAccountHolder()), "vvn"   },
-            { "MICR Code",      safe(cheque.getMicrCode()),    "vv mono" },
+              ? "₹" + moneyFmt.format(cheque.getAmount()) : "—",            "vv fw6" },
+            { "Amount in Words", safe(cheque.getAmountInWords()), "vvn"     },
+            { "Payee Name",      safe(cheque.getPayeeName()),     "vvn"     },
+            { "Account No.",     safe(cheque.getAccountNo()),     "vv mono" },
+            { "Account Holder",  safe(cheque.getAccountHolder()), "vvn"     },
+            { "MICR Code",       safe(cheque.getMicrCode()),      "vv mono" },
         };
         return buildVsSection("Key Cheque Information", rows);
     }
-
-    // ── Processing Status Section ──
 
     private Div buildProcessingStatusSection(OutwardCheque cheque) {
         Div vs = new Div();
         vs.setSclass("vs");
         vs.appendChild(buildVsTitle("Processing Status"));
 
-        // Batch status
-        String batchStatus = selectedBatch != null
-                ? selectedBatch.getStatus() : "—";
-        vs.appendChild(buildVrBadge(
-            "Batch Status",
-            getStatusLabel(batchStatus),
-            getStatusBadgeClass(batchStatus)));
-
-        // Cheque status
-        vs.appendChild(buildVrBadge(
-            "Cheque Status",
-            getStatusLabel(cheque.getStatus()),
-            getStatusBadgeClass(cheque.getStatus())));
-
-        // IQA status — FIX: use isMicrError()
-//        boolean isFail = cheque.isMicrError();
-//        vs.appendChild(buildVrBadge(
-//            "IQA",
-//            isFail ? "FAIL" : "PASS",
-//            isFail ? "badge b-fail" : "badge b-pass"));
+        String batchStatus = selectedBatch != null ? selectedBatch.getStatus() : "—";
+        vs.appendChild(buildVrBadge("Batch Status",
+            getStatusLabel(batchStatus), getStatusBadgeClass(batchStatus)));
+        vs.appendChild(buildVrBadge("Cheque Status",
+            getStatusLabel(cheque.getStatus()), getStatusBadgeClass(cheque.getStatus())));
 
         return vs;
     }
-
-    // ── MICR Repair Section ──
 
     private Div buildMicrRepairSection(OutwardCheque cheque) {
         Div vs = new Div();
@@ -573,7 +526,6 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         vs.appendChild(buildVsTitle("MICR Repair Status"));
 
         boolean wasRepaired = "REPAIRED".equals(cheque.getRepairStatus());
-
         if (wasRepaired) {
             Div warnNote = new Div();
             warnNote.setSclass("note-warn");
@@ -581,16 +533,10 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             warnLbl.setSclass("note-warn-txt");
             warnNote.appendChild(warnLbl);
             vs.appendChild(warnNote);
-
-            vs.appendChild(buildVrWithSclass(
-                "Original MICR",
-                safe(cheque.getMicrCode()),
-                "vv mono txt-warn"));
-
-            vs.appendChild(buildVrWithSclass(
-                "Corrected MICR",
-                safe(cheque.getMicrCodeCorrected()),
-                "vv mono txt-success"));
+            vs.appendChild(buildVrWithSclass("Original MICR",
+                safe(cheque.getMicrCode()), "vv mono txt-warn"));
+            vs.appendChild(buildVrWithSclass("Corrected MICR",
+                safe(cheque.getMicrCodeCorrected()), "vv mono txt-success"));
         } else {
             Div sucNote = new Div();
             sucNote.setSclass("note-suc");
@@ -599,12 +545,11 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             sucNote.appendChild(sucLbl);
             vs.appendChild(sucNote);
         }
-
         return vs;
     }
 
     // ════════════════════════════════════════════════════
-    //  ZK Component Builder Helpers
+    //  Builder Helpers
     // ════════════════════════════════════════════════════
 
     private Div buildVsSection(String title, String[][] rows) {
@@ -612,8 +557,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         vs.setSclass("vs");
         vs.appendChild(buildVsTitle(title));
         for (String[] r : rows) {
-            vs.appendChild(buildVrWithSclass(
-                r[0], r[1], r.length > 2 ? r[2] : "vv"));
+            vs.appendChild(buildVrWithSclass(r[0], r[1], r.length > 2 ? r[2] : "vv"));
         }
         return vs;
     }
@@ -624,8 +568,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         return t;
     }
 
-    private Div buildVrWithSclass(String label, String value,
-                                   String valueSclass) {
+    private Div buildVrWithSclass(String label, String value, String valueSclass) {
         Div vr = new Div();
         vr.setSclass("vr");
         Label vl = new Label(label);
@@ -637,8 +580,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         return vr;
     }
 
-    private Div buildVrBadge(String label, String badgeText,
-                               String badgeSclass) {
+    private Div buildVrBadge(String label, String badgeText, String badgeSclass) {
         Div vr = new Div();
         vr.setSclass("vr");
         Label vl = new Label(label);
@@ -674,28 +616,42 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     private String getStatusLabel(String status) {
         if (status == null) return "Unknown";
         switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR":  return "Needs MICR Repair";
-            case "ENTRY_PENDING": return "Pending Data Entry";
-            case "SUBMITTED":     return "Submitted";
-            case "REFER_BACK":    return "Referred Back";
-            case "PASSED":        return "Passed";
-            case "REJECTED":      return "Rejected";
-            case "PENDING":       return "Pending";
-            default:              return status;
+            case "NEEDS_REPAIR":        return "Needs MICR Repair";
+            case "ENTRY_PENDING":       return "Pending Data Entry";
+            case "SUBMITTED":           return "Submitted";
+            case "REFER_BACK":          return "Referred Back";
+            case "CHECKER_IN_PROGRESS": return "Checker In Progress";
+            case "CHECKER_HOLD":        return "On Hold";
+            case "CHECKER_APPROVED":    return "Approved";
+            case "EXPORTED":            return "Exported";
+            case "CHECKER_PASSED":      return "Passed";
+            case "CHECKER_REJECTED":    return "Rejected";
+            case "CHECKER_REFERRED":    return "Referred";
+            case "REJECTED":            return "Rejected";
+            case "PENDING":             return "Pending";
+            case "ENTRY_DONE":          return "Entry Done";
+            default:                    return status;
         }
     }
 
     private String getStatusBadgeClass(String status) {
         if (status == null) return "badge b-grey";
         switch (status.toUpperCase()) {
-            case "NEEDS_REPAIR":  return "badge b-pend";
-            case "ENTRY_PENDING": return "badge b-info";
-            case "SUBMITTED":     return "badge b-pass";
-            case "REFER_BACK":    return "badge b-warn";
-            case "PASSED":        return "badge b-pass";
-            case "REJECTED":      return "badge b-fail";
-            case "PENDING":       return "badge b-pend";
-            default:              return "badge b-grey";
+            case "NEEDS_REPAIR":        return "badge b-pend";
+            case "ENTRY_PENDING":       return "badge b-info";
+            case "SUBMITTED":           return "badge b-info";
+            case "REFER_BACK":          return "badge b-warn";
+            case "CHECKER_IN_PROGRESS": return "badge b-info";
+            case "CHECKER_HOLD":        return "badge b-ref";
+            case "CHECKER_APPROVED":    return "badge b-pass";
+            case "EXPORTED":            return "badge b-pass";
+            case "CHECKER_PASSED":      return "badge b-pass";
+            case "CHECKER_REJECTED":    return "badge b-fail";
+            case "CHECKER_REFERRED":    return "badge b-ref";
+            case "REJECTED":            return "badge b-fail";
+            case "PENDING":             return "badge b-pend";
+            case "ENTRY_DONE":          return "badge b-info";
+            default:                    return "badge b-grey";
         }
     }
 
@@ -703,9 +659,7 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
     //  General Helpers
     // ════════════════════════════════════════════════════
 
-    private String safe(String s) {
-        return s != null ? s.trim() : "";
-    }
+    private String safe(String s) { return s != null ? s.trim() : ""; }
 
     private String getSelected(Listbox lb) {
         if (lb.getSelectedItem() == null) return "";
@@ -713,18 +667,10 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         return val != null ? val.toString() : "";
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  Re-submit to Checker (for REFER_BACK batches)
-    // ════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Re-submit Panel
+    // ════════════════════════════════════════════════════
 
-    /**
-     * Refreshes the re-submit panel for the currently selected batch.
-     *
-     * Visibility / state logic:
-     *   - batch is NOT REFER_BACK         → hide the entire panel
-     *   - REFER_BACK with referrals left  → show panel, DISABLED button, warn note
-     *   - REFER_BACK with 0 referrals     → show panel, ENABLED button, success note
-     */
     private void updateResubmitPanel(OutwardBatch batch) {
         if (batch == null || !"REFER_BACK".equals(batch.getStatus())) {
             resubmitPanel.setVisible(false);
@@ -732,7 +678,6 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         }
 
         int remaining = makerOutwardService.countActiveReferrals(batch.getId());
-
         resubmitPanel.setVisible(true);
         if (remaining > 0) {
             resubmitNoteBox.setSclass("note warn flex1");
@@ -756,11 +701,9 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
             return;
         }
 
-        // Defensive re-check just before action
         int remaining = makerOutwardService.countActiveReferrals(selectedBatch.getId());
         if (remaining > 0) {
-            Clients.showNotification(
-                    remaining + " cheque(s) still need to be fixed.",
+            Clients.showNotification(remaining + " cheque(s) still need to be fixed.",
                     "warning", null, "top_center", 2500);
             return;
         }
@@ -774,27 +717,21 @@ public class ViewBatchesComposer extends SelectorComposer<Component> {
         if (!ok) {
             resubmitBtn.setLabel("↩ Re-submit to Checker");
             resubmitBtn.setDisabled(false);
-            Clients.showNotification(
-                    "Re-submit failed. Please refresh and try again.",
+            Clients.showNotification("Re-submit failed. Please refresh and try again.",
                     "error", null, "top_center", 3000);
             return;
         }
 
-        Clients.showNotification(
-                "✓ Batch " + selectedBatch.getBatchId()
-              + " re-submitted to Checker.",
-                "info", null, "top_center", 3000);
+        Clients.showNotification("✓ Batch " + selectedBatch.getBatchId()
+              + " re-submitted to Checker.", "info", null, "top_center", 3000);
 
-        // Reload all batches so the updated status reflects everywhere
         if ("ADMIN".equals(currentRole)) {
             allBatches = batchDao.findAll();
         } else {
             allBatches = batchDao.findByCreatedBy(currentUserId);
         }
-        // Reset back to the batch list
         selectedBatch = null;
         showSection("batch");
         renderBatchTable();
     }
-
 }

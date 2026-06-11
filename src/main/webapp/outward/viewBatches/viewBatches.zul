@@ -99,14 +99,14 @@
                         <div sclass="tbl-wrap">
                             <grid sclass="dt-grid">
                                 <columns>
-                                    <column label="S.No"             width="55px"/>
-                                    <column label="Batch ID"         width="165px"/>
-                                    <column label="Cheque Count"     width="120px"/>
-                                    <column label="Total Amount (₹)" width="150px"/>
-                                    <column label="Pending"          width="90px"/>
-                                    <column label="Processed"        width="100px"/>
-                                    <column label="Status"           width="130px"/>
-                                    <column label="Action"           width="90px"/>
+                                    <column label="S.No"             width="65px" sclass="batch-table-header"/>
+                                    <column label="Batch ID"         width="165px" sclass="batch-table-header"/>
+                                    <column label="Cheque Count"     width="150px" sclass="batch-table-header"/>
+                                    <column label="Total Amount (₹)" width="170px" sclass="batch-table-header"/>
+                                    <column label="Pending"          width="110px" sclass="batch-table-header"/>
+                                    <column label="Processed"        width="100px" sclass="batch-table-header"/>
+                                    <column label="Status"           width="150px" sclass="batch-table-header"/>
+                                    <column label="Action"           width="130px" sclass="batch-table-header"/>
                                 </columns>
                                 <rows id="batchRows"/>
                             </grid>
@@ -115,6 +115,15 @@
 
                 </div>
                 <!-- end batchSection -->
+                
+                
+                         <!-- ── PAGINATION BAR ── -->
+                              <div id="batchPager" sclass="pager" visible="false">
+                                  <button id="btnPrevPage" sclass="btn bo btn-sm" label="← Prev" disabled="true"/>
+                                  <label  id="batchPagerInfo" sclass="pager-info" value="Page 1 of 1"/>
+                                  <button id="btnNextPage" sclass="btn bo btn-sm" label="Next →" disabled="true"/>
+                              </div>
+                
 
                 <!-- ══════════════════════════════════════
                      SECTION 2: CHEQUE SPLIT VIEW
@@ -241,11 +250,7 @@
     <!-- end body-row -->
 
     <!-- STATUSBAR -->
-    <div sclass="statusbar" style="justify-content:flex-end">
-        <n:div class="sitem" style="opacity:.5;font-size:10px">
-            ExpressClear CTS · IISPL
-        </n:div>
-    </div>
+    <include src="/component/statusbar.zul"/>
 
 </div>
 </zk>
