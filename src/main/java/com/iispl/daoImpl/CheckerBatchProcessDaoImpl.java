@@ -33,7 +33,7 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
 	        List<InwardCheque> cheques = session.createQuery(
 	            "SELECT c FROM InwardCheque c " +
 	            "WHERE c.batch.batchId = :batchId " +
-	            "AND c.status != 'SEND_BACK' " +
+	            "AND c.status NOT IN ('SEND_BACK', 'ACCEPTED', 'RETURNED') " +
 	            "ORDER BY c.seqNo ASC",
 	            InwardCheque.class
 	        ).setParameter("batchId", batchId).getResultList();

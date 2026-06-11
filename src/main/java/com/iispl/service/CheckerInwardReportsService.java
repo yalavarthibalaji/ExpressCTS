@@ -11,7 +11,11 @@ import java.util.List;
  *           Responsibilities:
  *             - Input validation (date range, null guards)
  *             - Delegating to DAO for report queries
- *             - Orchestrating the "Generate to Debit" workflow
+ *             - Orchestrating the "Generate to Debit" workflow including
+ *               inward_exports persistence after XML file generation
+ *
+ * CHANGE — generateToDebit now accepts a userId parameter so the
+ *          inward_exports.generated_by FK can be populated correctly.
  */
 public interface CheckerInwardReportsService {
 
@@ -52,15 +56,20 @@ public interface CheckerInwardReportsService {
      * Execute the "Generate to Debit" workflow for the given batch.
      * <p>
      * Steps performed:
-     *   1. Validate batchId is not null/blank.
-     *   2. Re-fetch the batch and confirm its status is PENDING (guard against duplicates).
-     *   3. Transition status to PROCESSING.
-     *   4. Invoke debit generation logic (account debit entries, downstream posting).
-     *   5. Transition status to COMPLETED on success, FAILED on exception.
+     *   1. Validates batchId and userId.
+     *   2. Re-fetches the batch and confirms status is "Verified" (duplicate guard).
+     *   3. Fetches batch + cheques + checker actions from DB.
+     *   4. Generates ACK.xml and saves an inward_exports record (fileType = "ACK").
+     *   5. Generates RRF.xml and saves an inward_exports record (fileType = "RRF").
+     *   6. Executes legacy debit entry logic.
+     *   7. Updates batch status to "CBS_Processed".
+     *   8. On any failure, status remains "Verified" so the operator can retry.
      *
      * @param batchId the batch to process
-     * @throws IllegalArgumentException if batchId is blank or batch is not in PENDING state
-     * @throws RuntimeException         if the debit generation itself fails
+     * @param userId  ID of the currently logged-in Checker user; used to populate
+     *                the generated_by column in inward_exports
+     * @throws IllegalArgumentException if batchId is blank or batch is not in Verified state
+     * @throws RuntimeException         if file generation or DB operations fail
      */
-    void generateToDebit(String batchId);
+    void generateToDebit(String batchId, Long userId);
 }

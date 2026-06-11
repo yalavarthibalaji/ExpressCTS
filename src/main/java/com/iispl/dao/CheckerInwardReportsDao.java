@@ -2,6 +2,7 @@ package com.iispl.dao;
 
 import com.iispl.dto.InwardReportDTO;
 import com.iispl.entity.inward.InwardBatch;
+import com.iispl.entity.inward.InwardExport;
 
 import java.util.Date;
 import java.util.List;
@@ -86,4 +87,26 @@ public interface CheckerInwardReportsDao {
      * @return the populated InwardBatch, or null if not found
      */
     InwardBatch findBatchWithChequesAndActions(String batchId);
+
+    /**
+     * Persist an InwardExport record to the inward_exports table.
+     * <p>
+     * If a record with the same batch_id and file_type already exists, it is
+     * updated (file_name, file_path, status, generated_at) rather than
+     * inserting a duplicate row.
+     *
+     * @param export fully populated InwardExport entity (batch and generatedBy
+     *               must be managed or reference-proxied before calling this)
+     * @throws RuntimeException if the DB persist/merge fails
+     */
+    void saveInwardExport(InwardExport export);
+
+    /**
+     * Check whether an export record already exists for a given batch and file type.
+     *
+     * @param batchId  the batch ID string (not the PK)
+     * @param fileType e.g. "ACK" or "RRF"
+     * @return existing InwardExport, or null if none found
+     */
+    InwardExport findExportByBatchAndType(String batchId, String fileType);
 }

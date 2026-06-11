@@ -5,6 +5,7 @@ import com.iispl.dto.InwardReportDTO;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheckerAction;
 import com.iispl.entity.inward.InwardCheque;
+import com.iispl.entity.inward.InwardExport;
 import com.iispl.util.HibernateUtil;
 
 import org.hibernate.Session;
@@ -34,6 +35,9 @@ import java.util.List;
  *   CBS_Processed → "Completed"  (debit generated)
  *   Rejected      → "Failed"
  *   All others    → raw status string
+ *
+ * CHANGE — saveInwardExport / findExportByBatchAndType added to persist
+ *          inward_exports records after ACK.xml / RRF.xml generation.
  */
 public class CheckerInwardReportsDaoImpl implements CheckerInwardReportsDao {
 
@@ -290,6 +294,101 @@ public class CheckerInwardReportsDaoImpl implements CheckerInwardReportsDao {
         } finally {
             closeQuietly(session);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  saveInwardExport  (NEW)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Persists a new InwardExport row, or updates the existing one when a
+     * record for the same batch + file_type already exists.
+     * <p>
+     * Uses a dedicated transaction so that a failure here does not roll back
+     * the XML-file write or the batch status update.
+     */
+    @Override
+    public void saveInwardExport(InwardExport export) {
+        Session session = null;
+        Transaction tx  = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            // Look for an existing row with the same batch + fileType
+            InwardExport existing = findExportByBatchAndTypeInSession(
+                    session,
+                    export.getBatch().getBatchId(),
+                    export.getFileType()
+            );
+
+            if (existing != null) {
+                // UPDATE: refresh mutable fields only
+                existing.setFileName(export.getFileName());
+                existing.setFilePath(export.getFilePath());
+                existing.setStatus(export.getStatus());
+                existing.setGeneratedAt(LocalDateTime.now());
+                session.merge(existing);
+                log.info("saveInwardExport — UPDATED existing record id={} for batch='{}' type='{}'",
+                         existing.getId(),
+                         export.getBatch().getBatchId(),
+                         export.getFileType());
+            } else {
+                // INSERT: associate managed proxies for FK relationships
+                session.persist(export);
+                log.info("saveInwardExport — INSERTED new record for batch='{}' type='{}'",
+                         export.getBatch().getBatchId(),
+                         export.getFileType());
+            }
+
+            tx.commit();
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            log.error("saveInwardExport error for batch='{}' type='{}': {}",
+                      export.getBatch() != null ? export.getBatch().getBatchId() : "N/A",
+                      export.getFileType(),
+                      e.getMessage(), e);
+            throw new RuntimeException("Failed to persist InwardExport record: " + e.getMessage(), e);
+        } finally {
+            closeQuietly(session);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  findExportByBatchAndType  (NEW)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public InwardExport findExportByBatchAndType(String batchId, String fileType) {
+        Session session = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            return findExportByBatchAndTypeInSession(session, batchId, fileType);
+        } catch (Exception e) {
+            log.error("findExportByBatchAndType error for batch='{}' type='{}': {}",
+                      batchId, fileType, e.getMessage(), e);
+            return null;
+        } finally {
+            closeQuietly(session);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Private helper — reusable within an open Session
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private InwardExport findExportByBatchAndTypeInSession(Session session,
+                                                            String  batchId,
+                                                            String  fileType) {
+        return session.createQuery(
+            "SELECT e FROM InwardExport e " +
+            "JOIN e.batch b " +
+            "WHERE b.batchId = :batchId AND e.fileType = :fileType",
+            InwardExport.class
+        ).setParameter("batchId",  batchId)
+         .setParameter("fileType", fileType)
+         .uniqueResult();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

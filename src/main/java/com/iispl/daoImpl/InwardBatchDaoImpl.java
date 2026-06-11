@@ -168,11 +168,21 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
         }
     }
 
-	@Override
-	public List<InwardBatch> findInwardBatchesByStatus(String status) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public List<InwardBatch> findInwardBatchesByStatus(String status) {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            return session.createQuery(
+                "FROM InwardBatch b WHERE b.status = :status ORDER BY b.createdAt DESC",
+                InwardBatch.class
+            ).setParameter("status", status).list();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "findInwardBatchesByStatus failed, status=" + status, e);
+            return new ArrayList<>();
+        } finally {
+            session.close();
+        }
+    }
 	
 	public List<InwardBatch> findBatchesByStatuses(List<String> statuses) {
 	    Session session = HibernateUtil.getSessionFactory().openSession();

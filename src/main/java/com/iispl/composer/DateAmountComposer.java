@@ -222,14 +222,16 @@ public class DateAmountComposer extends SelectorComposer<Component> {
     private void showSplitReview(int idx) {
     	 // reviewList should only contain NEEDS_REPAIR and REFERRED_DATEAMOUNT
         // so Prev/Next arrows only navigate through cheques that need work
-        reviewList = allCheques.stream()
-                .filter(c -> {
-                    String s = c.getRepairStatus();
-                    return s == null
-                            || "NEEDS_REPAIR".equalsIgnoreCase(s)
-                            || "REFERRED_DATEAMOUNT".equalsIgnoreCase(s);
-                })
-                .collect(Collectors.toList());
+    	reviewList = allCheques.stream()
+    	        .filter(c -> {
+    	            String s = c.getRepairStatus();
+    	            return !"DATE_AMT_REPAIRED".equalsIgnoreCase(s)
+    	                && !"REPAIRED".equalsIgnoreCase(s)
+    	                && !"REJECTED".equalsIgnoreCase(s)
+    	                && !"ENTRY_DONE".equalsIgnoreCase(s)
+    	                && !"SUBMITTED_TO_CHECKER".equalsIgnoreCase(s);
+    	        })
+    	        .collect(Collectors.toList());
 
         // Find position of clicked cheque within reviewList
         // idx passed in is the allCheques index — translate to reviewList index
@@ -558,9 +560,11 @@ public class DateAmountComposer extends SelectorComposer<Component> {
 
     private boolean isPending(InwardCheque c) {
         String s = c.getRepairStatus();
-        return s == null
-                || "NEEDS_REPAIR".equalsIgnoreCase(s)
-                || "REFERRED_DATEAMOUNT".equalsIgnoreCase(s);
+        return !"DATE_AMT_REPAIRED".equalsIgnoreCase(s)
+            && !"REPAIRED".equalsIgnoreCase(s)
+            && !"REJECTED".equalsIgnoreCase(s)
+            && !"ENTRY_DONE".equalsIgnoreCase(s)
+            && !"SUBMITTED_TO_CHECKER".equalsIgnoreCase(s);
     }
 
     // ── Wizard navigation ─────────────────────────────────────────────────
@@ -600,12 +604,14 @@ public class DateAmountComposer extends SelectorComposer<Component> {
                         ? cmbFilter.getSelectedItem().getValue().toString() : "";
         return allCheques.stream()
                 // Base filter — only show cheques that still need work
-                .filter(c -> {
-                    String s = c.getRepairStatus();
-                    return s == null
-                            || "NEEDS_REPAIR".equalsIgnoreCase(s)
-                            || "REFERRED_DATEAMOUNT".equalsIgnoreCase(s);
-                })
+        		.filter(c -> {
+        		    String s = c.getRepairStatus();
+        		    // Hide only cheques already completed at this step or beyond
+        		    return !"DATE_AMT_REPAIRED".equalsIgnoreCase(s)
+        		        && !"REPAIRED".equalsIgnoreCase(s)
+        		        && !"ENTRY_DONE".equalsIgnoreCase(s)
+        		        && !"SUBMITTED_TO_CHECKER".equalsIgnoreCase(s);
+        		})
                 // Combobox filter on top
                 .filter(c -> filterVal.isEmpty()
                         || filterVal.equalsIgnoreCase(

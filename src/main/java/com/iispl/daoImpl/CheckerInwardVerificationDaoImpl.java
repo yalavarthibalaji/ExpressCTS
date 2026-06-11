@@ -26,11 +26,11 @@ public class CheckerInwardVerificationDaoImpl implements CheckerInwardVerificati
             session = HibernateUtil.getSessionFactory().openSession();
 
             String hql = "SELECT DISTINCT b FROM InwardBatch b "
-                       + "LEFT JOIN FETCH b.cheques "
-                       + "WHERE b.status = :status";
+                    + "LEFT JOIN FETCH b.cheques "
+                    + "WHERE b.status IN :statuses";
 
             Query<InwardBatch> query = session.createQuery(hql, InwardBatch.class);
-            query.setParameter("status", "MakerVerified"); // ← FIXED (was "RECEIVED")
+            query.setParameter("statuses", List.of("MakerVerified", "CheckerReferred"));
 
             result = query.getResultList();
 

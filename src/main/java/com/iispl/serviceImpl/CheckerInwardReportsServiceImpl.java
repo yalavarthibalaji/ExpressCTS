@@ -7,14 +7,18 @@ import com.iispl.dto.xml.AckBatchDto;
 import com.iispl.dto.xml.AckChequeDto;
 import com.iispl.dto.xml.RrfBatchDto;
 import com.iispl.dto.xml.RrfChequeDto;
+import com.iispl.entity.User;
 import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheckerAction;
 import com.iispl.entity.inward.InwardCheque;
+import com.iispl.entity.inward.InwardExport;
 import com.iispl.service.CheckerInwardReportsService;
+import com.iispl.util.HibernateUtil;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
 
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +37,19 @@ import java.util.List;
  *   CBS_Processed → debit already generated (Completed)
  *
  * generateToDebit():
- *   1.  Validates batchId.
+ *   1.  Validates batchId and userId.
  *   2.  Confirms status = "Verified" — guard against duplicates.
  *   3.  Fetches batch + cheques + checker actions from DB.
  *   4.  Generates ACK.xml  → /xml/ack/ACK_<batchId>.xml   (accepted cheques only)
+ *       Persists InwardExport row (fileType = "ACK") into inward_exports.
  *   5.  Generates RRF.xml  → /xml/rrf/RRF_<batchId>.xml   (all cheques + rejection detail)
+ *       Persists InwardExport row (fileType = "RRF") into inward_exports.
  *   6.  Updates batch status to "CBS_Processed" via DAO.
  *   7.  On any failure, status stays "Verified" so the operator can retry.
+ *
+ * CHANGE — generateToDebit(String batchId, Long userId) replaces the old
+ *          no-userId overload.  The userId is used to populate
+ *          inward_exports.generated_by (FK → users.id).
  */
 public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsService {
 
@@ -52,11 +62,14 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
     /** DB status set after successful debit + XML generation. */
     private static final String COMPLETED_STATUS = "CBS_Processed";
 
+    /** Status written into inward_exports.status after a successful file write. */
+    private static final String EXPORT_STATUS_GENERATED = "GENERATED";
+
     /** Output folder for ACK XML files. Created at runtime if absent. */
     private static final String ACK_FOLDER = "C:/ExpressCTS/xml/ack";
 
     /** Output folder for RRF XML files. Created at runtime if absent. */
-    private static final String RRF_FOLDER = "C:/ExpressCTS/xml/ack";
+    private static final String RRF_FOLDER = "C:/ExpressCTS/xml/rrf";
 
     private static final DateTimeFormatter TS_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
@@ -107,18 +120,21 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Generate to Debit  (enhanced with JAXB XML generation)
+    //  Generate to Debit  (UPDATED — accepts userId, persists inward_exports)
     // ─────────────────────────────────────────────────────────────────────────
 
     @Override
-    public void generateToDebit(String batchId) {
+    public void generateToDebit(String batchId, Long userId) {
 
         if (batchId == null || batchId.trim().isEmpty()) {
             throw new IllegalArgumentException("Batch ID must not be blank.");
         }
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must not be null.");
+        }
 
         String trimmedId = batchId.trim();
-        log.info("generateToDebit — starting for batch '{}'", trimmedId);
+        log.info("generateToDebit — starting for batch '{}' by userId={}", trimmedId, userId);
 
         // ── Step 1: Guard — batch must be in Verified state ──────────────────
         String currentStatus = dao.getBatchStatus(trimmedId);
@@ -151,14 +167,24 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
             String ackPath = generateAckXml(batch, cheques, trimmedId, batchDate, generatedAt);
             log.info("generateToDebit — ACK.xml written to '{}'", ackPath);
 
-            // ── Step 4: Generate RRF.xml ──────────────────────────────────────
+            // ── Step 4: Persist ACK export record in inward_exports ───────────
+            String ackFileName = "ACK_" + trimmedId + ".xml";
+            persistExportRecord(batch, userId, "ACK", ackFileName, ackPath);
+            log.info("generateToDebit — ACK inward_exports record saved");
+
+            // ── Step 5: Generate RRF.xml ──────────────────────────────────────
             String rrfPath = generateRrfXml(batch, cheques, trimmedId, batchDate, generatedAt);
             log.info("generateToDebit — RRF.xml written to '{}'", rrfPath);
 
-            // ── Step 5: Execute legacy debit entries (existing DAO logic) ─────
+            // ── Step 6: Persist RRF export record in inward_exports ───────────
+            String rrfFileName = "RRF_" + trimmedId + ".xml";
+            persistExportRecord(batch, userId, "RRF", rrfFileName, rrfPath);
+            log.info("generateToDebit — RRF inward_exports record saved");
+
+            // ── Step 7: Execute legacy debit entries (existing DAO logic) ─────
             dao.executeDebitGeneration(trimmedId);
 
-            // ── Step 6: Transition to CBS_Processed ───────────────────────────
+            // ── Step 8: Transition to CBS_Processed ───────────────────────────
             dao.updateBatchStatus(trimmedId, COMPLETED_STATUS);
             log.info("generateToDebit — batch '{}' set to {}", trimmedId, COMPLETED_STATUS);
 
@@ -170,6 +196,53 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
             log.error("generateToDebit — batch '{}' FAILED: {}", trimmedId, e.getMessage(), e);
             throw new RuntimeException(
                     "Debit generation failed for batch '" + trimmedId + "': " + e.getMessage(), e);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  inward_exports persistence helper  (NEW)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Builds an InwardExport entity and delegates to the DAO to INSERT or UPDATE
+     * the inward_exports row for the given batch + fileType combination.
+     *
+     * @param batch       the InwardBatch entity (provides the batch FK)
+     * @param userId      ID of the checker who triggered Generate to Debit
+     * @param fileType    "ACK" or "RRF"
+     * @param fileName    e.g. "ACK_IR003.xml"
+     * @param filePath    absolute path returned by the XML writer
+     */
+    private void persistExportRecord(InwardBatch batch,
+                                      Long        userId,
+                                      String      fileType,
+                                      String      fileName,
+                                      String      filePath) {
+
+        // Open a short-lived session just to get managed proxies for the FKs
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            // Proxy-load the InwardBatch by its PK so Hibernate treats it as managed
+            InwardBatch batchRef = session.getReference(InwardBatch.class, batch.getId());
+
+            // Proxy-load the User by PK (no full SELECT needed — just the FK reference)
+            User userRef = session.getReference(User.class, userId);
+
+            InwardExport export = new InwardExport();
+            export.setBatch(batchRef);
+            export.setFileType(fileType);
+            export.setFileName(fileName);
+            export.setFilePath(filePath);
+            export.setStatus(EXPORT_STATUS_GENERATED);
+            export.setGeneratedBy(userRef);
+            // generatedAt is set by @PrePersist in InwardExport, but we set it
+            // explicitly here too so that UPDATE paths (via saveInwardExport)
+            // always refresh the timestamp.
+            export.setGeneratedAt(LocalDateTime.now());
+            export.setTransmittedAt(LocalDateTime.now());  // add this line
+
+            // DAO handles INSERT vs UPDATE (duplicate guard by batchId + fileType)
+            dao.saveInwardExport(export);
         }
     }
 
@@ -324,8 +397,7 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
 
     /**
      * Ensures the target directory exists, then returns a File pointing to the
-     * desired output path. The folder path is relative to the JVM working
-     * directory (i.e. the web application root on Tomcat).
+     * desired output path.
      */
     private File prepareOutputFile(String folder, String filename) {
         File dir = new File(folder);
@@ -340,8 +412,6 @@ public class CheckerInwardReportsServiceImpl implements CheckerInwardReportsServ
 
     /**
      * Returns the most recent InwardCheckerAction on a cheque, or null if none.
-     * The actions list is ordered by insertion (natural persistence order), so
-     * the last element is the most recent.
      */
     private InwardCheckerAction resolveLastCheckerAction(InwardCheque cheque) {
         List<InwardCheckerAction> actions = cheque.getCheckerActions();

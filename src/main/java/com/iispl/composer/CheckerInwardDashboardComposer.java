@@ -103,7 +103,7 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
                 .count();
 
             // Total = only batches checker is involved with
-            long totalCount = pendingCount + clearedCount;
+            long totalCount = all.size();
 
             if (lblPendingCount != null) lblPendingCount.setValue(String.valueOf(pendingCount));
             if (lblClearedCount != null) lblClearedCount.setValue(String.valueOf(clearedCount));

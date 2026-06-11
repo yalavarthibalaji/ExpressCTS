@@ -257,7 +257,7 @@ public class InwardChequeDaoImpl implements InwardChequeDao {
                              + "SET ic.repairStatus = 'SUBMITTED_TO_CHECKER', "
                              + "    ic.status       = 'SUBMITTED', "
                              + "    ic.updatedAt    = CURRENT_TIMESTAMP "
-                             + "WHERE ic.batch.batchId = :batchId";
+                             + "WHERE ic.batch.batchId = :batchId AND ic.status != 'SEND_BACK'";
 
             int rows = session.createMutationQuery(chequeHql)
                     .setParameter("batchId", batchId)
@@ -351,6 +351,30 @@ public class InwardChequeDaoImpl implements InwardChequeDao {
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to count pending repairs for batchId", e);
+        }
+    }
+    
+ // Called when Maker re-submits a CheckerReferred batch to Checker.
+ // Resets all SEND_BACK cheques back to RECEIVED so Checker can see them again.
+    @Override
+    public int resetSendBackCheques(String batchId) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+
+            int rows = session.createMutationQuery(
+                "UPDATE InwardCheque ic " +
+                "SET ic.status = 'RECEIVED', ic.updatedAt = CURRENT_TIMESTAMP " +
+                "WHERE ic.batch.batchId = :batchId AND ic.status = 'SEND_BACK'"
+            ).setParameter("batchId", batchId).executeUpdate();
+
+            tx.commit();
+            LOG.info("resetSendBackCheques: reset " + rows + " cheque(s) for batch " + batchId);
+            return rows;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            LOG.log(Level.SEVERE, "resetSendBackCheques failed, batchId=" + batchId, e);
+            throw new RuntimeException("Failed to reset SEND_BACK cheques", e);
         }
     }
 }

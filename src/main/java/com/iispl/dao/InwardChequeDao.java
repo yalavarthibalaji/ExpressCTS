@@ -94,6 +94,8 @@ public interface InwardChequeDao {
 
     /** Fetch a single cheque by its primary key. */
     InwardCheque findById(Long id);
+    
+    int resetSendBackCheques(String batchId);
 
     /**
      * Fetch all cheques belonging to a batch, ordered by seqNo ASC.

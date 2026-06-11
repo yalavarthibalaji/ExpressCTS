@@ -86,7 +86,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
      // Pending = batches still being worked on by Maker
         long pending = allBatches.stream()
             .filter(b -> "Parsed".equals(b.getStatus())
-                      || "SentForVerification".equals(b.getStatus()))
+                      || "SentForVerification".equals(b.getStatus()) || "CheckerReferred".equals(b.getStatus()))
             .count();
 
         // Cleared = batches Maker has sent to Checker or beyond
@@ -260,17 +260,43 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
         statusCell.appendChild(statusBadge);
         item.appendChild(statusCell);
 
-        // Action button — passes batchId so RejectRepair loads correct batch
+        // Action button — routing depends on batch status
         Listcell actionCell = new Listcell();
         actionCell.setStyle("text-align:center");
-        Button repairBtn = new Button("Repair");
-        repairBtn.setSclass("btn-view");
-        repairBtn.addEventListener("onClick", event ->
-                Executions.sendRedirect(
-                        "/inward/inwardMicr/RejectRepair.zul?batchId=" + dto.getBatchId()));
-        actionCell.appendChild(repairBtn);
-        item.appendChild(actionCell);
 
+        String status = dto.getStatus();
+
+        if ("CheckerReferred".equals(status)) {
+            // Checker referred this batch back — Maker must fix and resubmit
+            // Route to RejectRepair (Step 1 entry point) which internally handles
+            // navigation to Step 2 / Step 3 based on each cheque's repairStatus
+            Button fixBtn = new Button("Fix & Resubmit");
+            fixBtn.setSclass("btn-view btn-referred");
+            fixBtn.addEventListener("onClick", event ->
+                    Executions.sendRedirect(
+                            "/inward/inwardMicr/RejectRepair.zul?batchId=" + dto.getBatchId()));
+            actionCell.appendChild(fixBtn);
+
+        } else if ("MakerVerified".equals(status)
+                || "Verified".equals(status)
+                || "CBS_Processed".equals(status)) {
+            // Batch already sent to checker or fully processed — view only
+            Button viewBtn = new Button("View");
+            viewBtn.setSclass("btn-view");
+            viewBtn.setDisabled(true);
+            actionCell.appendChild(viewBtn);
+
+        } else {
+            // Parsed / SentForVerification — normal repair flow
+            Button repairBtn = new Button("Repair");
+            repairBtn.setSclass("btn-view");
+            repairBtn.addEventListener("onClick", event ->
+                    Executions.sendRedirect(
+                            "/inward/inwardMicr/RejectRepair.zul?batchId=" + dto.getBatchId()));
+            actionCell.appendChild(repairBtn);
+        }
+
+        item.appendChild(actionCell);
         pendingBatches.appendChild(item);
     }
 

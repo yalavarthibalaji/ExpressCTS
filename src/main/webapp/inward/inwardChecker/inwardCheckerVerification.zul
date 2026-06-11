@@ -80,7 +80,7 @@
                                     <listhead sizable="true">
                                         <listheader label="BATCH ID"         hflex="2" align="left" />
                                         <listheader label="COUNT"            hflex="1" align="center" />
-                                        <listheader label="MICR ERRORS"      hflex="1" align="center" />
+                                        <listheader label="MICR ERRORS"      hflex="2" align="center" />
                                         <listheader label="PRESENTING BANKS" hflex="4" align="left" />
                                         <listheader label="STATUS"           hflex="2" align="center" />
                                         <listheader label="ACTION"           hflex="2" align="center" />

@@ -48,6 +48,10 @@ import com.iispl.util.SessionUtil;
  *   10. Generate to Debit — error handling — meaningful error message + auto-refresh
  *   11. Service error isolation            — load failure shows error, does not crash
  *   12. Null-safe rendering               — null DTO fields never cause NPE
+ *
+ * CHANGE — currentUserId captured at doAfterCompose and passed to
+ *          reportsService.generateToDebit(batchId, currentUserId) so the
+ *          inward_exports.generated_by FK is populated correctly.
  */
 public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
 
@@ -68,6 +72,9 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
             new CheckerInwardReportsServiceImpl();
 
     private List<InwardReportDTO> currentRows = new ArrayList<>();
+
+    /** ID of the currently logged-in CHECKER_INWARD user. Populated in doAfterCompose. */
+    private Long currentUserId;
 
     @Wire private Textbox  txtBatchSearch;
     @Wire private Datebox  dtFrom;
@@ -96,6 +103,9 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
             Executions.sendRedirect(SessionUtil.getDashboardUrlFor(user.getRoleCode()));
             return;
         }
+
+        // Capture the logged-in user's ID for use in generateToDebit calls
+        currentUserId = user.getUserId();
 
         populateStatusCombo();
         loadPage();
@@ -280,8 +290,8 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
     private void executeDebit(String batchId) {
         try {
             // VALIDATION 9 — Duplicate guard handled inside service.
-            // Service also generates ACK.xml and RRF.xml before updating status.
-            reportsService.generateToDebit(batchId);
+            // Pass currentUserId so inward_exports.generated_by is populated.
+            reportsService.generateToDebit(batchId, currentUserId);
 
             Clients.showNotification(
                 "Batch " + batchId + " processed successfully. " +
@@ -289,7 +299,7 @@ public class CheckerInwardReportsComposer extends SelectorComposer<Component> {
                 "Batch status updated to CBS_Processed.",
                 "info", null, "top_center", 5000
             );
-            log.info("executeDebit — batch '{}' completed (ACK + RRF XML generated)", batchId);
+            log.info("executeDebit — batch '{}' completed (ACK + RRF XML generated, exports persisted)", batchId);
 
             // Auto-refresh so the status updates to Completed and button disables
             loadPage();

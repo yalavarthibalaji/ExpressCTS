@@ -118,13 +118,11 @@ public class PayeeAccountServiceImpl implements PayeeAccountService {
     public boolean proceedToInwardChecker(String batchId) {
         if (batchId == null || batchId.isBlank()) return false;
         try {
-            List<InwardCheque> cheques = getChequesByBatchId(batchId);
-            long stillPending = countPending(cheques);
-            if (stillPending > 0) {
-                LOG.warning("proceedToInwardChecker: " + stillPending
-                        + " cheque(s) still pending in batch " + batchId
-                        + " — proceeding anyway.");
-            }
+            // Reset any SEND_BACK cheques to RECEIVED so checker can see them again.
+            // Maker has repaired them — repairStatus already reflects the work done.
+            // Only the status field needs clearing from SEND_BACK.
+            chequeDao.resetSendBackCheques(batchId);
+
             batchDao.updateBatchStatus(batchId, BATCH_STATUS_CHECKER, BATCH_REPAIR_STEP3_DONE);
             LOG.info("Batch " + batchId + " advanced to " + BATCH_STATUS_CHECKER);
             return true;
