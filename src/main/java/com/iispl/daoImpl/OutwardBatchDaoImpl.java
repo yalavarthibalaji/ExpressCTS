@@ -480,4 +480,36 @@ public class OutwardBatchDaoImpl implements OutwardBatchDao {
             session.close();
         }
     }
+
+    @Override
+    public boolean decrementChequeFromBatch(Long batchId, java.math.BigDecimal chequeAmount) {
+        if (batchId == null) return false;
+        Session     session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tx      = null;
+        try {
+            tx = session.beginTransaction();
+            java.math.BigDecimal amount = chequeAmount != null
+                    ? chequeAmount : java.math.BigDecimal.ZERO;
+            String sql = "UPDATE outward_batch "
+                       + "SET cheque_count  = GREATEST(0, cheque_count - 1), "
+                       + "    actual_amount = GREATEST(0, actual_amount - :amount), "
+                       + "    updated_at    = NOW() "
+                       + "WHERE id = :batchId";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("amount",  amount);
+            q.setParameter("batchId", batchId);
+            int rows = q.executeUpdate();
+            tx.commit();
+            System.out.println("OutwardBatchDao → decrementChequeFromBatch: batchId="
+                    + batchId + ", deducted=" + amount + " (rows=" + rows + ")");
+            return rows > 0;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            System.err.println("OutwardBatchDao → decrementChequeFromBatch failed: "
+                    + e.getMessage());
+            return false;
+        } finally {
+            session.close();
+        }
+    }
 }

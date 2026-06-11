@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.iispl.dao.ReportsDao;
 import com.iispl.daoImpl.ReportsDaoImpl;
@@ -425,5 +426,17 @@ public class ReportsServiceImpl implements ReportsService {
 
     private String nvl(String val, String fallback) {
         return (val != null && !val.trim().isEmpty()) ? val : fallback;
+    }
+
+    @Override
+    public Set<Long> getBatchIdsWithRejections(Long makerId) {
+        if (makerId == null) return new java.util.HashSet<>();
+        return reportDao.findBatchIdsWithRejections(makerId);
+    }
+    
+    @Override
+    public List<OutwardCheque> getMakerRejectedCheques(Long makerId) {
+        if (makerId == null) return new java.util.ArrayList<>();
+        return reportDao.getMakerRejectedCheques(makerId);
     }
 }

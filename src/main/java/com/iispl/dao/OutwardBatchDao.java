@@ -94,4 +94,11 @@ public interface OutwardBatchDao {
      * Single atomic UPDATE so the two columns can never drift out of sync.
      */
     boolean markRepairsCompleted(Long batchDbId);
+    
+    
+    /**
+     * Decrements cheque_count by 1 and subtracts chequeAmount from actual_amount.
+     * Called when Checker rejects a cheque.
+     */
+    boolean decrementChequeFromBatch(Long batchId, java.math.BigDecimal chequeAmount);
 }

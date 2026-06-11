@@ -1,9 +1,12 @@
 package com.iispl.service;
 
-import com.iispl.entity.outward.OutwardBatch;
-import com.iispl.entity.outward.OutwardCheckerAction;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+
+import com.iispl.entity.outward.OutwardBatch;
+import com.iispl.entity.outward.OutwardCheckerAction;
+import com.iispl.entity.outward.OutwardCheque;
 
 public interface ReportsService {
 
@@ -119,4 +122,15 @@ public interface ReportsService {
                                            LocalDate                  fromDate,
                                            LocalDate                  toDate,
                                            String                     jrxmlPath);
+    
+    Set<Long> getBatchIdsWithRejections(Long makerId);
+    
+    /**
+     * Returns all cheques rejected by this maker across all their batches.
+     * Ordered by rejected_at DESC.
+     *
+     * @param makerId  DB primary key of the logged-in maker user
+     * @return list of OutwardCheque, never null (empty list if none)
+     */
+    List<OutwardCheque> getMakerRejectedCheques(Long makerId);
 }

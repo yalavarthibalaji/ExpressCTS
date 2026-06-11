@@ -298,9 +298,8 @@ public class CheckerServiceImpl implements CheckerService {
 
     /**
      * Rejects a single cheque at the Checker stage.
-     *
-     * Does NOT decrement batch totals — Checker rejection is a verification
-     * decision, not a financial correction. Only Maker rejection decrements totals.
+     * Sets cheque status to CHECKER_REJECTED, saves action log,
+     * decrements batch count and amount, then checks if batch is fully actioned.
      */
     @Override
     public boolean rejectCheque(Long chequeId,
@@ -322,6 +321,15 @@ public class CheckerServiceImpl implements CheckerService {
             System.err.println("CheckerService → rejectCheque: DB update failed for chequeId="
                     + chequeId);
             return false;
+        }
+
+        // Decrement batch cheque_count and actual_amount for this rejected cheque
+        OutwardCheque rejected = chequeDao.findById(chequeId);
+        if (rejected != null) {
+            batchDao.decrementChequeFromBatch(batchDbId, rejected.getAmount());
+        } else {
+            System.err.println("CheckerService → rejectCheque: cheque not found for decrement, chequeId="
+                    + chequeId);
         }
 
         System.out.println("CheckerService → rejectCheque: chequeId=" + chequeId

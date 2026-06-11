@@ -220,7 +220,7 @@
                     <!-- Header row -->
                     <div sclass="cr-panel-hdr mb12">
                         <n:span class="cr-panel-sub">
-                            Cheques you rejected or referred — across all batches
+                            Cheques you rejected — across all batches
                         </n:span>
                         <button id="aDownloadBtn" sclass="btn bp btn-lg">
                             ⬇ Download PDF
@@ -267,7 +267,7 @@
                                      width="140px">
                                 <listitem label="All Actions" value="ALL"      selected="true"/>
                                 <listitem label="Rejected"    value="REJECTED"/>
-                                <listitem label="Referred"    value="REFERRED"/>
+                            
                             </listbox>
                         </div>
 
@@ -328,7 +328,7 @@
                         <div id="aEmptyState" sclass="rpt-empty" visible="false">
                             <n:div class="rpt-empty-icon">📋</n:div>
                             <n:div class="rpt-empty-txt">
-                                No rejected or referred cheques found for the selected filters.
+                               No rejected cheques found for the selected filters.
                             </n:div>
                         </div>
                     </div>
@@ -352,8 +352,7 @@
                     <div sclass="note info mt12">
                         <n:span>ℹ</n:span>
                         <n:span>
-                            This log shows only <n:strong>Rejected</n:strong> and
-                            <n:strong>Referred</n:strong> actions.
+                           This log shows only <n:strong>Rejected</n:strong> actions.
                             <n:strong>Download PDF</n:strong> exports all currently filtered rows.
                         </n:span>
                     </div>

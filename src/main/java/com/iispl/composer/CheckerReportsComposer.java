@@ -779,7 +779,6 @@ public class CheckerReportsComposer extends SelectorComposer<Component> {
         if (action == null) return "—";
         switch (action) {
             case "REJECTED": return "Rejected";
-            case "REFERRED": return "Referred";
             default:         return action;
         }
     }
@@ -797,7 +796,6 @@ public class CheckerReportsComposer extends SelectorComposer<Component> {
         if (action == null) return "badge b-grey";
         switch (action) {
             case "REJECTED": return "badge b-fail";
-            case "REFERRED": return "badge b-ref";
             default:         return "badge b-grey";
         }
     }

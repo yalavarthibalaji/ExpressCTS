@@ -4,18 +4,14 @@
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/reports/reports.css"?>
+<?link rel="stylesheet" type="text/css" href="/reports/checkerReports.css"?>
 
 <!--
     File    : webapp/reports/reports.zul
-    Purpose : Reports page — filter bar, batch table, pagination, PDF download.
-    Composer: com.iispl.composer.ReportComposer
-
-    FIXES:
-      1. Datebox replaced with native HTML <input type="date"> to fix
-         the calendar popup clipping/z-index issue completely.
-         The native input value is read by a ZK Textbox via client binding.
-      2. Pagination bar added — prevBtn, pageInfoLabel, nextBtn.
-      3. paginationBar div added so composer can show/hide it.
+    Purpose : Maker Outward Reports — two tabs.
+              Tab 1 → My Batches     (all batches created by this maker).
+              Tab 2 → Rejected Cheques (cheques rejected by this maker).
+    Composer: com.iispl.composer.ReportsComposer
 -->
 
 <zk xmlns="http://www.zkoss.org/2005/zul"
@@ -38,178 +34,228 @@
                     <div>
                         <n:div class="page-title">Reports</n:div>
                         <n:div class="page-sub">
-                            My Batches — filter, view and download as PDF
-                        </n:div>
-                    </div>
-                    <button id="downloadBtn" sclass="btn bp btn-lg">
-                        ⬇ Download PDF
-                    </button>
-                </div>
-
-                <!-- ══ FILTER BAR ════════════════════════════════════
-                     Native HTML date inputs are used here instead of
-                     ZK Datebox. This completely avoids the popup
-                     calendar clipping bug caused by overflow:hidden
-                     on parent containers.
-
-                     How it works:
-                       - n:input type="date" renders a real browser
-                         date picker — no ZK popup involved.
-                       - A hidden ZK Textbox sits next to it and is
-                         kept in sync by the oninput JS handler.
-                       - The composer reads the Textbox value as a
-                         plain yyyy-MM-dd string and parses it.
-                ═══════════════════════════════════════════════════ -->
-                <div sclass="fbar mb14">
-
-                    <!-- From Date -->
-                    <div sclass="fg">
-                        <n:label class="fg-lbl">From Date</n:label>
-                        <div sclass="date-wrap">
-                            <!-- Native browser date picker — always visible,
-                                 no popup clipping issue -->
-                            <n:input type="date"
-                                     id="fromDateNative"
-                                     class="native-date-input"
-                                     oninput="zk.$('$fromDateInput').setValue(this.value);"/>
-                            <!-- Hidden ZK Textbox — composer reads this value -->
-                            <textbox id="fromDateInput"
-                                     sclass="hidden-textbox"
-                                     value=""/>
-                        </div>
-                    </div>
-
-                    <!-- To Date -->
-                    <div sclass="fg">
-                        <n:label class="fg-lbl">To Date</n:label>
-                        <div sclass="date-wrap">
-                            <n:input type="date"
-                                     id="toDateNative"
-                                     class="native-date-input"
-                                     oninput="zk.$('$toDateInput').setValue(this.value);"/>
-                            <textbox id="toDateInput"
-                                     sclass="hidden-textbox"
-                                     value=""/>
-                        </div>
-                    </div>
-
-                    <!-- Status -->
-                    <div sclass="fg">
-                        <n:label class="fg-lbl">Status</n:label>
-                        <listbox id="statusFilter"
-                                 sclass="fs"
-                                 mold="select"
-                                 width="170px">
-                               
-                            <listitem label="All Statuses"        value="ALL" selected="true"/>
-                            <listitem label="Uploaded"            value="UPLOADED"/>
-                            <listitem label="Needs Repair"        value="NEEDS_REPAIR"/>
-                            <listitem label="Entry Done"          value="ENTRY_DONE"/>
-                            <listitem label="Submitted"           value="SUBMITTED"/>
-                            <listitem label="Checker In Progress" value="CHECKER_IN_PROGRESS"/>
-                            <listitem label="Checker Approved"    value="CHECKER_APPROVED"/>
-                            <listitem label="Checker Hold"        value="CHECKER_HOLD"/>
-                            <listitem label="Rejected"            value="REJECTED"/>
-                        </listbox>
-                    </div>
-
-                    <!-- Batch ID Search -->
-                    <div sclass="fg flex1">
-                        <n:label class="fg-lbl">Search Batch ID</n:label>
-                        <textbox id="searchBox"
-                                 sclass="fi w100"
-                                 placeholder="e.g. B-2026-0606-001"
-                                 instant="true"/>
-                    </div>
-
-                    <button id="applyFilterBtn" sclass="btn bp">Apply</button>
-                    <button id="clearFilterBtn" sclass="btn bo">Clear</button>
-
-                </div>
-
-                <!-- Error / validation message -->
-                <label id="errorLabel" sclass="report-error" value=""/>
-
-                <!-- ══ SUMMARY STRIP ══════════════════════════════════ -->
-                <div sclass="report-summary mb12">
-                    <n:span class="rs-lbl">Showing</n:span>
-                    <label id="rowCountLabel"    sclass="rs-count"  value="0"/>
-                    <n:span class="rs-lbl">batches</n:span>
-                    <n:span class="rs-sep">·</n:span>
-                    <n:span class="rs-lbl">Total Amount</n:span>
-                    <label id="totalAmountLabel" sclass="rs-amount" value="₹ 0.00"/>
-                </div>
-
-                <!-- ══ BATCH TABLE ════════════════════════════════════ -->
-                <div sclass="tbl-wrap">
-                    <grid id="batchGrid" sclass="rpt-grid" width="100%">
-                        <columns sclass="rpt-col-hdr">
-                            <column label="#"
-                                    width="44px"
-                                    sclass="col-sno"/>
-                            <column label="Batch ID"
-                                    width="165px"/>
-                            <column label="Cheques"
-                                    width="120px"
-                                    align="center"/>
-                            <column label="Exp. Amount (₹)"
-                                    width="160px"
-                                    align="right"/>
-                            <column label="Act. Amount (₹)"
-                                    width="160px"
-                                    align="right"/>
-                            <column label="Status"
-                                    width="155px"/>
-                            <column label="Created At"/>
-                            <column label="PDF"
-                                    width="80px"
-                                    align="center"/>
-                        </columns>
-                        <rows id="batchRows"/>
-                    </grid>
-
-                    <!-- Empty state -->
-                    <div id="emptyState" sclass="rpt-empty" visible="false">
-                        <n:div class="rpt-empty-icon">📋</n:div>
-                        <n:div class="rpt-empty-txt">
-                            No batches found for the selected filters.
+                            My Batches &amp; Rejected Cheques — filter, view and download as PDF
                         </n:div>
                     </div>
                 </div>
 
-                <!-- ══ PAGINATION BAR ═════════════════════════════════
-                     Shown/hidden by composer.
-                     prevBtn and nextBtn are disabled by composer
-                     when on first/last page.
-                ═══════════════════════════════════════════════════ -->
-                <div id="paginationBar" sclass="pagination-bar mt12" visible="false">
-                    <button id="prevBtn"
-                            sclass="btn bo btn-sm pg-btn"
-                            label="← Prev"
-                            disabled="true"/>
-                    <label id="pageInfoLabel"
-                           sclass="pg-info"
-                           value="Page 1 of 1"/>
-                    <button id="nextBtn"
-                            sclass="btn bp btn-sm pg-btn"
-                            label="Next →"
-                            disabled="true"/>
+                <!-- ══ TAB STRIP ════════════════════════════════════ -->
+                <div sclass="cr-tabs mb14">
+                    <div id="tabBatches"  sclass="cr-tab cr-tab-active">My Batches</div>
+                    <div id="tabRejected" sclass="cr-tab">Rejected Cheques</div>
                 </div>
 
-                <!-- PDF note -->
-                <div sclass="note info mt12">
-                    <n:span>ℹ</n:span>
-                    <n:span>
-                        <n:strong>Download PDF</n:strong>
-                        (header button) downloads a report of
-                        <n:strong>all currently filtered batches</n:strong>
-                        shown in the table — applies date, status, and search filters.
-                        The per-row <n:strong>⬇ PDF</n:strong>
-                        button downloads a
-                        <n:strong>Cheque Detail report</n:strong>
-                        listing every cheque under that batch.
-                    </n:span>
+                <!-- ══════════════════════════════════════════════════
+                     PANEL 1 — MY BATCHES
+                ════════════════════════════════════════════════════ -->
+                <div id="batchPanel" visible="true">
+
+                    <div sclass="cr-panel-hdr mb12">
+                        <n:span class="cr-panel-sub">
+                            All batches created by you — filter by date, status or batch ID
+                        </n:span>
+                        <button id="downloadBtn" sclass="btn bp btn-lg">
+                            ⬇ Download PDF
+                        </button>
+                    </div>
+
+                    <!-- Filter bar -->
+                    <div sclass="fbar mb14">
+
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">From Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="fromDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$fromDateInput').setValue(this.value);"/>
+                                <textbox id="fromDateInput" sclass="hidden-textbox" value=""/>
+                            </div>
+                        </div>
+
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">To Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="toDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$toDateInput').setValue(this.value);"/>
+                                <textbox id="toDateInput" sclass="hidden-textbox" value=""/>
+                            </div>
+                        </div>
+
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">Status</n:label>
+                            <listbox id="statusFilter" sclass="fs" mold="select" width="170px">
+                                <listitem label="All Statuses"        value="ALL"                selected="true"/>
+                                <listitem label="Uploaded"            value="UPLOADED"/>
+                                <listitem label="Needs Repair"        value="NEEDS_REPAIR"/>
+                                <listitem label="Entry Done"          value="ENTRY_DONE"/>
+                                <listitem label="Submitted"           value="SUBMITTED"/>
+                                <listitem label="Checker In Progress" value="CHECKER_IN_PROGRESS"/>
+                                <listitem label="Checker Approved"    value="CHECKER_APPROVED"/>
+                                <listitem label="Checker Hold"        value="CHECKER_HOLD"/>
+                            </listbox>
+                        </div>
+
+                        <div sclass="fg flex1">
+                            <n:label class="fg-lbl">Search Batch ID</n:label>
+                            <textbox id="searchBox"
+                                     sclass="fi w100"
+                                     placeholder="e.g. B-2026-0606-001"
+                                     instant="true"/>
+                        </div>
+
+                        <button id="applyFilterBtn" sclass="btn bp">Apply</button>
+                        <button id="clearFilterBtn" sclass="btn bo">Clear</button>
+
+                    </div>
+
+                    <label id="errorLabel" sclass="report-error" value=""/>
+
+                    <div sclass="report-summary mb12">
+                        <n:span class="rs-lbl">Showing</n:span>
+                        <label id="rowCountLabel"    sclass="rs-count"  value="0"/>
+                        <n:span class="rs-lbl">batches</n:span>
+                        <n:span class="rs-sep">·</n:span>
+                        <n:span class="rs-lbl">Total Amount</n:span>
+                        <label id="totalAmountLabel" sclass="rs-amount" value="₹ 0.00"/>
+                    </div>
+
+                    <div sclass="tbl-wrap">
+                        <grid id="batchGrid" sclass="rpt-grid" width="100%">
+                            <columns sclass="rpt-col-hdr">
+                                <column label="#"               width="44px"  sclass="col-sno"/>
+                                <column label="Batch ID"        width="165px"/>
+                                <column label="Cheques"         width="120px" align="center"/>
+                                <column label="Exp. Amount (₹)" width="160px" align="right"/>
+                                <column label="Act. Amount (₹)" width="160px" align="right"/>
+                                <column label="Status"          width="155px"/>
+                                <column label="Created At"/>
+                                <column label="PDF"             width="80px"  align="center"/>
+                            </columns>
+                            <rows id="batchRows"/>
+                        </grid>
+                        <div id="emptyState" sclass="rpt-empty" visible="false">
+                            <n:div class="rpt-empty-icon">📋</n:div>
+                            <n:div class="rpt-empty-txt">No batches found for the selected filters.</n:div>
+                        </div>
+                    </div>
+
+                    <div id="paginationBar" sclass="pagination-bar mt12" visible="false">
+                        <button id="prevBtn"       sclass="btn bo btn-sm pg-btn" label="← Prev"   disabled="true"/>
+                        <label  id="pageInfoLabel" sclass="pg-info"              value="Page 1 of 1"/>
+                        <button id="nextBtn"       sclass="btn bp btn-sm pg-btn" label="Next →"   disabled="true"/>
+                    </div>
+
+                    <div sclass="note info mt12">
+                        <n:span>ℹ</n:span>
+                        <n:span>
+                            <n:strong>Download PDF</n:strong> exports all filtered batches.
+                            The per-row <n:strong>⬇ PDF</n:strong> button downloads the
+                            <n:strong>Cheque Detail report</n:strong> for that batch,
+                            including any rejected cheques with their REJECTED status.
+                        </n:span>
+                    </div>
+
                 </div>
+                <!-- END batchPanel -->
+
+
+                <!-- ══════════════════════════════════════════════════
+                     PANEL 2 — REJECTED CHEQUES
+                ════════════════════════════════════════════════════ -->
+                <div id="rejectedPanel" visible="false">
+
+                    <div sclass="cr-panel-hdr mb12">
+                        <n:span class="cr-panel-sub">
+                            Cheques you rejected during MICR Repair or Data Entry — across all batches
+                        </n:span>
+                    </div>
+
+                    <!-- Filter bar -->
+                    <div sclass="fbar mb14">
+
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">From Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="rjFromDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$rjFromDateInput').setValue(this.value);"/>
+                                <textbox id="rjFromDateInput" sclass="hidden-textbox" value=""/>
+                            </div>
+                        </div>
+
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">To Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="rjToDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$rjToDateInput').setValue(this.value);"/>
+                                <textbox id="rjToDateInput" sclass="hidden-textbox" value=""/>
+                            </div>
+                        </div>
+
+                        <div sclass="fg flex1">
+                            <n:label class="fg-lbl">Search Batch ID / Cheque No</n:label>
+                            <textbox id="rjSearchBox"
+                                     sclass="fi w100"
+                                     placeholder="e.g. B-2026-0606-001 or 123456"
+                                     instant="true"/>
+                        </div>
+
+                        <button id="rjApplyFilterBtn" sclass="btn bp">Apply</button>
+                        <button id="rjClearFilterBtn" sclass="btn bo">Clear</button>
+
+                    </div>
+
+                    <label id="rjErrorLabel" sclass="report-error" value=""/>
+
+                    <div sclass="report-summary mb12">
+                        <n:span class="rs-lbl">Showing</n:span>
+                        <label id="rjRowCountLabel" sclass="rs-count" value="0"/>
+                        <n:span class="rs-lbl">rejected cheques</n:span>
+                    </div>
+
+                    <div sclass="tbl-wrap">
+                        <grid id="rjGrid" sclass="rpt-grid" width="100%">
+                            <columns sclass="rpt-col-hdr">
+                                <column label="#"          width="44px"  sclass="col-sno"/>
+                                <column label="Batch ID"   width="155px"/>
+                                <column label="Cheque No"  width="110px"/>
+                                <column label="Payee Name" width="140px"/>
+                                <column label="Amount (₹)" width="120px" align="right"/>
+                                <column label="Reason"     width="80px"  align="center"/>
+                                <column label="Remarks"/>
+                                <column label="Rejected At" width="140px"/>
+                            </columns>
+                            <rows id="rjRows"/>
+                        </grid>
+                        <div id="rjEmptyState" sclass="rpt-empty" visible="false">
+                            <n:div class="rpt-empty-icon">📋</n:div>
+                            <n:div class="rpt-empty-txt">No rejected cheques found for the selected filters.</n:div>
+                        </div>
+                    </div>
+
+                    <div id="rjPaginationBar" sclass="pagination-bar mt12" visible="false">
+                        <button id="rjPrevBtn"       sclass="btn bo btn-sm pg-btn" label="← Prev"   disabled="true"/>
+                        <label  id="rjPageInfoLabel" sclass="pg-info"              value="Page 1 of 1"/>
+                        <button id="rjNextBtn"       sclass="btn bp btn-sm pg-btn" label="Next →"   disabled="true"/>
+                    </div>
+
+                    <div sclass="note info mt12">
+                        <n:span>ℹ</n:span>
+                        <n:span>
+                            This log shows cheques <n:strong>rejected by you</n:strong>
+                            during MICR Repair or Data Entry.
+                            These cheques did not go to the Checker — their lifecycle ended at your stage.
+                        </n:span>
+                    </div>
+
+                </div>
+                <!-- END rejectedPanel -->
 
             </div>
         </div>

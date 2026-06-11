@@ -208,9 +208,10 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
     public List<OutwardCheque> findByBatchId(Long batchId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
-            String sql = "SELECT * FROM outward_cheque "
-                       + "WHERE batch_id = :batchId "
-                       + "ORDER BY seq_no ASC";
+        	String sql = "SELECT * FROM outward_cheque "
+                    + "WHERE batch_id = :batchId "
+                    + "AND status != 'REJECTED' "
+                    + "ORDER BY seq_no ASC";
             NativeQuery<OutwardCheque> query = session.createNativeQuery(sql, OutwardCheque.class);
             query.setParameter("batchId", batchId);
             return query.list();
@@ -421,9 +422,10 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
          Session session = HibernateUtil.getSessionFactory().openSession();
          try {
              // Step 1: Load all cheques for this batch using native SQL
-             String sql = "SELECT * FROM outward_cheque "
-                        + "WHERE batch_id = :batchDbId "
-                        + "ORDER BY seq_no ASC";
+        	 String sql = "SELECT * FROM outward_cheque "
+                     + "WHERE batch_id = :batchDbId "
+                     + "AND status != 'REJECTED' "
+                     + "ORDER BY seq_no ASC";
              NativeQuery<OutwardCheque> q =
                      session.createNativeQuery(sql, OutwardCheque.class);
              q.setParameter("batchDbId", batchDbId);

@@ -1,10 +1,12 @@
 package com.iispl.dao;
 
-import com.iispl.entity.outward.OutwardBatch;
-import com.iispl.entity.outward.OutwardCheque;
-import com.iispl.entity.outward.OutwardCheckerAction;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+
+import com.iispl.entity.outward.OutwardBatch;
+import com.iispl.entity.outward.OutwardCheckerAction;
+import com.iispl.entity.outward.OutwardCheque;
 
 /**
  * File    : com/iispl/dao/ReportsDao.java
@@ -69,4 +71,18 @@ public interface ReportsDao {
      * @return list of OutwardCheckerAction, never null (empty list if none)
      */
     List<OutwardCheckerAction> getCheckerActionLog(Long checkerId);
+    
+    /**
+     * Returns DB IDs of all batches (created by this maker)
+     * that contain at least one maker-rejected cheque.
+     * Used by Reports screen to make the "Rejected" status filter work.
+     */
+    Set<Long> findBatchIdsWithRejections(Long makerId);
+    
+    /**
+     * Returns all cheques rejected by this maker across all their batches.
+     * Used to populate Tab 2 (Rejected Cheques) in the Maker Reports screen.
+     * Ordered by rejected_at DESC — most recently rejected shown first.
+     */
+    List<OutwardCheque> getMakerRejectedCheques(Long makerId);
 }
