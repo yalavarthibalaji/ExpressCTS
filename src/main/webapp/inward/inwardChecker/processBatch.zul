@@ -75,12 +75,15 @@
 					<!-- Nav Bar -->
 					<div sclass="pb-nav-bar">
 						<div sclass="pb-nav-left">
+
 							<button id="btnBackToList" sclass="btn bo"
 								label="← Back" />
+
 							<label id="lblBatchBadge"
 								sclass="pv-batch-badge" value="BATCH: —" />
 						</div>
 						<div sclass="pb-nav-center">
+
 							<button id="btnPrev" sclass="btn bo"
 								label="← Prev" disabled="true" />
 							<label id="lblRecordNav"
@@ -96,6 +99,7 @@
 				<div sclass="pb-split">
 
 					<!-- ════ LEFT — Cheque Image + Card ════ -->
+
 					<div sclass="pb-left">
 
 						<div sclass="pb-panel-hdr">
@@ -137,6 +141,7 @@
 					</div><!-- end pb-left -->
 
 					<!-- ════ RIGHT — Technical Verification ════ -->
+
 					<div sclass="pb-right">
 
 						<div sclass="pv-panel-header">
@@ -202,6 +207,7 @@
 						</div>
 
 						<!-- Our Account CBS -->
+
 						<div sclass="pv-section">
 							<div sclass="pv-section-label">
 								OUR ACCOUNT (CBS)
@@ -271,13 +277,13 @@
 									sclass="pv-reason-error" value="" visible="false" />
 							</div>
 
+
 						</div>
 
 					</div><!-- end pb-right -->
 
 				</div><!-- end pb-split -->
 
-				<!-- Footer -->
 				<div sclass="pv-footer">
 					<label id="lblFooterProgress"
 						sclass="pv-footer-progress" value="0 of 0 cheques actioned" />
@@ -295,6 +301,7 @@
 		</div><!-- end .body-row -->
 
 
+
 		<!-- ══════════════════════════════════════════════════════════════
 			REFER BACK POPUP WINDOW
 			Triggered when checker clicks "↩ Refer Back".
@@ -304,7 +311,7 @@
 			txtReferRemarks, lblReferError,
 			btnConfirmReferBack, btnCancelReferBack
 			══════════════════════════════════════════════════════════════ -->
-		<div id="winReferBack" sclass="rb-overlay" >
+		<div id="winReferBack" sclass="rb-overlay">
 			<div sclass="rb-dialog">
 
 				<!-- Header -->
@@ -386,4 +393,5 @@
 
 
 	</div><!-- end dash-shell -->
+
 </zk>
