@@ -146,31 +146,19 @@
 
                     <!-- Batch table -->
                     <div sclass="tbl-wrap">
-                        <grid id="bBatchGrid" sclass="rpt-grid" hflex="1">
-                            <columns sclass="rpt-col-hdr">
-    <column label="#"
-            width="44px"
-            sclass="col-sno"/>
-    <column label="Batch ID"
-            width="165px"/>
-    <column label="Cheques"
-            width="120px"
-            align="center"/>
-    <column label="Maker"
-            width="130px"/>
-    <column label="Actual Amt (₹)"
-            width="260px"
-            align="right"/>
-    <column label="Verified At"
-            width="150px"/>
-    <column label="Status"
-            width="px"/>
-    <column label="PDF"
-            width="80px"
-            align="center"/>
-</columns>
-                            <rows id="bBatchRows"/>
-                        </grid>
+                        <grid id="bBatchGrid" sclass="rpt-grid" width="100%">
+    <columns sclass="rpt-col-hdr">
+        <column label="#" width="4%" align="center"/>
+        <column label="Batch ID" width="15%"/>
+        <column label="Cheques" width="10%" align="center"/>
+        <column label="Maker" width="15%"/>
+        <column label="Actual Amt (₹)" width="20%" align="left"/>
+        <column label="Verified At" width="16%"/>
+        <column label="Status" width="12%"/>
+        <column label="PDF" width="8%" align="center"/>
+    </columns>
+    <rows id="bBatchRows"/>
+</grid>
 
                         <!-- Empty state -->
                         <div id="bEmptyState" sclass="rpt-empty" visible="false">

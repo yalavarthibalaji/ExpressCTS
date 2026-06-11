@@ -1,41 +1,220 @@
-/* ════════════════════════════════════════════════════
-   demExport.css
-   Page-specific styles ONLY.
-   Shared styles come from: global.css → components.css → layout.css
-   ════════════════════════════════════════════════════ */
+/*
+ * File: outward/demExport/demExport.css
+ * Purpose: Page-specific styles for DEM Export.
+ *          Builds on global.css + layout.css + components.css.
+ */
 
-/* ════════════════════════════════════════════════════
-   STATS ROW (top of batch list view)
-   Three KPI cards in a row
-   ════════════════════════════════════════════════════ */
-.export-stats {
-    display: flex;
-    gap: 12px;
+/* ══════════════════════════════════════════════════════════════════
+   TABS — same underline style as Reports screen
+   ══════════════════════════════════════════════════════════════════ */
+.rpt-tabs {
+    display:     flex;
+    gap:         0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
 }
-.export-stat {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r6);
-    padding: 16px 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+
+.rpt-tab {
+    background:    transparent !important;
+    border:        none        !important;
+    border-bottom: 3px solid transparent;
+    border-radius: 0           !important;
+    padding:       10px 18px   !important;
+    font-size:     14px        !important;
+    font-weight:   500         !important;
+    color:         var(--tm)   !important;
+    cursor:        pointer;
+    margin-bottom: -1px;
+    outline:       none;
+    box-shadow:    none        !important;
+    line-height:   1.4;
 }
-.export-stat-lbl {
+
+.rpt-tab:hover {
+    color: var(--t1) !important;
+    background: transparent !important;
+}
+
+.rpt-tab.active {
+    color:         var(--t1)      !important;
+    font-weight:   600            !important;
+    border-bottom: 3px solid #2C3E50 !important;
+    background:    transparent    !important;
+}
+
+/* ── Filter bar labels ── */
+.fbar .fg-lbl {
     font-size: 11px;
-    color: var(--tm);
+    font-weight: 600;
+    color: var(--t2);
     text-transform: uppercase;
-    letter-spacing: .4px;
-    margin-bottom: 8px;
-}
-.export-stat-val {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--t1);
+    letter-spacing: 0.4px;
     display: block;
+    margin-bottom: 4px;
+}
+
+/* ── Native date input ── */
+.native-date-input {
+    border:        1px solid #cccccc;
+    border-radius: 4px;
+    padding:       6px 10px;
+    font-size:     13px;
+    height:        34px;
+    color:         #333333;
+    background:    #ffffff;
+    cursor:        pointer;
+    width:         160px;
+}
+.native-date-input:focus {
+    border-color: #2C3E50;
+    outline:      none;
+}
+
+/* Hidden ZK textbox — invisible but exists in DOM for value binding */
+.hidden-textbox {
+    display: none !important;
+}
+
+/* date-wrap: only the native input is visible */
+.date-wrap {
+    display:        flex;
+    flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   GRID COLUMN HEADER
+   Same dark header as Reports grid.
+   ══════════════════════════════════════════════════════════════════ */
+.rpt-grid .z-columns .z-column,
+.rpt-grid .z-columns .z-column-cnt {
+    background-color: #2C3E50 !important;
+    background-image: none     !important;
+    border-bottom: 2px solid #1a252f !important;
+    border-right:  1px solid #3d5166 !important;
+    font-size:     11px        !important;
+    font-weight:   700         !important;
+    color:         #FFFFFF     !important;
+    text-transform: uppercase  !important;
+    letter-spacing: 0.5px      !important;
+    padding:       0 12px      !important;
+    height:        36px        !important;
+    line-height:   36px        !important;
+    white-space:   nowrap      !important;
+}
+
+.rpt-grid .z-columns .z-column .z-column-cnt,
+.rpt-grid .z-columns .z-column .z-column-cnt > span,
+.rpt-grid .z-columns .z-column .z-label,
+.rpt-grid .z-columns .z-column span {
+    color:      #FFFFFF     !important;
+    background: transparent !important;
+}
+
+.rpt-grid .z-columns .z-column .z-sorticon {
+    color: #FFFFFF !important;
+}
+
+.rpt-grid .z-columns .z-column:hover {
+    background-color: #2C3E50 !important;
+}
+
+.rpt-grid .z-columns .z-column .z-column-cnt {
+    overflow:   visible !important;
+    text-overflow: clip !important;
+}
+
+/* Center the # column */
+.rpt-grid .z-columns .z-column.col-sno,
+.rpt-grid .z-columns .z-column.col-sno .z-column-cnt {
+    text-align: center !important;
+}
+
+/* ── Grid rows ── */
+.rpt-grid .z-cell {
+    border-bottom: 1px solid var(--border) !important;
+    padding:       0 12px !important;
+    height:        38px   !important;
+    vertical-align: middle !important;
+    font-size:     13px   !important;
+    color:         var(--t1) !important;
+}
+.rpt-grid .z-row:nth-child(even) .z-cell { background: #F7F9FC !important; }
+.rpt-grid .z-row:hover           .z-cell { background: #eef3fa !important; }
+
+/* ── Remove ZK grid outer chrome ── */
+.rpt-grid,
+.rpt-grid .z-grid-body {
+    border:     none !important;
+    box-shadow: none !important;
+}
+
+/* ── Results summary strip ── */
+.report-summary {
+    display:     flex;
+    align-items: center;
+    gap:         6px;
+    font-size:   13px;
+}
+.rs-lbl    { color: var(--tm); }
+.rs-count  { font-size: 14px; font-weight: 700; color: var(--primary); }
+.rs-sep    { color: var(--border-s); padding: 0 4px; }
+.rs-amount { font-weight: 700; color: var(--success); font-family: var(--mono); font-size: 13px; }
+
+/* ── Serial number cell ── */
+.sno-cell {
+    display:       block;
+    text-align:    right;
+    color:         var(--tm);
+    font-size:     12px;
+    padding-right: 4px;
+}
+
+/* ── Amount cell ── */
+.amt-cell {
+    display:     block;
+    text-align:  right;
+    font-family: var(--mono);
+    font-size:   12px;
+}
+
+/* ── Empty state ── */
+.rpt-empty {
+    padding:    52px 20px;
+    text-align: center;
+    background: #fff;
+    border-top: 1px solid var(--border);
+}
+.rpt-empty-icon { font-size: 36px; margin-bottom: 10px; }
+.rpt-empty-txt  { font-size: 13px; color: var(--tm); }
+
+/* ══════════════════════════════════════════════════════════════════
+   PAGINATION BAR — centered, same as Reports screen
+   ══════════════════════════════════════════════════════════════════ */
+.pg-bar {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    gap:             16px;
+    padding:         12px 0;
+    border-top:      1px solid var(--border);
+}
+
+.pg-info {
+    font-size:  13px;
+    color:      var(--tm);
+    min-width:  160px;
+    text-align: center;
+}
+
+/* Disabled state for Prev / Next buttons */
+.pg-bar .z-button[disabled],
+.pg-bar .z-button.z-button-disabled {
+    opacity: 0.45;
+    cursor:  not-allowed;
 }
 
 /* ════════════════════════════════════════════════════
-   GENERATE PANE (centered call-to-action when not exported)
+   GENERATE PANE (centered call-to-action)
    ════════════════════════════════════════════════════ */
 .generate-pane {
     text-align: center;
@@ -124,9 +303,7 @@
     align-items: flex-start;
     font-size: 13px;
 }
-.file-row:last-child {
-    margin-bottom: 0;
-}
+.file-row:last-child { margin-bottom: 0; }
 .file-path {
     font-size: 11px;
     word-break: break-all;
@@ -141,11 +318,9 @@
     justify-content: flex-end;
 }
 
-/* ════════════════════════════════════════════════════
-   RESPONSIVE — stack file cards on narrow screens
-   ════════════════════════════════════════════════════ */
+/* ── Responsive ── */
 @media (max-width: 900px) {
-    .file-cards-row    { grid-template-columns: 1fr; }
-    .export-stats      { flex-direction: column; }
-    .export-stat       { flex: none; }
+    .file-cards-row      { grid-template-columns: 1fr; }
+    .rpt-tabs            { gap: 0; }
+    .rpt-tab             { padding: 8px 12px !important; font-size: 13px !important; }
 }

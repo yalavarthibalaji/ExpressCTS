@@ -113,6 +113,8 @@ public class CheckerReportsComposer extends SelectorComposer<Component> {
     private List<OutwardCheckerAction> filteredActions;
     private int                        aCurrentPage = 0;
 
+    
+    
     // ── Session ──────────────────────────────────────────────────────
     private LoginDTO currentUser;
 
