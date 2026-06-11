@@ -30,4 +30,12 @@ public class InwardCheckerServiceImpl implements InwardCheckerService {
     public int getClearedBatchCount() {
         return inwardBatchDao.countClearedBatches();
     }
+    
+ // In InwardCheckerServiceImpl
+    public List<InwardBatch> getAllBatchesForChecker() {
+        // Returns all batches with status in MakerVerified, Verified, CBS_Processed
+        return inwardBatchDao.findBatchesByStatuses(
+            List.of("MakerVerified", "Verified", "CBS_Processed")
+        );
+    }
 }

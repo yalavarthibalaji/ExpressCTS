@@ -51,9 +51,11 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
             return session.createNativeQuery(
-                    "SELECT * FROM inward_batch WHERE status = 'MakerVerified' " +
-                    "ORDER BY created_at ASC",
-                    InwardBatch.class).list();
+                "SELECT * FROM inward_batch " +
+                "WHERE status IN ('MakerVerified', 'CheckerReferred') " +
+                "ORDER BY created_at ASC",
+                InwardBatch.class
+            ).list();
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "findPendingCheckerBatches failed", e);
             return new ArrayList<>();
@@ -170,5 +172,20 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
 	public List<InwardBatch> findInwardBatchesByStatus(String status) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public List<InwardBatch> findBatchesByStatuses(List<String> statuses) {
+	    Session session = HibernateUtil.getSessionFactory().openSession();
+	    try {
+	        return session.createQuery(
+	            "FROM InwardBatch b WHERE b.status IN :statuses ORDER BY b.createdAt DESC",
+	            InwardBatch.class
+	        ).setParameter("statuses", statuses).list();
+	    } catch (Exception e) {
+	        LOG.log(Level.SEVERE, "findBatchesByStatuses failed", e);
+	        return new ArrayList<>();
+	    } finally {
+	        session.close();
+	    }
 	}
 }

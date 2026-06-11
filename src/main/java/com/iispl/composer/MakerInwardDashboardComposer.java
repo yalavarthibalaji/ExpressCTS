@@ -83,14 +83,18 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
         }
 
         // Stat cards
+     // Pending = batches still being worked on by Maker
         long pending = allBatches.stream()
-                .filter(b -> "RECEIVED".equals(b.getStatus())
-                          || "PARSED".equals(b.getStatus()))
-                .count();
+            .filter(b -> "Parsed".equals(b.getStatus())
+                      || "SentForVerification".equals(b.getStatus()))
+            .count();
 
+        // Cleared = batches Maker has sent to Checker or beyond
         long cleared = allBatches.stream()
-                .filter(b -> "APPROVED".equals(b.getStatus()))
-                .count();
+            .filter(b -> "MakerVerified".equals(b.getStatus())
+                      || "Verified".equals(b.getStatus())
+                      || "CBS_Processed".equals(b.getStatus()))
+            .count();
 
         lblPendingCount.setValue(String.valueOf(pending));
         lblClearedCount.setValue(String.valueOf(cleared));
@@ -291,12 +295,16 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
 
     private String resolveStatusSclass(String status) {
         if (status == null) return "status-badge";
-        return switch (status.toUpperCase()) {
-            case "RECEIVED" -> "status-badge status-received";
-            case "PARSED"   -> "status-badge status-parsed";
-            case "APPROVED" -> "status-badge status-approved";
-            case "REJECTED" -> "status-badge status-rejected";
-            default         -> "status-badge";
+        return switch (status) {
+            case "Parsed"              -> "status-badge status-parsed";
+            case "SentForVerification" -> "status-badge status-pending";
+            case "MakerVerified"       -> "status-badge status-approved";
+            case "MakerRejected"       -> "status-badge status-rejected";
+            case "CheckerReferred"     -> "status-badge status-referred";  // ← ADD
+            case "Verified"            -> "status-badge status-approved";
+            case "CBS_Processed"       -> "status-badge status-approved";
+            case "Rejected"            -> "status-badge status-rejected";
+            default                    -> "status-badge";
         };
     }
 

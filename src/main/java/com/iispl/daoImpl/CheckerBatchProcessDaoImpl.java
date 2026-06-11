@@ -14,26 +14,40 @@ import com.iispl.util.HibernateUtil;
 
 public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
 
-    @Override
-    public InwardBatch findBatchWithCheques(String batchId) {
-        Session session = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            Query<InwardBatch> q = session.createQuery(
-                "SELECT DISTINCT b FROM InwardBatch b " +
-                "LEFT JOIN FETCH b.cheques " +
-                "WHERE b.batchId = :batchId",
-                InwardBatch.class
-            );
-            q.setParameter("batchId", batchId);
-            return q.uniqueResult();
-        } catch (Exception e) {
-            System.err.println("findBatchWithCheques error: " + e.getMessage());
-            return null;
-        } finally {
-            if (session != null && session.isOpen()) session.close();
-        }
-    }
+	@Override
+	public InwardBatch findBatchWithCheques(String batchId) {
+	    Session session = null;
+	    try {
+	        session = HibernateUtil.getSessionFactory().openSession();
+
+	        // Load batch
+	        InwardBatch batch = session.createQuery(
+	            "SELECT b FROM InwardBatch b WHERE b.batchId = :batchId",
+	            InwardBatch.class
+	        ).setParameter("batchId", batchId).uniqueResult();
+
+	        if (batch == null) return null;
+
+	        // Load only cheques that are NOT referred back
+	        // SEND_BACK cheques are already saved individually and returned to Maker
+	        List<InwardCheque> cheques = session.createQuery(
+	            "SELECT c FROM InwardCheque c " +
+	            "WHERE c.batch.batchId = :batchId " +
+	            "AND c.status != 'SEND_BACK' " +
+	            "ORDER BY c.seqNo ASC",
+	            InwardCheque.class
+	        ).setParameter("batchId", batchId).getResultList();
+
+	        batch.setCheques(cheques);
+	        return batch;
+
+	    } catch (Exception e) {
+	        System.err.println("findBatchWithCheques error: " + e.getMessage());
+	        return null;
+	    } finally {
+	        if (session != null && session.isOpen()) session.close();
+	    }
+	}
 
     @Override
     public void saveCheckerActions(List<InwardCheckerAction> actions) {
@@ -134,14 +148,29 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
 
+            // 1. Save the action record
             session.persist(action);
 
+            // 2. Update referred cheque — status + repair_status + refer_back_module
             InwardCheque cheque = action.getInwardCheque();
             if (cheque != null) {
                 cheque.setStatus("SEND_BACK");
                 cheque.setReferBackModule(action.getReferBackModule());
                 cheque.setRepairStatus(mapModuleToRepairStatus(action.getReferBackModule()));
                 session.merge(cheque);
+            }
+
+            // 3. Update batch status to CheckerReferred in same transaction
+            //    This blocks Maker from proceeding until Maker fixes and re-sends
+            InwardBatch batch = action.getInwardBatch();
+            if (batch != null) {
+                InwardBatch managed = session.get(InwardBatch.class, batch.getId());
+                if (managed != null) {
+                    managed.setStatus("CheckerReferred");
+                    session.merge(managed);
+                    // Keep in-memory object in sync so UI updates immediately
+                    batch.setStatus("CheckerReferred");
+                }
             }
 
             tx.commit();

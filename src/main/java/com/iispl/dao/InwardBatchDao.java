@@ -39,4 +39,6 @@ public interface InwardBatchDao {
 
     /** Count of inward batches cleared/accepted by checker. */
     int countClearedBatches();
+    
+    List<InwardBatch> findBatchesByStatuses(List<String> statuses);
 }

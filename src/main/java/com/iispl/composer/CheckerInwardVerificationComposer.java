@@ -4,8 +4,8 @@ import java.util.Date;
 import java.util.List;
 
 import org.zkoss.zk.ui.Component;
+import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.Sessions;
-import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
@@ -24,7 +24,9 @@ import com.iispl.entity.inward.InwardBatch;
 import com.iispl.entity.inward.InwardCheckerAction;
 import com.iispl.entity.inward.InwardCheque;
 import com.iispl.service.CheckerInwardVerificationService;
+import com.iispl.service.InwardCheckerService;
 import com.iispl.serviceImpl.CheckerInwardVerificationServiceImpl;
+import com.iispl.serviceImpl.InwardCheckerServiceImpl;
 import com.iispl.util.SessionUtil;
 
 public class CheckerInwardVerificationComposer extends SelectorComposer<Component> {
@@ -48,6 +50,9 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
 
     private final CheckerInwardVerificationService verificationService =
             new CheckerInwardVerificationServiceImpl();
+    
+    private final InwardCheckerService inwardCheckerService =
+            new InwardCheckerServiceImpl();
 
     // ─────────────────────────────────────────────────────────────────────────
     // INIT
@@ -164,9 +169,7 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
             cellBatchId.appendChild(lblBatchId);
 
             // Cell 2 — Total cheque count
-            Listcell cellCount = new Listcell(
-                String.valueOf(batch.getTotalCheques())
-            );
+            Listcell cellCount = new Listcell(String.valueOf(batch.getTotalCheques()));
 
             // Cell 3 — MICR error count
             Listcell cellMicr = new Listcell(
@@ -376,9 +379,38 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
     // ─────────────────────────────────────────────────────────────────────────
 
     private void onProcessBatch(String batchId) {
+        //InwardBatch fresh = InwardCheckerService.getBatchById(batchId);
+        InwardBatch fresh = inwardCheckerService.getBatchById(batchId);
+        if (fresh == null) {
+            Messagebox.show("Batch " + batchId + " no longer exists.",
+                "Not Found", Messagebox.OK, Messagebox.EXCLAMATION);
+            return;
+        }
+
+        // Block if batch has referred cheques waiting for Maker correction
+        if ("CheckerReferred".equals(fresh.getStatus())) {
+            Messagebox.show(
+                "Batch " + batchId + " has cheque(s) referred back to Maker for correction.\n\n" +
+                "This batch cannot be processed until the Maker corrects the referred cheque(s) " +
+                "and resubmits the batch.\n\n" +
+                "Current Status: CHECKER REFERRED — Waiting for Maker.",
+                "Batch Blocked", Messagebox.OK, Messagebox.EXCLAMATION
+            );
+            return;
+        }
+
+        if (!"MakerVerified".equals(fresh.getStatus())) {
+            Messagebox.show(
+                "Batch " + batchId + " cannot be processed.\n" +
+                "Current status: " + fresh.getStatus(),
+                "Batch Unavailable", Messagebox.OK, Messagebox.EXCLAMATION,
+                ev -> loadPendingBatches(null)
+            );
+            return;
+        }
+
         Sessions.getCurrent().setAttribute("selectedBatchId", batchId);
-        org.zkoss.zk.ui.Executions.getCurrent()
-            .sendRedirect("/inward/inwardChecker/processBatch.zul");
+        Executions.sendRedirect("/inward/inwardChecker/processBatch.zul");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -391,21 +423,13 @@ public class CheckerInwardVerificationComposer extends SelectorComposer<Componen
      */
     private String resolveStatusBadge(String status) {
         if (status == null) return "badge b-grey";
-        switch (status.toUpperCase()) {
-            case "RECEIVED":
-            case "PENDING":
-                return "badge b-pend";
-            case "CLEARED":
-            case "ACCEPTED":
-            case "CBS_PROCESSED":
-                return "badge b-pass";
-            case "RETURNED":
-            case "REJECTED":
-                return "badge b-fail";
-            case "PROCESSING":
-                return "badge b-info";
-            default:
-                return "badge b-grey";
+        switch (status) {
+            case "MakerVerified":    return "badge b-pend";
+            case "CheckerReferred":  return "badge b-fail";  // red — blocked
+            case "Verified":         return "badge b-pass";
+            case "CBS_Processed":    return "badge b-pass";
+            case "Rejected":         return "badge b-fail";
+            default:                 return "badge b-grey";
         }
     }
 

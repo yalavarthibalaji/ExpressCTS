@@ -178,6 +178,19 @@
     box-sizing: border-box;
 }
 
+/* Fix listbox table-layout so columns align correctly */
+.rpt-listbox .z-listbox-body > table,
+.rpt-listbox > table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+.rpt-listbox .z-listcell-content {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+
 /* Search textbox */
 .rpt-fbar .rpt-fi-search,
 .rpt-fbar .rpt-fi-search.z-textbox {

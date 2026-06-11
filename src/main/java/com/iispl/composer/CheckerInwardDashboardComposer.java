@@ -89,30 +89,39 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
     // ─────────────────────────────────────────────────────────────────────────
 
     private void populateStatCards() {
-
-        // VALIDATION 7 — Isolate service errors so the page still renders
-        List<InwardBatch> pending;
-        int clearedCount = 0;
-        int totalCount   = 0;
-
         try {
-            pending      = inwardCheckerService.getPendingBatches();
-            clearedCount = inwardCheckerService.getClearedBatchCount();
-            totalCount   = inwardCheckerService.getTotalBatchCount();
+            // Single DB call — fetch all batches visible to checker
+            List<InwardBatch> all = inwardCheckerService.getAllBatchesForChecker();
+
+            long pendingCount = all.stream()
+                .filter(b -> "MakerVerified".equals(b.getStatus()))
+                .count();
+
+            long clearedCount = all.stream()
+                .filter(b -> "Verified".equals(b.getStatus())
+                          || "CBS_Processed".equals(b.getStatus()))
+                .count();
+
+            // Total = only batches checker is involved with
+            long totalCount = pendingCount + clearedCount;
+
+            if (lblPendingCount != null) lblPendingCount.setValue(String.valueOf(pendingCount));
+            if (lblClearedCount != null) lblClearedCount.setValue(String.valueOf(clearedCount));
+            if (lblTotalCount   != null) lblTotalCount.setValue(String.valueOf(totalCount));
+
+            // Render only pending batches in the grid
+            List<InwardBatch> pending = all.stream()
+                .filter(b -> "MakerVerified".equals(b.getStatus()))
+                .collect(java.util.stream.Collectors.toList());
+
+            renderPendingBatches(pending);
+
         } catch (Exception e) {
-            pending = new java.util.ArrayList<>();
             Clients.showNotification(
                 "Could not load dashboard data. Please refresh the page.",
                 "error", null, "top_center", 5000
             );
         }
-
-        // VALIDATION 3 — Null-safe label updates
-        if (lblPendingCount != null) lblPendingCount.setValue(String.valueOf(pending.size()));
-        if (lblClearedCount != null) lblClearedCount.setValue(String.valueOf(clearedCount));
-        if (lblTotalCount   != null) lblTotalCount.setValue(String.valueOf(totalCount));
-
-        renderPendingBatches(pending);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

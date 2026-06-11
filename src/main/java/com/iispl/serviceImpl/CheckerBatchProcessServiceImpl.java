@@ -38,36 +38,22 @@ public class CheckerBatchProcessServiceImpl implements CheckerBatchProcessServic
     @Override
     public void submitBatch(InwardBatch batch, List<InwardCheckerAction> actions, User checker) {
 
-        if (batch == null) {
+        if (batch == null)
             throw new IllegalArgumentException("Batch cannot be null.");
-        }
-        if (actions == null || actions.isEmpty()) {
+        if (actions == null || actions.isEmpty())
             throw new IllegalArgumentException("No actions provided. Please action all cheques before submitting.");
-        }
-        if (checker == null) {
+        if (checker == null)
             throw new IllegalArgumentException("Checker information is missing. Please log in again.");
-        }
 
-        List<InwardCheque> cheques = batch.getCheques();
+        // ── REMOVED: count check against batch.getCheques() ──────────────────
+        // batch.getCheques() is the original Hibernate-loaded list.
+        // Its in-memory statuses get mutated by confirmReturn/confirmReferBack
+        // in unpredictable ways across sessions, making the count unreliable.
+        // The composer already manages the correct working list and only sends
+        // actions for cheques that need to be submitted here.
+        // ─────────────────────────────────────────────────────────────────────
 
-        if (cheques == null || cheques.isEmpty()) {
-            throw new IllegalArgumentException("This batch has no cheques to process.");
-        }
-
-        // SEND_BACK cheques already saved individually via confirmReferBack()
-        // so exclude them from the expected count
-        long expectedCount = cheques.stream()
-            .filter(c -> !"SEND_BACK".equalsIgnoreCase(c.getStatus()))
-            .count();
-
-        if (actions.size() != expectedCount) {
-            throw new IllegalArgumentException(
-                "All cheques must be actioned before submitting. " +
-                "Expected: " + expectedCount + ", Actioned: " + actions.size()
-            );
-        }
-
-        // Only ACCEPTED and RETURNED allowed at submit time
+        // Validate each action in the submitted list
         for (InwardCheckerAction action : actions) {
             String actionType = action.getAction();
 
@@ -98,8 +84,7 @@ public class CheckerBatchProcessServiceImpl implements CheckerBatchProcessServic
                 }
 
                 if (action.getReasonText() == null || action.getReasonText().trim().isEmpty()) {
-                    String reasonText = InwardReturnReason.getReasonText(action.getReasonCode());
-                    action.setReasonText(reasonText);
+                    action.setReasonText(InwardReturnReason.getReasonText(action.getReasonCode()));
                 }
             }
         }

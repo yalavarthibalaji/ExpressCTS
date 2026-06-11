@@ -252,22 +252,38 @@ public class InwardChequeDaoImpl implements InwardChequeDao {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
 
-            String hql = "UPDATE InwardCheque ic "
-                       + "SET ic.repairStatus = 'SUBMITTED_TO_CHECKER', "
-                       + "    ic.status       = 'SUBMITTED', "
-                       + "    ic.updatedAt    = CURRENT_TIMESTAMP "
-                       + "WHERE ic.batch.batchId = :batchId";
+            // Update all cheques in the batch
+            String chequeHql = "UPDATE InwardCheque ic "
+                             + "SET ic.repairStatus = 'SUBMITTED_TO_CHECKER', "
+                             + "    ic.status       = 'SUBMITTED', "
+                             + "    ic.updatedAt    = CURRENT_TIMESTAMP "
+                             + "WHERE ic.batch.batchId = :batchId";
 
-            int rows = session.createQuery(hql)
+            int rows = session.createMutationQuery(chequeHql)
+                    .setParameter("batchId", batchId)
+                    .executeUpdate();
+
+            // Update batch status back to MakerVerified
+            String batchHql = "UPDATE InwardBatch b "
+                            + "SET b.status = 'MakerVerified', "
+                            + "    b.updatedAt = CURRENT_TIMESTAMP "
+                            + "WHERE b.batchId = :batchId";
+
+            session.createMutationQuery(batchHql)
                     .setParameter("batchId", batchId)
                     .executeUpdate();
 
             tx.commit();
             return rows;
+
         } catch (Exception e) {
-            if (tx != null) tx.rollback();
+            if (tx != null) {
+                tx.rollback();
+            }
+
             LOG.log(Level.SEVERE,
                     "submitBatchToChecker failed, batchId=" + batchId, e);
+
             throw new RuntimeException("Failed to submitBatchToChecker", e);
         }
     }

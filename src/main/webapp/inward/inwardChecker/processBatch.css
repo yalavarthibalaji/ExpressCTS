@@ -899,6 +899,15 @@
     color: var(--t1) !important;
 }
 
+
+/* Active state for action buttons */
+.btn-on {
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.3), 0 0 0 5px currentColor !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
+    filter: brightness(1.1) !important;
+}
+
 /* Disabled state */
 .z-button.btn.disabled,
 .z-button.btn[disabled],

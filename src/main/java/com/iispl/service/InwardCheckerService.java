@@ -16,4 +16,6 @@ public interface InwardCheckerService {
 
     /** Number of inward batches that have been cleared. */
     int getClearedBatchCount();
+    
+    List<InwardBatch> getAllBatchesForChecker();
 }

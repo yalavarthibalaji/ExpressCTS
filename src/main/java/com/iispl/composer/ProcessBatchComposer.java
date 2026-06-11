@@ -183,6 +183,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 	// ── Services ──────────────────────────────────────────────────────────────
 	private final CheckerBatchProcessService batchService = new CheckerBatchProcessServiceImpl();
 	private final CbsFirebaseService cbsService = new CbsFirebaseService();
+	private final java.util.Set<Long> savedViaConfirmReturn = new java.util.HashSet<>();
 
 	// ══════════════════════════════════════════════════════════════════════════
 	// Lifecycle
@@ -256,6 +257,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 
 		set(lblRecordNav, "Record " + record + " of " + total);
 		set(lblProgressCounter, record + "/" + total);
+		
 
 		if (btnPrev != null)
 			btnPrev.setDisabled(index == 0);
@@ -595,6 +597,7 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 
 		try {
 			batchService.confirmReturn(currentBatch, cheque, reasonCode, checker);
+			savedViaConfirmReturn.add(cheque.getId());
 		} catch (IllegalArgumentException e) {
 			showReturnReasonError(e.getMessage());
 			return;
@@ -695,29 +698,29 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 	// ══════════════════════════════════════════════════════════════════════════
 
 	private void refreshProgress() {
-		if (cheques == null)
-			return;
+	    if (cheques == null) return;
 
-		int total = cheques.size();
-		int actioned = 0;
+	    int total    = cheques.size();
+	    int actioned = 0;
+	    for (InwardCheque c : cheques) {
+	        if (actionMap.containsKey(c.getId())) actioned++;
+	    }
 
-		for (InwardCheque c : cheques) {
-			if (actionMap.containsKey(c.getId())) {
-				actioned++;
-			}
-		}
+	    int pct   = total > 0 ? actioned * 100 / total : 100;
+	    String text = actioned + " of " + total + " cheques actioned";
 
-		int pct = total > 0 ? actioned * 100 / total : 100;
-		String text = actioned + " of " + total + " cheques actioned";
+	    set(lblProgressText,   text);
+	    set(lblFooterProgress, text);
 
-		set(lblProgressText, text);
-		set(lblFooterProgress, text);
+	    if (divProgressFill != null)
+	        divProgressFill.setStyle("width:" + pct + "%");
 
-		if (divProgressFill != null)
-			divProgressFill.setStyle("width:" + pct + "%");
+	    // Disable submit if batch is CheckerReferred regardless of actioned count
+	    boolean isReferred = currentBatch != null &&
+	                         "CheckerReferred".equals(currentBatch.getStatus());
 
-		if (btnSubmit != null)
-			btnSubmit.setDisabled(total == 0 || actioned < total);
+	    if (btnSubmit != null)
+	        btnSubmit.setDisabled(total == 0 || actioned < total || isReferred);
 	}
 
 	// ══════════════════════════════════════════════════════════════════════════
@@ -727,28 +730,34 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 	@Listen("onClick = #btnSubmit")
 	public void onSubmitBatch() {
 		LoginDTO user = (LoginDTO) Sessions.getCurrent().getAttribute(SessionUtil.SESSION_KEY);
-		if (user == null) {
-			Messagebox.show("Session expired. Please log in again.", "Session Error", Messagebox.OK, Messagebox.ERROR);
-			return;
-		}
+		if ("CheckerReferred".equals(currentBatch.getStatus())) {
+	        Messagebox.show(
+	            "This batch cannot be submitted.\n\n" +
+	            "One or more cheques have been referred back to the Maker for correction.\n" +
+	            "Please wait until the Maker corrects the referred cheque(s) and " +
+	            "resubmits the batch with status MakerVerified.",
+	            "Submit Blocked", Messagebox.OK, Messagebox.EXCLAMATION
+	        );
+	        return;
+	    }
 
 		User checker = new User();
 		checker.setId(user.getUserId());
 
 		List<InwardCheckerAction> actions = new ArrayList<>();
 		for (InwardCheque c : cheques) {
-			String action = actionMap.get(c.getId());
-
-			// Guard: SEND_BACK cheques are removed from list but skip if somehow present
-			if ("SEND_BACK".equals(action))
-				continue;
-
-			InwardCheckerAction ca = new InwardCheckerAction();
-			ca.setInwardCheque(c);
-			ca.setAction(action);
-			if ("RETURNED".equals(action))
-				ca.setReasonCode(reasonMap.get(c.getId()));
-			actions.add(ca);
+		    String action = actionMap.get(c.getId());
+		    if ("SEND_BACK".equals(action)) continue;
+		    
+		    // Skip cheques already individually saved via confirmReturn
+		    if (savedViaConfirmReturn.contains(c.getId())) continue;
+		    
+		    InwardCheckerAction ca = new InwardCheckerAction();
+		    ca.setInwardCheque(c);
+		    ca.setAction(action);
+		    if ("RETURNED".equals(action))
+		        ca.setReasonCode(reasonMap.get(c.getId()));
+		    actions.add(ca);
 		}
 
 		try {
