@@ -20,6 +20,4 @@ public interface CheckerBatchProcessService {
                           String reasonCode, String targetModule,
                           String remarks, User checker);
 
-    // Decrements total_cheques count in DB after a refer-back removal
-    void decrementBatchChequeCount(InwardBatch batch);
 }

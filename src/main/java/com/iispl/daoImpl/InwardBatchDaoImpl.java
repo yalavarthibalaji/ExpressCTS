@@ -183,6 +183,21 @@ public class InwardBatchDaoImpl implements InwardBatchDao {
             session.close();
         }
     }
+    
+    @Override
+    public int countSendBackCheques(String batchId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Long count = session.createQuery(
+                    "SELECT COUNT(c) FROM InwardCheque c " +
+                    "WHERE c.batch.batchId = :batchId AND c.status = 'SEND_BACK'",
+                    Long.class
+            ).setParameter("batchId", batchId).uniqueResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "countSendBackCheques failed, batchId=" + batchId, e);
+            return 0;
+        }
+    }
 	
 	public List<InwardBatch> findBatchesByStatuses(List<String> statuses) {
 	    Session session = HibernateUtil.getSessionFactory().openSession();

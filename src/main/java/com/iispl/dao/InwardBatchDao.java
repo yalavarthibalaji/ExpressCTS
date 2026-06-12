@@ -40,5 +40,7 @@ public interface InwardBatchDao {
     /** Count of inward batches cleared/accepted by checker. */
     int countClearedBatches();
     
+    int countSendBackCheques(String batchId);
+    
     List<InwardBatch> findBatchesByStatuses(List<String> statuses);
 }

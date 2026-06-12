@@ -23,15 +23,17 @@ public class InwardBatchServiceImpl implements InwardBatchService {
         List<InwardBatch>    batches = inwardBatchDao.findAll();
         List<InwardBatchDto> dtos    = new ArrayList<>();
         for (InwardBatch b : batches) {
-            dtos.add(new InwardBatchDto(
-            		b.getId(),
+            InwardBatchDto dto = new InwardBatchDto(
+                    b.getId(),
                     b.getBatchId(),
                     b.getSourceFileName(),
                     b.getTotalCheques(),
                     b.getMicrErrorCount(),
                     b.getParsedAt(),
                     b.getStatus()
-            ));
+            );
+            dto.setPendingRepairCount(inwardBatchDao.countSendBackCheques(b.getBatchId()));
+            dtos.add(dto);
         }
         return dtos;
     }

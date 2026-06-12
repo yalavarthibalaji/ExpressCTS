@@ -181,15 +181,6 @@ public class CheckerBatchProcessServiceImpl implements CheckerBatchProcessServic
         cheque.setRepairStatus(mapModuleToRepairStatus(targetModule.trim()));
     }
 
-    // ── Decrement Batch Cheque Count ──────────────────────────────────────────
-
-    @Override
-    public void decrementBatchChequeCount(InwardBatch batch) {
-        if (batch == null) {
-            throw new IllegalArgumentException("Batch cannot be null.");
-        }
-        checkerBatchProcessDao.decrementBatchChequeCount(batch);
-    }
 
     // ── Private Helpers ───────────────────────────────────────────────────────
 

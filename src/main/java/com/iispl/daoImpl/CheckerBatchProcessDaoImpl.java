@@ -194,31 +194,6 @@ public class CheckerBatchProcessDaoImpl implements CheckerBatchProcessDao {
         }
     }
 
-    @Override
-    public void decrementBatchChequeCount(InwardBatch batch) {
-        Session session = null;
-        Transaction tx  = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
-            tx = session.beginTransaction();
-
-            // FIX: use batch.getId() (Long) not batch.getBatchId() (String)
-            InwardBatch managed = session.get(InwardBatch.class, batch.getId());
-            if (managed != null && managed.getTotalCheques() > 0) {
-                managed.setTotalCheques(managed.getTotalCheques() - 1);
-                session.merge(managed);
-                batch.setTotalCheques(managed.getTotalCheques());
-            }
-
-            tx.commit();
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            System.err.println("decrementBatchChequeCount error: " + e.getMessage());
-            throw new RuntimeException("Failed to decrement batch cheque count.", e);
-        } finally {
-            if (session != null && session.isOpen()) session.close();
-        }
-    }
 
     // Maps checker action string → inward_cheque.status column value
     private String mapActionToStatus(String action) {

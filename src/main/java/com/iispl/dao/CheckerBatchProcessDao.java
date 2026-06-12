@@ -19,6 +19,4 @@ public interface CheckerBatchProcessDao {
 
     void saveReferBackAction(InwardCheckerAction action);
 
-    // Decrements total_cheques by 1 in DB after a refer-back
-    void decrementBatchChequeCount(InwardBatch batch);
 }

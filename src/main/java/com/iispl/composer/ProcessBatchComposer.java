@@ -517,8 +517,6 @@ public class ProcessBatchComposer extends SelectorComposer<Component> {
 			// Step 1: Save SEND_BACK action + update cheque status in DB
 			batchService.confirmReferBack(currentBatch, pendingReferCheque, reasonCode, moduleCode, remarks, checker);
 
-			// Step 2: Decrement total_cheques count in DB
-			batchService.decrementBatchChequeCount(currentBatch);
 
 		} catch (Exception e) {
 			showReferError("Failed to save: " + e.getMessage());
