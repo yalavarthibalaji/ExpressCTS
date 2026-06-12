@@ -36,15 +36,15 @@
                     </div>
                     <grid sclass="dt">
                         <columns>
-                            <column label="#"          width="50px" />
-                            <column label="User ID"    />
-                            <column label="Full Name"  />
-                            <column label="Email"      />
-                            <column label="Mobile"     />
-                            <column label="Role"       />
-                            <column label="Status"     />
-                            <column label="Created"    />
-                            <column label="Action"     />
+                            <column label="S.No "          width="70px" sclass="batch-table-header"/>
+                            <column label="User ID"    sclass="batch-table-header"/>
+                            <column label="Full Name"  sclass="batch-table-header"/>
+                            <column label="Email"      sclass="batch-table-header"/>
+                            <column label="Mobile"     sclass="batch-table-header"/>
+                            <column label="Role"       sclass="batch-table-header"/>
+                            <column label="Status"     sclass="batch-table-header"/>
+                            <column label="Created"    sclass="batch-table-header"/>
+                            <column label="Action"     sclass="batch-table-header"/>
                         </columns>
                         <rows id="userRows" />
                     </grid>

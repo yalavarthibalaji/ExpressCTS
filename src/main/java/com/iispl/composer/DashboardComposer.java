@@ -103,6 +103,9 @@ public class DashboardComposer extends SelectorComposer<Component> {
         if (lblTodayDate       != null)
             lblTodayDate.setValue(LocalDate.now().format(DATE_FMT));
 
+        // Skip batch table logic on pages that don't have the batch table (e.g. admin dashboard)
+        if (recentBatchList == null) return;
+
         allBatches = batchUploadService.getMyBatches(currentMakerId);
         loadKpis(allBatches);
         renderTable(allBatches);

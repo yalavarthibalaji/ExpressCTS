@@ -17,6 +17,7 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.*;
 
+
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -33,10 +34,7 @@ public class UserManagementComposer extends SelectorComposer<Component> {
 
     private final UserService userService = new UserServiceImpl();
 
-    // ── Topbar wires ──
-    @Wire private Label userAvatar;
-    @Wire private Label userName;
-    @Wire private Label userRole;
+   
 
     // ── User table wires ──
     @Wire private Rows userRows;
@@ -63,9 +61,7 @@ public class UserManagementComposer extends SelectorComposer<Component> {
         if (dto == null) return;
 
         // Populate topbar
-        userAvatar.setValue(dto.getInitials());
-        userName.setValue(dto.getFullName());
-        userRole.setValue("Administrator");
+        
 
         // Initial load
         loadRolesIntoCombobox();

@@ -2,7 +2,6 @@
 
 package com.iispl.composer;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +23,7 @@ import org.zkoss.zul.Label;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listcell;
 import org.zkoss.zul.Listitem;
+import org.zkoss.zul.Rows;
 import org.zkoss.zul.Textbox;
 
 import com.iispl.dto.LoginDTO;
@@ -40,6 +40,23 @@ import com.iispl.util.SessionUtil;
  */
 public class CheckerOutwardDashboardComposer extends SelectorComposer<Component> {
 
+
+    // ── Topbar labels ──
+	@Wire private Label userAvatar;
+    @Wire private Label userName;
+    @Wire private Label userRole;
+
+
+    // ── Pending Verification table ──
+    @Wire private Rows pendingBatchRows;
+
+    // ── Summary labels ──
+    @Wire private Label sumPending;
+    @Wire private Label sumOnHold;
+    @Wire private Label sumReadyExport;
+    @Wire private Label sumExported;
+
+    // ── Service ──
     private final CheckerService checkerService = new CheckerServiceImpl();
 
     private static final DateTimeFormatter DATE_FMT  = DateTimeFormatter.ofPattern("dd MMM yyyy");
@@ -99,9 +116,10 @@ public class CheckerOutwardDashboardComposer extends SelectorComposer<Component>
             return;
         }
 
-        // Page header pills
-        if (lblTodayDate       != null) lblTodayDate.setValue(LocalDate.now().format(DATE_FMT));
-       
+
+        if (userAvatar != null) userAvatar.setValue(dto.getInitials());
+        if (userName   != null) userName.setValue(dto.getFullName());
+        if (userRole   != null) userRole.setValue("Checker — Outward");
 
         // KPI strip
         loadKpis();
