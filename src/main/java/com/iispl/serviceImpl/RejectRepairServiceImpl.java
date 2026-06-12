@@ -128,7 +128,7 @@ public class RejectRepairServiceImpl implements RejectRepairService {
                         cheque.getChequeNo()));
             }
             cheque.setMicrError(false);
-            cheque.setRepairStatus(STATUS_REPAIRED);
+            
 
             chequeDao.updateCheque(cheque);
 

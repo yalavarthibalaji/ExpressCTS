@@ -54,7 +54,7 @@
 							<label sclass="stat-number"
 								id="lblClearedCount" value="0" />
 							<label sclass="stat-label"
-								value="Cleared batches" />
+								value="Verified batches" />
 							<div sclass="stat-card-overlay">
 								<button sclass="stat-overlay-btn"
 									id="btnClearedOverlay" label="View Batches" />

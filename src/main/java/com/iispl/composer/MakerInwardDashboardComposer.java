@@ -242,7 +242,7 @@ public class MakerInwardDashboardComposer extends SelectorComposer<Component> {
         item.appendChild(new Listcell(dto.getBatchId()));
 
         // No. of Cheques
-        item.appendChild(new Listcell(String.valueOf(dto.getPendingRepairCount())));
+        item.appendChild(new Listcell(String.valueOf(dto.getTotalCheques())));
 
         // MICR Error Count
         item.appendChild(new Listcell(String.valueOf(dto.getMicrErrorCount())));

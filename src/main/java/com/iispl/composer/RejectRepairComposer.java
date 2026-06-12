@@ -247,7 +247,8 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         repairList = allCheques.stream()
                 .filter(c -> c.isMicrError()
                         || "NEEDS_REPAIR".equalsIgnoreCase(c.getRepairStatus())
-                        || "REFERRED_MICR".equalsIgnoreCase(c.getRepairStatus()))
+                        || "REFERRED_MICR".equalsIgnoreCase(c.getRepairStatus())
+                        || "REPAIRED".equals(c.getRepairStatus()))
                 .collect(Collectors.toList());
 
         showList();
@@ -348,6 +349,7 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         actionCell.setStyle("text-align:center");
         Button repairBtn = new Button("Repair");
         repairBtn.setSclass("btn-repair-row");
+        if(c.getRepairStatus().equalsIgnoreCase("REPAIRED")) repairBtn.setDisabled(true);
 
         int idx = repairList.indexOf(c);
         repairBtn.addEventListener(Events.ON_CLICK, e -> {
@@ -703,7 +705,12 @@ public class RejectRepairComposer extends SelectorComposer<Component> {
         c.setBranchCode(branchCode);
         c.setMicrCodeCorrected(correctedMicr);
         c.setMicrError(false);
-        c.setRepairStatus("REPAIRED");
+        
+        if (!c.isDateAmountError()) {
+            c.setRepairStatus("REPAIRED");
+        } else {
+            c.setRepairStatus("NEEDS_REPAIR"); // Step 2 will pick this up
+        }
         if (remarks != null && !remarks.isBlank())
             c.setRemarks(remarks);
 

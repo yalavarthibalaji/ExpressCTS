@@ -147,7 +147,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	// ══════════════════════════════════════════════════════════════════════
 	// Service & State
 	// ══════════════════════════════════════════════════════════════════════
-	private final PayeeAccountService service = new PayeeAccountServiceImpl();
+	private final PayeeAccountService payeeAccountService = new PayeeAccountServiceImpl();
 
 	private String currentBatchId;
 	private List<InwardCheque> allCheques; // full unfiltered list for the batch
@@ -156,7 +156,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	private int currentPage = 1;
 
 	// Detail-panel navigation index (into allCheques, not filtered list)
-	private int detailIdx = 0;
+	private int detailedChequeIndex = 0;
 
 	// ══════════════════════════════════════════════════════════════════════
 	// Lifecycle
@@ -179,9 +179,9 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 			currentBatchId = param.trim();
 			Sessions.getCurrent().setAttribute(SESSION_BATCH_ID, currentBatchId);
 		} else {
-			Object sess = Sessions.getCurrent().getAttribute(SESSION_BATCH_ID);
-			if (sess != null) {
-				currentBatchId = sess.toString();
+			Object session = Sessions.getCurrent().getAttribute(SESSION_BATCH_ID);
+			if (session != null) {
+				currentBatchId = session.toString();
 			}
 		}
 	}
@@ -191,7 +191,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 			allCheques = Collections.emptyList();
 			return;
 		}
-		allCheques = service.getChequesByBatchId(currentBatchId);
+		allCheques = payeeAccountService.getChequesByBatchId(currentBatchId);
 		if (allCheques == null)
 			allCheques = Collections.emptyList();
 	}
@@ -228,16 +228,16 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		// Detail navigation
 		if (btnPrevCheque != null) {
 			btnPrevCheque.addEventListener(Events.ON_CLICK, e -> {
-				if (detailIdx > 0) {
-					detailIdx--;
+				if (detailedChequeIndex > 0) {
+					detailedChequeIndex--;
 					loadDetailRecord();
 				}
 			});
 		}
 		if (btnNextCheque != null) {
 			btnNextCheque.addEventListener(Events.ON_CLICK, e -> {
-				if (detailIdx < allCheques.size() - 1) {
-					detailIdx++;
+				if (detailedChequeIndex < allCheques.size() - 1) {
+					detailedChequeIndex++;
 					loadDetailRecord();
 				}
 			});
@@ -252,10 +252,10 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		}
 	}
 
-	private void loadChequeImages(InwardCheque c) {
-		setImageViaServlet(imgFront, c.getFrontImagePath());
-		setImageViaServlet(imgBack, c.getBackImagePath());
-		setImageViaServlet(imgGray, c.getFrontImagePath());
+	private void loadChequeImages(InwardCheque cheque) {
+		setImageViaServlet(imgFront, cheque.getFrontImagePath());
+		setImageViaServlet(imgBack, cheque.getBackImagePath());
+		setImageViaServlet(imgGray, cheque.getFrontImagePath());
 		if (imgGray != null)
 			imgGray.setStyle("filter:grayscale(100%);max-width:100%;display:block;");
 	}
@@ -287,7 +287,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	}
 
 	private void showDetailPanel(int idx) {
-		detailIdx = idx;
+		detailedChequeIndex = idx;
 		setVis(listPanel, false);
 		setVis(detailPanel, true);
 		if (lblDetailBatchBadge != null)
@@ -335,7 +335,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 			addCell(row, nvl(c.getPresentingBankName()));
 
 			// Amount — right-aligned
-			Listcell amtCell = new Listcell(c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
+			Listcell amtCell = new Listcell(c.getAmount() != null ? "₹ " + formatString(c.getAmount()) : "—");
 			amtCell.setStyle("text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px;");
 			row.appendChild(amtCell);
 
@@ -360,6 +360,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 			Button enterBtn = new Button("Enter");
 			enterBtn.setSclass("btn-pa-enter");
 			enterBtn.addEventListener(Events.ON_CLICK, ev -> showDetailPanel(allIdx));
+			if(c.getRepairStatus().equals("ENTRY_DONE")) enterBtn.setDisabled(true);
 			actionCell.appendChild(enterBtn);
 			row.appendChild(actionCell);
 
@@ -382,7 +383,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		if (lblBatchBadge != null && currentBatchId != null)
 			lblBatchBadge.setValue("BATCH: " + currentBatchId);
 		if (lblPendingBadge != null) {
-			long pending = service.countPending(allCheques);
+			long pending = payeeAccountService.countPending(allCheques);
 			lblPendingBadge.setValue(pending + " PENDING");
 		}
 	}
@@ -394,16 +395,16 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	private void loadDetailRecord() {
 		if (allCheques.isEmpty())
 			return;
-		detailIdx = Math.max(0, Math.min(detailIdx, allCheques.size() - 1));
-		InwardCheque c = allCheques.get(detailIdx);
+		detailedChequeIndex = Math.max(0, Math.min(detailedChequeIndex, allCheques.size() - 1));
+		InwardCheque c = allCheques.get(detailedChequeIndex);
 
 		// Navigation indicator
 		if (lblNavIndicator != null)
-			lblNavIndicator.setValue((detailIdx + 1) + " of " + allCheques.size());
+			lblNavIndicator.setValue((detailedChequeIndex + 1) + " of " + allCheques.size());
 		if (btnPrevCheque != null)
-			btnPrevCheque.setDisabled(detailIdx == 0);
+			btnPrevCheque.setDisabled(detailedChequeIndex == 0);
 		if (btnNextCheque != null)
-			btnNextCheque.setDisabled(detailIdx == allCheques.size() - 1);
+			btnNextCheque.setDisabled(detailedChequeIndex == allCheques.size() - 1);
 
 		// Left card — cheque reference
 		if (lblRefBank != null)
@@ -423,7 +424,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		if (lblRefAmtWords != null)
 			lblRefAmtWords.setValue(nvl(amountInWords(c.getAmount())));
 		if (lblRefAmount != null)
-			lblRefAmount.setValue(c.getAmount() != null ? "₹ " + fmt(c.getAmount()) : "—");
+			lblRefAmount.setValue(c.getAmount() != null ? "₹ " + formatString(c.getAmount()) : "—");
 
 		// Right form — pre-fill with existing values
 		if (txtPayeeName != null)
@@ -443,7 +444,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	private void doSaveEntry() {
 		if (allCheques.isEmpty())
 			return;
-		InwardCheque c = allCheques.get(detailIdx);
+		InwardCheque c = allCheques.get(detailedChequeIndex);
 
 		String payee = txtPayeeName != null ? txtPayeeName.getValue().trim() : "";
 		String accNo = txtAccNo != null ? txtAccNo.getValue().trim() : "";
@@ -461,7 +462,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		c.setPayeeName(payee);
 		c.setDraweeAccountNumber(accNo);
 		c.setRemarks(remark);
-		service.saveEntry(c);
+		payeeAccountService.saveEntry(c);
 
 		Messagebox.show("Entry saved for cheque " + c.getChequeNo() + " ✓", "Success", Messagebox.OK,
 				Messagebox.INFORMATION);
@@ -476,15 +477,15 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 	 */
 	private void advanceToNextPending() {
 		// Refresh in-memory list from DB
-		allCheques = service.getChequesByBatchId(currentBatchId);
+		allCheques = payeeAccountService.getChequesByBatchId(currentBatchId);
 		if (allCheques == null)
 			allCheques = Collections.emptyList();
 
 		// Look for next pending after current index
-		for (int i = detailIdx + 1; i < allCheques.size(); i++) {
+		for (int i = detailedChequeIndex + 1; i < allCheques.size(); i++) {
 			InwardCheque c = allCheques.get(i);
 			if (isPending(c)) {
-				detailIdx = i;
+				detailedChequeIndex = i;
 				loadDetailRecord();
 				return;
 			}
@@ -523,13 +524,13 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 
 	@Listen("onClick = #btnProceedChecker")
 	public void onProceedChecker() {
-		long pending = service.countPending(allCheques);
+		long pending =payeeAccountService.countPending(allCheques);
 		String msg = pending > 0 ? pending + " cheque(s) still pending. Proceed to Inward Checker anyway?"
 				: "All entries complete. Proceed to Inward Checker?";
 
 		Messagebox.show(msg, "Confirm", Messagebox.YES | Messagebox.NO, Messagebox.QUESTION, evt -> {
 			if (Messagebox.ON_YES.equals(evt.getName())) {
-				boolean ok = service.proceedToInwardChecker(currentBatchId);
+				boolean ok = payeeAccountService.proceedToInwardChecker(currentBatchId);
 				if (ok) {
 					Executions.getCurrent().sendRedirect(PAGE_CHECKER + "?batchId=" + currentBatchId);
 				} else {
@@ -548,7 +549,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		if(allCheques == null) return Collections.emptyList();
 		final String filterVal = selectedFilterValue();
 		return allCheques.stream()
-				.filter(c->!"ENTRY_DONE".equalsIgnoreCase(c.getRepairStatus()))
+				
 				.filter(c -> {
 					if(filterVal.isEmpty()) return true;
 					String rs = c.getRepairStatus() != null ? c.getRepairStatus() : "";
@@ -599,7 +600,7 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 		return v != null ? v : "";
 	}
 
-	private String fmt(BigDecimal v) {
+	private String formatString(BigDecimal v) {
 		return String.format("%,.2f", v);
 	}
 
@@ -646,10 +647,12 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 
 	private String resolveStatusLabel(String s) {
 		if (s == null || s.isBlank())
-			return "NEEDS ENTRY";
+			return "NEEDS ENTRY"; 
+		
 		return switch (s.toUpperCase()) {
 		
 		case "REFERRED_PAYEEACCOUNT" -> "REFERRED PAYEEACCOUNT";
+		case "ENTRY_DONE" -> "VERIFIED";
 		default -> "NEEDS ENTRY";
 		};
 	}
