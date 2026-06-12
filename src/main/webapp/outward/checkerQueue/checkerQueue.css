@@ -500,3 +500,97 @@
     font-size: 11px;
     color: #666;
 }
+
+
+.tbl-wrap {
+    width: 100%;
+}
+
+.dt {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.z-grid.dt {
+    width: 100% !important;
+}
+
+.z-grid.dt table {
+    width: 100% !important;
+    table-layout: fixed;
+}
+
+.rpt-grid .z-column {
+    background: #2f4358 !important;
+    color: #fff !important;
+    border-color: #0d6efd !important;
+}
+.pager-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-top: 18px;
+}
+
+.pager-info {
+    font-size: 12px;
+    color: #666;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PASS CONFIRMATION MODAL — centred screen overlay
+═══════════════════════════════════════════════════════ */
+.cq-pass-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.cq-pass-modal-box {
+    background: var(--surface, #fff);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+    padding: 36px 40px 28px;
+    min-width: 340px;
+    max-width: 420px;
+    text-align: center;
+}
+
+.cq-pass-modal-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #e6f4ea;
+    color: #2e7d32;
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.cq-pass-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--t1, #0a1628);
+    margin-bottom: 10px;
+}
+
+.cq-pass-modal-msg {
+    font-size: 14px;
+    color: var(--t2, #4a5568);
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.cq-pass-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}

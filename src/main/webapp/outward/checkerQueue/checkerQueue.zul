@@ -47,7 +47,7 @@
                 <!-- Page Header -->
                 <div sclass="page-hdr">
                     <div>
-                        <div sclass="page-title">Cheque Verification</div>
+                    <n:div class="page-title">Cheque Verification</n:div>
                         <div sclass="page-sub">Pass, Reject or Refer cheques back to Maker</div>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                         <div sclass="fg">
                             <n:label class="fg-lbl">Status</n:label>
                             <listbox id="cqStatusFilter" sclass="fs" mold="select">
-                                <listitem label="All Status"      value=""/>
+                                <listitem label="All Status"      value="" selected ="true"/>
                                 <listitem label="Pending"         value="SUBMITTED"/>
                                 <listitem label="In Progress"     value="CHECKER_IN_PROGRESS"/>
                               <listitem label="Hold"            value="CHECKER_HOLD"/>
@@ -89,51 +89,25 @@
                         </div>
                     </div>
 
-                    <!-- Status Legend -->
-                    <div sclass="cq-legend-row">
-                        <div sclass="note info cq-legend-item">
-                            <n:span>🕐</n:span>
-                            <n:span>
-                                <n:b>Pending</n:b> — Submitted by Maker, waiting for Checker
-                            </n:span>
-                        </div>
-                        <div sclass="note info cq-legend-item">
-                            <n:span>🔄</n:span>
-                            <n:span>
-                                <n:b>In Progress</n:b> — Checker is currently processing
-                            </n:span>
-                        </div>
-                        <div sclass="note warn cq-legend-item">
-                            <n:span>⏸</n:span>
-                            <n:span>
-                            <n:b>Hold</n:b> — Cheques referred back to Maker for correction
-                            <n:b>With Maker</n:b> — Batch sent back to Maker, waiting for re-submission
-                            </n:span>
-                        </div>
-                        <div sclass="note suc cq-legend-item">
-                            <n:span>✅</n:span>
-                            <n:span>
-                                <n:b>Ready to Export</n:b> — All cheques verified
-                            </n:span>
-                        </div>
-                    </div>
+
 
                     <!-- Batch Table -->
-                    <div sclass="tbl-wrap mb12">
-                        <grid sclass="dt" width="100%">
-                            <columns>
-                                <column label="Batch ID"     width="160px"/>
-                                <column label="Total"        width="70px"/>
-                                <column label="Verified"     width="80px"/>
-                                <column label="Referred"     width="80px"/>
-                                <column label="Maker"        width="150px"/>
-                                <column label="Submitted At" width="150px"/>
-                                <column label="Status"       width="140px"/>
-                                <column label="Action"/>
-                            </columns>
-                            <rows id="cqBatchRows"/>
-                        </grid>
-                    </div>
+<div sclass="tbl-wrap mb12">
+    <grid sclass="rpt-grid" width="100%">
+        <columns sclass="rpt-col-hdr" sizable="true">
+            <column label="Batch ID" width="18%"/>
+            <column label="Total" width="8%"/>
+            <column label="Verified" width="8%"/>
+            <column label="Referred" width="8%"/>
+            <column label="Maker" width="16%"/>
+            <column label="Submitted At" width="18%"/>
+            <column label="Status" width="12%"/>
+            <column label="Action" width="12%"/>
+        </columns>
+
+        <rows id="cqBatchRows"/>
+    </grid>
+</div>
 
                 </div><!-- end cqBatchView -->
 
@@ -377,29 +351,7 @@
                                         
                                     </div>
 
-                                    <!-- Pass inline confirmation panel -->
-                                    <div id="cqPassConfirm" visible="false">
-                                        <div sclass="note warn mb8">
-                                            <n:span>⚠</n:span>
-                                            <n:span>
-                                                Confirm: Do you want to pass Cheque
-                                                <n:b>
-                                                    <label id="cqPassConfirmNo"
-                                                           sclass="mono"/>
-                                                </n:b> ?
-                                            </n:span>
-                                        </div>
-                                        <div sclass="btn-grp">
-                                            <button id="cqConfirmPassBtn"
-                                                    sclass="btn bs btn-sm">
-                                                Yes — Pass
-                                            </button>
-                                            <button id="cqCancelPassBtn"
-                                                    sclass="btn bo btn-sm">
-                                                No — Cancel
-                                            </button>
-                                        </div>
-                                    </div>
+
 
                                     <!-- Reject inline form panel -->
                                     <div id="cqRejectForm" visible="false">
@@ -668,6 +620,26 @@
                 <button id="cqGoToExportBtn" sclass="btn bs">
                     Yes — Go to File Processing →
                 </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         PASS CONFIRMATION MODAL
+         Centred overlay — shown when Checker clicks ✓ Pass
+    ═══════════════════════════════════════════════════════ -->
+    <div id="cqPassConfirm" sclass="cq-pass-modal-overlay" visible="false">
+        <div sclass="cq-pass-modal-box">
+            <div sclass="cq-pass-modal-icon">✓</div>
+            <div sclass="cq-pass-modal-title">Confirm Pass</div>
+            <div sclass="cq-pass-modal-msg">
+                Do you want to pass Cheque
+                <n:b><label id="cqPassConfirmNo" sclass="mono"/></n:b> ?
+            </div>
+            <div sclass="cq-pass-modal-actions">
+                <button id="cqCancelPassBtn" sclass="btn bo">No — Cancel</button>
+                <button id="cqConfirmPassBtn" sclass="btn bs">Yes — Pass</button>
             </div>
         </div>
     </div>

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?page title="ExpressCTS — DEM Export"
       contentType="text/html;charset=UTF-8"?>
-<?link rel="stylesheet" type="text/css"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/components.css"?>
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
@@ -17,36 +15,36 @@
 <zk xmlns="http://www.zkoss.org/2005/zul"
     xmlns:n="native">
 
-<div sclass="shell" apply="com.iispl.composer.DemExportComposer">
+<div sclass="shell-layout" apply="com.iispl.composer.DemExportComposer">
 
-    <div sclass="topbar">
-        <include src="/component/topbar.zul" />
-    </div>
+    <include src="/component/topbar.zul"/>
 
     <div sclass="body-row">
-        <include src="/component/sidebar.zul" />
+        <include src="/component/sidebar.zul"/>
 
         <div sclass="main">
-            <div sclass="dash-main">
+            <include src="/component/breadcrumb.zul"/>
 
-                <!-- ───────── Page Header ───────── -->
-                <div sclass="page-hdr">
+            <div sclass="page">
+
+                <!-- ══ PAGE HEADER ══════════════════════════════════ -->
+                <div sclass="page-hdr mb16">
                     <div>
-                        <div sclass="page-title">DEM Export</div>
-                        <div sclass="page-sub">
+                        <n:div class="page-title">DEM Export</n:div>
+                        <n:div class="page-sub">
                             Generate CXF and CIGF files from approved batches for NPCI submission.
-                        </div>
+                        </n:div>
                     </div>
                 </div>
 
                 <!-- ═════════════════════════════════════════════════
                      VIEW 1 — Empty State
                      ═════════════════════════════════════════════════ -->
-                <div id="emptyStateView" visible="false" sclass="empty-box">
-                    <div sclass="empty-title">No batches ready for export</div>
-                    <div sclass="empty-sub">
-                        Batches approved by Checker will appear here automatically.
-                    </div>
+                <div id="emptyStateView" visible="false" sclass="rpt-empty">
+                    <n:div class="rpt-empty-icon">📤</n:div>
+                    <n:div class="rpt-empty-txt">
+                        No batches ready for export. Batches approved by Checker will appear here.
+                    </n:div>
                     <button id="gotoQueueBtn"
                             sclass="btn bp"
                             label="Go to Verification Queue"
@@ -58,67 +56,104 @@
                      ═════════════════════════════════════════════════ -->
                 <div id="batchListView" visible="false">
 
-                    <!-- Stats row -->
-                    <div sclass="export-stats mb16">
-                        <div sclass="export-stat">
-                            <div sclass="export-stat-lbl">Ready for Export</div>
-                            <label id="statApproved"
-                                   sclass="export-stat-val txt-primary"
-                                   value="0"/>
-                        </div>
-                        <div sclass="export-stat">
-                            <div sclass="export-stat-lbl">Already Exported</div>
-                            <label id="statExported"
-                                   sclass="export-stat-val txt-success"
-                                   value="0"/>
-                        </div>
-                        <div sclass="export-stat">
-                            <div sclass="export-stat-lbl">Total Cheques in Queue</div>
-                            <label id="statTotalCheques"
-                                   sclass="export-stat-val"
-                                   value="0"/>
-                        </div>
-                    </div>
-
-                    <!-- Tabs -->
-                    <div sclass="chq-tabs">
+                    <!-- Tabs — same style as Reports screen -->
+                    <div sclass="rpt-tabs mb14">
                         <button id="tabApprovedBtn"
-                                sclass="chq-tab active"
+                                sclass="rpt-tab active"
                                 label="Ready for Export"/>
                         <button id="tabExportedBtn"
-                                sclass="chq-tab"
+                                sclass="rpt-tab"
                                 label="Exported"/>
                     </div>
 
-                    <!-- Filter + Grid -->
-                    <div sclass="card mt12">
-                        <div sclass="card-hdr">
-                            <div sclass="card-title">Batches</div>
-                            <div sclass="flex gap8">
-                                <textbox id="listSearchBox"
-                                         sclass="fi"
-                                         placeholder="Search batch ID..."
-                                         style="width:240px;"
-                                         instant="true"/>
+                    <!-- ══ FILTER BAR ════════════════════════════════
+                         Status filter removed — tab controls which
+                         data is shown (CHECKER_APPROVED / EXPORTED).
+                         Native HTML date inputs avoid popup clipping.
+                    ══════════════════════════════════════════════════ -->
+                    <div sclass="fbar mb14">
+
+                        <!-- From Date -->
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">From Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="fromDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$fromDateInput').setValue(this.value);"/>
                             </div>
                         </div>
-                        <div sclass="card-body" style="padding:0;">
-                            <grid id="exportBatchGrid"
-                                  sclass="dt-grid"
-                                  width="100%">
-                                <columns>
-                                    <column label="Batch ID"      width="170px"/>
-                                    <column label="Cheques"       width="90px"/>
-                                    <column label="Total Amount"  width="160px"/>
-                                    <column label="Approved On"   width="160px"/>
-                                    <column label="Verified By"   width="180px"/>
-                                    <column label="Status"        width="120px"/>
-                                    <column label="Actions"       />
-                                </columns>
-                                <rows id="exportBatchRows"/>
-                            </grid>
+
+                        <!-- To Date -->
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">To Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="toDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$toDateInput').setValue(this.value);"/>
+                            </div>
+                        </div>
+
+                        <!-- Batch ID Search -->
+                        <div sclass="fg flex1">
+                            <n:label class="fg-lbl">Search Batch ID</n:label>
+                            <textbox id="listSearchBox"
+                                     sclass="fi w100"
+                                     placeholder="e.g. B-2026-0610-001"
+                                     instant="true"/>
+                        </div>
+
+                        <button id="applyFilterBtn" sclass="btn bp">Apply</button>
+                        <button id="clearFilterBtn" sclass="btn bo">Clear</button>
+
+                    </div>
+
+                    <!-- ══ SUMMARY STRIP ════════════════════════════ -->
+                    <div sclass="report-summary mb12">
+                        <n:span class="rs-lbl">Showing</n:span>
+                        <label id="rowCountLabel"    sclass="rs-count"  value="0"/>
+                        <n:span class="rs-lbl">batches</n:span>
+                        <n:span class="rs-sep">·</n:span>
+                        <n:span class="rs-lbl">Total Amount</n:span>
+                        <label id="totalAmountLabel" sclass="rs-amount" value="₹ 0.00"/>
+                    </div>
+
+                    <!-- ══ BATCH TABLE ════════════════════════════════ -->
+                    <div sclass="tbl-wrap">
+                        <grid id="exportBatchGrid"
+                              sclass="rpt-grid"
+                              width="100%"
+                              sizedByContent="false">
+                            <columns sclass="rpt-col-hdr">
+                                <column label="#"            width="4%"  align="center"/>
+                                <column label="Batch ID"     width="16%"/>
+                                <column label="Cheques"      width="8%"  align="center"/>
+                                <column label="Total Amount" width="18%" align="left"/>
+                                <column label="Approved On"  width="16%"/>
+                                <column label="Verified By"  width="16%"/>
+                                <column label="Status"       width="12%"/>
+                                <column label="Actions"      width="10%" align="center"/>
+                            </columns>
+                            <rows id="exportBatchRows"/>
+                        </grid>
+
+                        <!-- Pagination bar — same style as Reports screen -->
+                        <div id="pgBar" sclass="pg-bar mt12">
+                            <button id="prevPageBtn"   sclass="btn bo btn-sm" label="← Prev"/>
+                            <label  id="pageInfoLabel" sclass="pg-info"       value="Page 1 of 1 (0 batches)"/>
+                            <button id="nextPageBtn"   sclass="btn bo btn-sm" label="Next →"/>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div id="exportEmptyState" sclass="rpt-empty" visible="false">
+                            <n:div class="rpt-empty-icon">📋</n:div>
+                            <n:div class="rpt-empty-txt">
+                                No batches found for the selected filters.
+                            </n:div>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- ═════════════════════════════════════════════════
@@ -127,17 +162,15 @@
                 <div id="exportDetailView" visible="false">
 
                     <!-- Toolbar -->
-                    <div sclass="card mb12">
-                        <div sclass="card-hdr">
-                            <div sclass="flex gap8 items-c">
-                                <button id="backToListBtn"
-                                        sclass="btn bo btn-sm"
-                                        label="← Back"/>
-                                <label sclass="card-title" value="Export Detail —"/>
-                                <label id="detailBatchBadge"
-                                       sclass="badge b-pass"
-                                       value=""/>
-                            </div>
+                    <div sclass="page-hdr mb12">
+                        <div sclass="flex gap8 items-c">
+                            <button id="backToListBtn"
+                                    sclass="btn bo btn-sm"
+                                    label="← Back"/>
+                            <n:div class="page-title" style="margin:0;">Export Detail —</n:div>
+                            <label id="detailBatchBadge"
+                                   sclass="badge b-pass"
+                                   value=""/>
                         </div>
                     </div>
 
@@ -148,37 +181,30 @@
                                 <div sclass="vs-title">BATCH SUMMARY</div>
                                 <div sclass="vr">
                                     <label sclass="vl" value="Batch ID"/>
-                                    <label id="detailBatchId"
-                                           sclass="vv" value="—"/>
+                                    <label id="detailBatchId"      sclass="vv" value="—"/>
                                 </div>
                                 <div sclass="vr">
                                     <label sclass="vl" value="Cheques Approved"/>
-                                    <label id="detailChequeCount"
-                                           sclass="vvn" value="—"/>
+                                    <label id="detailChequeCount"  sclass="vvn" value="—"/>
                                 </div>
                                 <div sclass="vr">
                                     <label sclass="vl" value="Total Amount"/>
-                                    <label id="detailAmount"
-                                           sclass="vvn" value="—"/>
+                                    <label id="detailAmount"       sclass="vvn" value="—"/>
                                 </div>
                                 <div sclass="vr">
                                     <label sclass="vl" value="Approved On"/>
-                                    <label id="detailApprovedDate"
-                                           sclass="vvn" value="—"/>
+                                    <label id="detailApprovedDate" sclass="vvn" value="—"/>
                                 </div>
                                 <div sclass="vr">
                                     <label sclass="vl" value="Verified By"/>
-                                    <label id="detailVerifiedBy"
-                                           sclass="vvn" value="—"/>
+                                    <label id="detailVerifiedBy"   sclass="vvn" value="—"/>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Generate Trigger (shown when not yet exported) -->
-                    <div id="generateArea"
-                         sclass="card mb12"
-                         visible="false">
+                    <div id="generateArea" sclass="card mb12" visible="false">
                         <div sclass="card-body generate-pane">
                             <div sclass="generate-info">
                                 This batch is approved and ready for DEM Export.
@@ -203,39 +229,27 @@
                                     <div sclass="file-icon file-icon-xml">CXF</div>
                                     <div sclass="file-meta">
                                         <div sclass="file-type-lbl">Cheque Exchange File</div>
-                                        <label id="cxfFileName"
-                                               sclass="file-name"
-                                               value="—"/>
+                                        <label id="cxfFileName" sclass="file-name" value="—"/>
                                     </div>
-                                    <label id="cxfStatusBadge"
-                                           sclass="badge b-info"
-                                           value="GENERATED"/>
+                                    <label id="cxfStatusBadge" sclass="badge b-info" value="GENERATED"/>
                                 </div>
                                 <div sclass="file-card-body">
                                     <div sclass="file-row">
                                         <label sclass="vl" value="File Size"/>
-                                        <label id="cxfFileSize"
-                                               sclass="vvn" value="—"/>
+                                        <label id="cxfFileSize" sclass="vvn" value="—"/>
                                     </div>
                                     <div sclass="file-row">
                                         <label sclass="vl" value="Generated"/>
-                                        <label id="cxfGenTime"
-                                               sclass="vvn" value="—"/>
+                                        <label id="cxfGenTime" sclass="vvn" value="—"/>
                                     </div>
                                     <div sclass="file-row">
                                         <label sclass="vl" value="Path"/>
-                                        <label id="cxfFilePath"
-                                               sclass="vv mono file-path"
-                                               value="—"/>
+                                        <label id="cxfFilePath" sclass="vv mono file-path" value="—"/>
                                     </div>
                                 </div>
                                 <div sclass="file-card-foot">
-                                    <button id="cxfDownloadBtn"
-                                            sclass="btn bp btn-sm"
-                                            label="Download"/>
-                                    <button id="cxfTransmitBtn"
-                                            sclass="btn bs btn-sm"
-                                            label="Mark Transmitted"/>
+                                    <button id="cxfDownloadBtn"  sclass="btn bp btn-sm" label="Download"/>
+                                    <button id="cxfTransmitBtn"  sclass="btn bs btn-sm" label="Mark Transmitted"/>
                                 </div>
                             </div>
 
@@ -245,41 +259,30 @@
                                     <div sclass="file-icon file-icon-img">CIGF</div>
                                     <div sclass="file-meta">
                                         <div sclass="file-type-lbl">Cheque Image Group File</div>
-                                        <label id="cigfFileName"
-                                               sclass="file-name"
-                                               value="—"/>
+                                        <label id="cigfFileName" sclass="file-name" value="—"/>
                                     </div>
-                                    <label id="cigfStatusBadge"
-                                           sclass="badge b-info"
-                                           value="GENERATED"/>
+                                    <label id="cigfStatusBadge" sclass="badge b-info" value="GENERATED"/>
                                 </div>
                                 <div sclass="file-card-body">
                                     <div sclass="file-row">
                                         <label sclass="vl" value="File Size"/>
-                                        <label id="cigfFileSize"
-                                               sclass="vvn" value="—"/>
+                                        <label id="cigfFileSize" sclass="vvn" value="—"/>
                                     </div>
                                     <div sclass="file-row">
                                         <label sclass="vl" value="Generated"/>
-                                        <label id="cigfGenTime"
-                                               sclass="vvn" value="—"/>
+                                        <label id="cigfGenTime" sclass="vvn" value="—"/>
                                     </div>
                                     <div sclass="file-row">
                                         <label sclass="vl" value="Path"/>
-                                        <label id="cigfFilePath"
-                                               sclass="vv mono file-path"
-                                               value="—"/>
+                                        <label id="cigfFilePath" sclass="vv mono file-path" value="—"/>
                                     </div>
                                 </div>
                                 <div sclass="file-card-foot">
-                                    <button id="cigfDownloadBtn"
-                                            sclass="btn bp btn-sm"
-                                            label="Download"/>
-                                    <button id="cigfTransmitBtn"
-                                            sclass="btn bs btn-sm"
-                                            label="Mark Transmitted"/>
+                                    <button id="cigfDownloadBtn" sclass="btn bp btn-sm" label="Download"/>
+                                    <button id="cigfTransmitBtn" sclass="btn bs btn-sm" label="Mark Transmitted"/>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -288,6 +291,8 @@
             </div>
         </div>
     </div>
+
+    <include src="/component/statusbar.zul"/>
 
 </div>
 </zk>

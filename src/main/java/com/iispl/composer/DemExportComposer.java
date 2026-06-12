@@ -3,7 +3,9 @@
 package com.iispl.composer;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +46,13 @@ import com.iispl.util.SessionUtil;
  *   3. exportDetailView — selected batch's export panel
  *                         (Generate button OR CXF + CIGF file cards)
  *
+ * Tab behaviour:
+ *   "Ready for Export" tab → shows CHECKER_APPROVED batches only
+ *   "Exported"         tab → shows EXPORTED batches only
+ *   Status dropdown removed — tab controls which data is shown.
+ *
+ * Pagination: PAGE_SIZE rows per page, same style as Reports screen.
+ *
  * Download uses ZK's Filedownload.save() — no servlet required.
  * Transmit just flips the status to TRANSMITTED (real NPCI integration
  * would happen here in production).
@@ -64,14 +73,19 @@ public class DemExportComposer extends SelectorComposer<Component> {
     @Wire private Div batchListView;
     @Wire private Div exportDetailView;
 
-    // ── Batch List — stats and controls ──
-    @Wire private Label   statApproved;
-    @Wire private Label   statExported;
-    @Wire private Label   statTotalCheques;
+    // ── Batch List — tabs and filter bar ──
     @Wire private Button  tabApprovedBtn;
     @Wire private Button  tabExportedBtn;
     @Wire private Textbox listSearchBox;
+    @Wire private Label   rowCountLabel;
+    @Wire private Label   totalAmountLabel;
     @Wire private Rows    exportBatchRows;
+    @Wire private Div     exportEmptyState;
+
+    // ── Pagination ──
+    @Wire private Button prevPageBtn;
+    @Wire private Button nextPageBtn;
+    @Wire private Label  pageInfoLabel;
 
     // ── Export Detail — summary ──
     @Wire private Label detailBatchBadge;
@@ -113,6 +127,10 @@ public class DemExportComposer extends SelectorComposer<Component> {
     private OutwardExport       currentCigfExport;
     private boolean             showingExportedTab = false;
 
+    // ── Pagination state ──
+    private int currentPage            = 1;
+    private static final int PAGE_SIZE = 10;
+
     // ════════════════════════════════════════════════════
     //  Page Init
     // ════════════════════════════════════════════════════
@@ -144,10 +162,6 @@ public class DemExportComposer extends SelectorComposer<Component> {
     private void loadInitialView() {
         approvedBatches = demExportService.getExportableBatches();
         exportedBatches = demExportService.getExportedBatches();
-
-        statApproved.setValue(String.valueOf(approvedBatches.size()));
-        statExported.setValue(String.valueOf(exportedBatches.size()));
-        statTotalCheques.setValue(String.valueOf(countTotalCheques(approvedBatches)));
 
         if (approvedBatches.isEmpty() && exportedBatches.isEmpty()) {
             showView("empty");
@@ -183,70 +197,167 @@ public class DemExportComposer extends SelectorComposer<Component> {
 
     // ════════════════════════════════════════════════════
     //  Tabs (Ready for Export / Exported)
+    //  Tab click resets page to 1 and sets sclass to rpt-tab
+    //  to match the Reports screen underline style.
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #tabApprovedBtn")
     public void onTabApproved() {
         showingExportedTab = false;
-        tabApprovedBtn.setSclass("chq-tab active");
-        tabExportedBtn.setSclass("chq-tab");
+        currentPage        = 1;
+        tabApprovedBtn.setSclass("rpt-tab active");
+        tabExportedBtn.setSclass("rpt-tab");
         renderBatchTable();
     }
 
     @Listen("onClick = #tabExportedBtn")
     public void onTabExported() {
         showingExportedTab = true;
-        tabApprovedBtn.setSclass("chq-tab");
-        tabExportedBtn.setSclass("chq-tab active");
+        currentPage        = 1;
+        tabApprovedBtn.setSclass("rpt-tab");
+        tabExportedBtn.setSclass("rpt-tab active");
         renderBatchTable();
     }
 
     // ════════════════════════════════════════════════════
-    //  Search
+    //  Filter Bar — Apply / Clear / instant search
     // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #applyFilterBtn")
+    public void onApplyFilter() {
+        currentPage = 1;
+        renderBatchTable();
+    }
+
+    @Listen("onClick = #clearFilterBtn")
+    public void onClearFilter() {
+        currentPage = 1;
+        listSearchBox.setValue("");
+        // Reset the native date inputs via JS
+        org.zkoss.zk.ui.util.Clients.evalJavaScript(
+            "var f=document.getElementById('fromDateNative'); if(f) f.value='';" +
+            "var t=document.getElementById('toDateNative');   if(t) t.value='';"
+        );
+        renderBatchTable();
+    }
 
     @Listen("onChange = #listSearchBox; onChanging = #listSearchBox")
     public void onSearchChange() {
+        currentPage = 1;
+        renderBatchTable();
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Pagination Listeners
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #prevPageBtn")
+    public void onPrevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderBatchTable();
+        }
+    }
+
+    @Listen("onClick = #nextPageBtn")
+    public void onNextPage() {
+        currentPage++;
         renderBatchTable();
     }
 
     // ════════════════════════════════════════════════════
     //  Render Batch Table
+    //  Source list is decided by the active tab:
+    //    Ready for Export tab → approvedBatches (CHECKER_APPROVED)
+    //    Exported         tab → exportedBatches (EXPORTED)
+    //  No status dropdown — tab controls this.
     // ════════════════════════════════════════════════════
 
     private void renderBatchTable() {
         List<OutwardBatch> source = showingExportedTab
                 ? exportedBatches : approvedBatches;
 
+        // ── Read filter values ──
         String search = listSearchBox.getValue() != null
                 ? listSearchBox.getValue().trim().toLowerCase() : "";
 
+        LocalDate fromDate = null;
+        LocalDate toDate   = null;
+
+        // ── Apply filters ──
         List<OutwardBatch> filtered = new ArrayList<>();
         for (OutwardBatch b : source) {
+
+            // Batch ID search
             String id = b.getBatchId() != null ? b.getBatchId().toLowerCase() : "";
-            if (search.isEmpty() || id.contains(search)) filtered.add(b);
+            if (!search.isEmpty() && !id.contains(search)) continue;
+
+            // Date filter — uses verifiedAt (fall back to updatedAt)
+            LocalDateTime dt = b.getVerifiedAt() != null
+                    ? b.getVerifiedAt() : b.getUpdatedAt();
+            if (dt != null) {
+                LocalDate batchDate = dt.toLocalDate();
+                if (fromDate != null && batchDate.isBefore(fromDate)) continue;
+                if (toDate   != null && batchDate.isAfter(toDate))    continue;
+            }
+
+            filtered.add(b);
         }
 
+        // ── Update summary strip ──
+        rowCountLabel.setValue(String.valueOf(filtered.size()));
+        BigDecimal total = BigDecimal.ZERO;
+        for (OutwardBatch b : filtered) {
+            if (b.getActualAmount() != null) total = total.add(b.getActualAmount());
+        }
+        totalAmountLabel.setValue("₹ " + moneyFmt.format(total));
+
+        // ── Clear existing rows ──
         exportBatchRows.getChildren().clear();
 
+        // ── Handle empty result ──
         if (filtered.isEmpty()) {
-            Row emptyRow = new Row();
-            Label lbl = new Label(showingExportedTab
-                    ? "No exported batches yet."
-                    : "No batches ready for export.");
-            lbl.setStyle("color:var(--tm); font-size:13px; padding:20px;");
-            emptyRow.appendChild(lbl);
-            exportBatchRows.appendChild(emptyRow);
+            exportEmptyState.setVisible(true);
+            pageInfoLabel.setValue("Page 1 of 1 (0 batches)");
+            prevPageBtn.setDisabled(true);
+            nextPageBtn.setDisabled(true);
             return;
         }
 
-        for (OutwardBatch b : filtered) {
-            exportBatchRows.appendChild(buildBatchRow(b));
+        exportEmptyState.setVisible(false);
+
+        // ── Pagination calculation ──
+        int totalCount = filtered.size();
+        int totalPages = (int) Math.ceil((double) totalCount / PAGE_SIZE);
+
+        // Guard: keep currentPage within valid range
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1)          currentPage = 1;
+
+        int fromIndex = (currentPage - 1) * PAGE_SIZE;
+        int toIndex   = Math.min(fromIndex + PAGE_SIZE, totalCount);
+
+        // Update pagination bar
+        pageInfoLabel.setValue(
+                "Page " + currentPage + " of " + totalPages
+                + " (" + totalCount + " batches)");
+        prevPageBtn.setDisabled(currentPage <= 1);
+        nextPageBtn.setDisabled(currentPage >= totalPages);
+
+        // ── Render rows for current page ──
+        int sno = fromIndex + 1;
+        for (OutwardBatch b : filtered.subList(fromIndex, toIndex)) {
+            exportBatchRows.appendChild(buildBatchRow(b, sno++));
         }
     }
 
-    private Row buildBatchRow(final OutwardBatch batch) {
+    private Row buildBatchRow(final OutwardBatch batch, int sno) {
         Row row = new Row();
+
+        // Serial number
+        Label snoLbl = new Label(String.valueOf(sno));
+        snoLbl.setSclass("sno-cell");
+        row.appendChild(snoLbl);
 
         // Batch ID (mono, bold)
         Label batchIdLbl = new Label(safe(batch.getBatchId()));
@@ -256,9 +367,11 @@ public class DemExportComposer extends SelectorComposer<Component> {
         // Cheques count
         row.appendChild(new Label(String.valueOf(batch.getChequeCount())));
 
-        // Amount
-        row.appendChild(new Label(batch.getActualAmount() != null
-                ? "₹" + moneyFmt.format(batch.getActualAmount()) : "—"));
+        // Amount (right-aligned mono)
+        Label amtLbl = new Label(batch.getActualAmount() != null
+                ? "₹" + moneyFmt.format(batch.getActualAmount()) : "—");
+        amtLbl.setSclass("amt-cell");
+        row.appendChild(amtLbl);
 
         // Approved date (from verifiedAt; fall back to updatedAt)
         LocalDateTime approvedAt = batch.getVerifiedAt() != null
@@ -365,8 +478,8 @@ public class DemExportComposer extends SelectorComposer<Component> {
         String genTime = exp.getGeneratedAt() != null
                 ? exp.getGeneratedAt().format(dateFmt) : "—";
 
-        String statusLbl   = exp.getStatus();
-        String badgeClass  = "TRANSMITTED".equals(exp.getStatus())
+        String statusLbl  = exp.getStatus();
+        String badgeClass = "TRANSMITTED".equals(exp.getStatus())
                 ? "badge b-pass" : "badge b-info";
 
         if ("CXF".equals(type)) {
@@ -475,7 +588,6 @@ public class DemExportComposer extends SelectorComposer<Component> {
             return;
         }
         try {
-            // Send file to browser — saves as exp.getFileName()
             Filedownload.save(file, "application/xml");
         } catch (Exception e) {
             Clients.showNotification(
@@ -520,12 +632,6 @@ public class DemExportComposer extends SelectorComposer<Component> {
     // ════════════════════════════════════════════════════
     //  Helpers
     // ════════════════════════════════════════════════════
-
-    private int countTotalCheques(List<OutwardBatch> batches) {
-        int total = 0;
-        for (OutwardBatch b : batches) total += b.getChequeCount();
-        return total;
-    }
 
     private String formatStatusLabel(String status) {
         if (status == null) return "—";
