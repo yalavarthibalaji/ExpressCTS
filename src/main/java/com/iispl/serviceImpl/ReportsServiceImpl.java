@@ -18,6 +18,7 @@ import com.iispl.dto.reports.BatchReportRow;
 import com.iispl.dto.reports.CheckerBatchReportRow;
 import com.iispl.dto.reports.CheckerChequeActionReportRow;
 import com.iispl.dto.reports.ChequeReportRow;
+import com.iispl.dto.reports.RejectedChequeReportRow;
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.entity.outward.OutwardCheckerAction;
 import com.iispl.entity.outward.OutwardCheque;
@@ -438,5 +439,64 @@ public class ReportsServiceImpl implements ReportsService {
     public List<OutwardCheque> getMakerRejectedCheques(Long makerId) {
         if (makerId == null) return new java.util.ArrayList<>();
         return reportDao.getMakerRejectedCheques(makerId);
+    }
+    
+ // ════════════════════════════════════════════════════════════════
+    //  MAKER REPORTS — Rejected Cheques PDF
+    // ════════════════════════════════════════════════════════════════
+
+    @Override
+    public byte[] generateMakerRejectedReport(List<OutwardCheque> cheques,
+                                               String              makerName,
+                                               LocalDate           fromDate,
+                                               LocalDate           toDate,
+                                               String              jrxmlPath) {
+        try {
+            System.out.println("ReportsServiceImpl → generateMakerRejectedReport → "
+                    + cheques.size() + " cheques for maker=" + makerName);
+
+            List<RejectedChequeReportRow> dataList = new ArrayList<>();
+            int serialNo = 1;
+
+            for (OutwardCheque c : cheques) {
+
+                String batchId = (c.getBatch() != null
+                        && c.getBatch().getBatchId() != null)
+                        ? c.getBatch().getBatchId() : "-";
+
+                String rejectedAtStr = c.getRejectedAt() != null
+                        ? c.getRejectedAt().format(DT_FORMAT) : "-";
+
+                dataList.add(new RejectedChequeReportRow(
+                    serialNo++,
+                    batchId,
+                    nvl(c.getChequeNo(),           "-"),
+                    nvl(c.getPayeeName(),           "-"),
+                    c.getAmount() != null ? c.getAmount() : BigDecimal.ZERO,
+                    nvl(c.getRejectedReasonCode(), "-"),
+                    nvl(c.getRemarks(),            "-"),
+                    rejectedAtStr
+                ));
+            }
+
+            String fromLabel = fromDate != null
+                    ? fromDate.format(DISPLAY_FORMAT) : "All";
+            String toLabel   = toDate   != null
+                    ? toDate.format(DISPLAY_FORMAT)   : "All";
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("reportTitle",  "Rejected Cheques Report");
+            params.put("makerName",    makerName != null ? makerName : "-");
+            params.put("fromDate",     fromLabel);
+            params.put("toDate",       toLabel);
+            params.put("totalCheques", dataList.size());
+            params.put("generatedAt",  LocalDateTime.now().format(DT_FORMAT));
+
+            return renderPdf(jrxmlPath, params, dataList);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

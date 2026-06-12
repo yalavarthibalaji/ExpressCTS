@@ -165,13 +165,17 @@
                 <!-- ══════════════════════════════════════════════════
                      PANEL 2 — REJECTED CHEQUES
                 ════════════════════════════════════════════════════ -->
-                <div id="rejectedPanel" visible="false">
+                <!-- PANEL 2 — REJECTED CHEQUES -->
+<div id="rejectedPanel" visible="false">
 
-                    <div sclass="cr-panel-hdr mb12">
-                        <n:span class="cr-panel-sub">
-                            Cheques you rejected during MICR Repair or Data Entry — across all batches
-                        </n:span>
-                    </div>
+    <div sclass="cr-panel-hdr mb12">
+        <n:span class="cr-panel-sub">
+            Cheques you rejected during MICR Repair or Data Entry — across all batches
+        </n:span>
+        <button id="rjDownloadBtn" sclass="btn bp btn-lg">
+            ⬇ Download PDF
+        </button>
+    </div>
 
                     <!-- Filter bar -->
                     <div sclass="fbar mb14">
@@ -221,18 +225,18 @@
 
                     <div sclass="tbl-wrap">
                         <grid id="rjGrid" sclass="rpt-grid" width="100%">
-                            <columns sclass="rpt-col-hdr">
-                                <column label="#"          width="44px"  sclass="col-sno"/>
-                                <column label="Batch ID"   width="155px"/>
-                                <column label="Cheque No"  width="110px"/>
-                                <column label="Payee Name" width="140px"/>
-                                <column label="Amount (₹)" width="120px" align="right"/>
-                                <column label="Reason"     width="80px"  align="center"/>
-                                <column label="Remarks"/>
-                                <column label="Rejected At" width="140px"/>
-                            </columns>
-                            <rows id="rjRows"/>
-                        </grid>
+    <columns>
+        <column label="#" width="5%"/>
+        <column label="Batch ID" width="15%"/>
+        <column label="Cheque No" width="12%"/>
+        <column label="Payee Name" width="18%"/>
+        <column label="Amount (₹)" width="12%" align="right"/>
+        <column label="Reason" width="10%" align="center"/>
+        <column label="Remarks" width="18%"/>
+        <column label="Rejected At" width="10%"/>
+    </columns>
+    <rows id="rjRows"/>
+</grid>
                         <div id="rjEmptyState" sclass="rpt-empty" visible="false">
                             <n:div class="rpt-empty-icon">📋</n:div>
                             <n:div class="rpt-empty-txt">No rejected cheques found for the selected filters.</n:div>
@@ -255,6 +259,15 @@
                     </div>
 
                 </div>
+                <div sclass="note info mt12">
+                        <n:span>ℹ</n:span>
+                        <n:span>
+                            This log shows cheques <n:strong>rejected by you</n:strong>
+                            during MICR Repair or Data Entry.
+                            These cheques did not go to the Checker — their lifecycle ended at your stage.
+                            Use <n:strong>⬇ Download PDF</n:strong> to export the filtered list.
+                        </n:span>
+                    </div>
                 <!-- END rejectedPanel -->
 
             </div>

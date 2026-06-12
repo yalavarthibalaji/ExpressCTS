@@ -1,120 +1,126 @@
 /*
  * File: reports/reports.css
- * Purpose: Page-specific styles for the Reports page.
+ * Purpose: Page-specific styles for the Maker Outward Reports page.
  *          Builds on global.css + layout.css + components.css.
  */
 
-/* ── Filter bar labels ── */
-.fbar .fg-lbl {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--t2);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    display: block;
-    margin-bottom: 4px;
+/* ════════════════════════════════════════════════════════════════════
+   TABLE WRAPPER
+   overflow-x: auto  →  long tables scroll horizontally instead of
+   breaking out of the container, which was causing "table not good"
+   appearance on screens narrower than the total column width.
+   ════════════════════════════════════════════════════════════════════ */
+.tbl-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    width:      100%;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   GRID COLUMN HEADER FIX
-   ZK renders column headers inside .z-columns > .z-column.
-   The dark background + white text must be forced at every selector
-   level because ZK's default theme injects its own background and
-   text color via multiple selectors.
-   ══════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════
+   GRID COLUMN HEADERS
+   ZK renders the <columns> element as a <tr class="z-columns z-row">
+   and each <column> as a <th class="z-column z-cell">.
+   We target both the ZK class pattern AND a direct th/td fallback
+   so the dark header applies in all ZK 10 theme variants.
+   ════════════════════════════════════════════════════════════════════ */
 
-/* Primary rule — targets the <th>-equivalent cell */
-.rpt-grid .z-columns .z-column,
-.rpt-grid .z-columns .z-column-cnt {
+/* Primary rule — column header cells */
+.rpt-grid .z-column,
+.rpt-grid th.z-cell,
+.rpt-grid .z-columns .z-column {
     background-color: #2C3E50 !important;
-    background-image: none     !important;
-    border-bottom: 2px solid #1a252f !important;
-    border-right:  1px solid #3d5166 !important;
-    font-size:     11px        !important;
-    font-weight:   700         !important;
-    color:         #FFFFFF     !important;
-    text-transform: uppercase  !important;
-    letter-spacing: 0.5px      !important;
-    padding:       0 12px      !important;
-    height:        36px        !important;
-    line-height:   36px        !important;
-    white-space:   nowrap      !important;
+    background-image: none    !important;
+    color:            #FFFFFF !important;
+    font-size:        11px    !important;
+    font-weight:      700     !important;
+    text-transform:   uppercase !important;
+    letter-spacing:   0.5px  !important;
+    padding:          0 12px !important;
+    height:           36px   !important;
+    line-height:      36px   !important;
+    white-space:      nowrap !important;
+    border-right:     1px solid #3d5166 !important;
+    border-bottom:    2px solid #1a252f !important;
 }
 
-/* ZK wraps the label text inside a <div class="z-column-cnt"> and
-   further inside a <span> — force white on all of them */
-.rpt-grid .z-columns .z-column .z-column-cnt,
-.rpt-grid .z-columns .z-column .z-column-cnt > span,
-.rpt-grid .z-columns .z-column .z-label,
-.rpt-grid .z-columns .z-column span {
-    color:       #FFFFFF !important;
-    background:  transparent !important;
+/* ZK wraps header label text inside an inner span/div — keep it white */
+.rpt-grid .z-column span,
+.rpt-grid .z-column .z-column-cnt,
+.rpt-grid .z-column .z-column-cnt > span,
+.rpt-grid .z-column .z-label {
+    color:      #FFFFFF     !important;
+    background: transparent !important;
 }
 
-/* Sort icon (if any) — keep white */
-.rpt-grid .z-columns .z-column .z-sorticon {
-    color: #FFFFFF !important;
-}
-
-/* Remove ZK's default hover/focus tint on header */
-.rpt-grid .z-columns .z-column:hover {
+/* Remove ZK hover tint on header */
+.rpt-grid .z-column:hover,
+.rpt-grid th.z-cell:hover {
     background-color: #2C3E50 !important;
 }
 
-/* Ensure header text is never clipped by inner overflow:hidden */
-.rpt-grid .z-columns .z-column .z-column-cnt {
-    overflow: visible !important;
-    text-overflow: clip !important;
+/* ════════════════════════════════════════════════════════════════════
+   GRID DATA ROWS
+   ════════════════════════════════════════════════════════════════════ */
+
+.rpt-grid .z-cell,
+.rpt-grid td.z-cell {
+    border-bottom:   1px solid var(--border) !important;
+    border-right:    1px solid #EEF2F7      !important;
+    padding:         0 12px                 !important;
+    height:          38px                   !important;
+    vertical-align:  middle                 !important;
+    font-size:       13px                   !important;
+    color:           var(--t1)              !important;
 }
 
-/* Center the # column */
-.rpt-grid .z-columns .z-column.col-sno,
-.rpt-grid .z-columns .z-column.col-sno .z-column-cnt {
-    text-align: center !important;
+/* Alternate row shading */
+.rpt-grid .z-row:nth-child(even) .z-cell,
+.rpt-grid tr:nth-child(even) td.z-cell {
+    background: #F7F9FC !important;
 }
 
-/* ── Grid rows ── */
-.rpt-grid .z-cell {
-    border-bottom: 1px solid var(--border) !important;
-    padding:       0 12px !important;
-    height:        38px   !important;
-    vertical-align: middle !important;
-    font-size:     13px   !important;
-    color:         var(--t1) !important;
+/* Row hover highlight */
+.rpt-grid .z-row:hover .z-cell,
+.rpt-grid tr:hover td.z-cell {
+    background: #EEF3FA !important;
 }
-.rpt-grid .z-row:nth-child(even) .z-cell { background: #F7F9FC !important; }
-.rpt-grid .z-row:hover           .z-cell { background: #eef3fa !important; }
 
-/* ── Remove ZK grid outer chrome ── */
+/* ════════════════════════════════════════════════════════════════════
+   GRID OUTER CHROME — remove default ZK border and shadow
+   ════════════════════════════════════════════════════════════════════ */
 .rpt-grid,
-.rpt-grid .z-grid-body {
+.rpt-grid .z-grid-body,
+.rpt-grid .z-grid-inner {
     border:     none !important;
     box-shadow: none !important;
 }
 
-/* ── Per-row download button ── */
+/* ════════════════════════════════════════════════════════════════════
+   PER-ROW DOWNLOAD BUTTON (in My Batches PDF column)
+   ════════════════════════════════════════════════════════════════════ */
 .rpt-dl-btn.z-button {
-    font-size:    11px   !important;
-    height:       26px   !important;
-    padding:      0 8px  !important;
-    border-radius: var(--r4) !important;
-    border:       1px solid var(--border) !important;
-    background:   #fff   !important;
-    color:        var(--primary) !important;
-    font-weight:  600    !important;
-    cursor:       pointer !important;
-    display:      inline-flex !important;
-    align-items:  center !important;
-    gap:          3px    !important;
-    white-space:  nowrap !important;
+    font-size:     11px   !important;
+    height:        26px   !important;
+    padding:       0 8px  !important;
+    border-radius: var(--r4)            !important;
+    border:        1px solid var(--border) !important;
+    background:    #ffffff              !important;
+    color:         var(--primary)       !important;
+    font-weight:   600                  !important;
+    cursor:        pointer              !important;
+    display:       inline-flex          !important;
+    align-items:   center               !important;
+    gap:           3px                  !important;
+    white-space:   nowrap               !important;
 }
 .rpt-dl-btn.z-button:hover {
-    background:   var(--info-bg) !important;
-    border-color: var(--primary-light) !important;
-    color:        var(--primary) !important;
+    background:   var(--info-bg)        !important;
+    border-color: var(--primary-light)  !important;
 }
 
-/* ── Amount cells ── */
+/* ════════════════════════════════════════════════════════════════════
+   AMOUNT AND SERIAL NUMBER CELLS
+   ════════════════════════════════════════════════════════════════════ */
 .amt-cell {
     display:     block;
     text-align:  right;
@@ -122,16 +128,17 @@
     font-size:   12px;
 }
 
-/* ── Serial number cell ── */
 .sno-cell {
-    display:      block;
-    text-align:   right;
-    color:        var(--tm);
-    font-size:    12px;
+    display:       block;
+    text-align:    right;
+    color:         var(--tm);
+    font-size:     12px;
     padding-right: 4px;
 }
 
-/* ── Results summary strip ── */
+/* ════════════════════════════════════════════════════════════════════
+   RESULTS SUMMARY STRIP
+   ════════════════════════════════════════════════════════════════════ */
 .report-summary {
     display:     flex;
     align-items: center;
@@ -143,7 +150,9 @@
 .rs-sep    { color: var(--border-s); padding: 0 4px; }
 .rs-amount { font-weight: 700; color: var(--success); font-family: var(--mono); font-size: 13px; }
 
-/* ── Error label ── */
+/* ════════════════════════════════════════════════════════════════════
+   ERROR LABEL
+   ════════════════════════════════════════════════════════════════════ */
 .report-error {
     display:       block;
     font-size:     12px;
@@ -153,17 +162,36 @@
     margin-bottom: 8px;
 }
 
-/* ── Empty state ── */
+/* ════════════════════════════════════════════════════════════════════
+   EMPTY STATE
+   ════════════════════════════════════════════════════════════════════ */
 .rpt-empty {
     padding:    52px 20px;
     text-align: center;
     background: #fff;
-    border-top: 1px solid var(--border);
+    border:     1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--r6) var(--r6);
 }
 .rpt-empty-icon { font-size: 36px; margin-bottom: 10px; }
 .rpt-empty-txt  { font-size: 13px; color: var(--tm); }
 
-/* ── Native date input ── */
+/* ════════════════════════════════════════════════════════════════════
+   FILTER BAR LABELS
+   ════════════════════════════════════════════════════════════════════ */
+.fbar .fg-lbl {
+    font-size:      11px;
+    font-weight:    600;
+    color:          var(--t2);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display:        block;
+    margin-bottom:  4px;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   NATIVE DATE INPUT
+   ════════════════════════════════════════════════════════════════════ */
 .native-date-input {
     border:        1px solid #cccccc;
     border-radius: 4px;
@@ -185,13 +213,14 @@
     display: none !important;
 }
 
-/* date-wrap: only the native input is visible */
 .date-wrap {
     display:        flex;
     flex-direction: column;
 }
 
-/* ── Pagination bar ── */
+/* ════════════════════════════════════════════════════════════════════
+   PAGINATION BAR
+   ════════════════════════════════════════════════════════════════════ */
 .pagination-bar {
     display:         flex;
     align-items:     center;
@@ -206,14 +235,4 @@
     color:      #555555;
     min-width:  180px;
     text-align: center;
-}
-
-/* ── Datebox legacy rules (kept for safety) ── */
-.rpt-datebox .z-datebox-icon        { display: none !important; }
-.rpt-datebox input.z-datebox-input  {
-    border: none !important; padding: 0 !important;
-    height: 100% !important; width: 100% !important;
-    font-size: 13px !important; font-family: var(--mono) !important;
-    color: var(--t1) !important; background: transparent !important;
-    outline: none !important;
 }

@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+              http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="rejectedChequeReport"
+              pageWidth="842"
+              pageHeight="595"
+              orientation="Landscape"
+              columnWidth="782"
+              leftMargin="30"
+              rightMargin="30"
+              topMargin="20"
+              bottomMargin="20">
+
+    <!-- Parameters passed from ReportsServiceImpl -->
+    <parameter name="reportTitle"  class="java.lang.String"/>
+    <parameter name="makerName"    class="java.lang.String"/>
+    <parameter name="fromDate"     class="java.lang.String"/>
+    <parameter name="toDate"       class="java.lang.String"/>
+    <parameter name="totalCheques" class="java.lang.Integer"/>
+    <parameter name="generatedAt"  class="java.lang.String"/>
+
+    <!-- Fields — must match getter names in RejectedChequeReportRow.java -->
+    <field name="serialNo"   class="java.lang.Integer"/>
+    <field name="batchId"    class="java.lang.String"/>
+    <field name="chequeNo"   class="java.lang.String"/>
+    <field name="payeeName"  class="java.lang.String"/>
+    <field name="amount"     class="java.math.BigDecimal"/>
+    <field name="reasonCode" class="java.lang.String"/>
+    <field name="remarks"    class="java.lang.String"/>
+    <field name="rejectedAt" class="java.lang.String"/>
+
+    <!-- TITLE BAND — printed once at the top -->
+    <title>
+        <band height="110">
+
+            <staticText>
+                <reportElement x="0" y="0" width="782" height="28"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="15" isBold="true"/>
+                </textElement>
+                <text><![CDATA[ExpressClear CTS — Rejected Cheques Report]]></text>
+            </staticText>
+
+            <!-- Maker Name -->
+            <textField>
+                <reportElement x="0" y="32" width="400" height="18"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Maker     :  " + $P{makerName}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Date Range -->
+            <textField>
+                <reportElement x="0" y="52" width="400" height="18"/>
+                <textElement verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Date Range :  " + $P{fromDate} + "  to  " + $P{toDate}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Total Cheques (right side) -->
+            <textField>
+                <reportElement x="400" y="32" width="382" height="18"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Total Rejected : " + $P{totalCheques}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Generated At (right side) -->
+            <textField>
+                <reportElement x="400" y="52" width="382" height="18"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Generated  :  " + $P{generatedAt}]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Separator line -->
+            <line>
+                <reportElement x="0" y="100" width="782" height="1" forecolor="#2C3E50"/>
+            </line>
+
+        </band>
+    </title>
+
+    <!-- COLUMN HEADER BAND -->
+    <columnHeader>
+        <band height="28">
+
+            <!-- # -->
+            <staticText>
+                <reportElement x="0" y="0" width="36" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[#]]></text>
+            </staticText>
+
+            <!-- Batch ID -->
+            <staticText>
+                <reportElement x="36" y="0" width="120" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Batch ID]]></text>
+            </staticText>
+
+            <!-- Cheque No -->
+            <staticText>
+                <reportElement x="156" y="0" width="80" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Cheque No]]></text>
+            </staticText>
+
+            <!-- Payee Name -->
+            <staticText>
+                <reportElement x="236" y="0" width="120" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Payee Name]]></text>
+            </staticText>
+
+            <!-- Amount -->
+            <staticText>
+                <reportElement x="356" y="0" width="100" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Amount (Rs.)  ]]></text>
+            </staticText>
+
+            <!-- Reason Code -->
+            <staticText>
+                <reportElement x="456" y="0" width="70" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Reason]]></text>
+            </staticText>
+
+            <!-- Remarks -->
+            <staticText>
+                <reportElement x="526" y="0" width="146" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Remarks]]></text>
+            </staticText>
+
+            <!-- Rejected At -->
+            <staticText>
+                <reportElement x="672" y="0" width="110" height="28"
+                               backcolor="#2C3E50" forecolor="#FFFFFF" mode="Opaque"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Rejected At]]></text>
+            </staticText>
+
+        </band>
+    </columnHeader>
+
+    <!-- DETAIL BAND — one row per rejected cheque -->
+    <detail>
+        <band height="22">
+
+            <!-- # -->
+            <textField>
+                <reportElement x="0" y="0" width="36" height="22"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{serialNo}]]></textFieldExpression>
+            </textField>
+
+            <!-- Batch ID -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="36" y="0" width="120" height="22"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{batchId} != null ? $F{batchId} : "—"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Cheque No -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="156" y="0" width="80" height="22"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{chequeNo} != null ? $F{chequeNo} : "—"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Payee Name -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="236" y="0" width="120" height="22"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{payeeName} != null ? $F{payeeName} : "—"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Amount -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="356" y="0" width="100" height="22"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{amount} != null
+                        ? $F{amount}.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()
+                        : "0.00"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Reason Code -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="456" y="0" width="70" height="22"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{reasonCode} != null ? $F{reasonCode} : "—"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Remarks -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="526" y="0" width="146" height="22"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{remarks} != null ? $F{remarks} : "—"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Rejected At -->
+            <textField isBlankWhenNull="true">
+                <reportElement x="672" y="0" width="110" height="22"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$F{rejectedAt} != null ? $F{rejectedAt} : "—"]]>
+                </textFieldExpression>
+            </textField>
+
+            <!-- Row separator line -->
+            <line>
+                <reportElement x="0" y="21" width="782" height="1" forecolor="#DDDDDD"/>
+            </line>
+
+        </band>
+    </detail>
+
+    <!-- PAGE FOOTER -->
+    <pageFooter>
+        <band height="18">
+            <textField>
+                <reportElement x="0" y="0" width="782" height="18"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Page " + $V{PAGE_NUMBER}]]>
+                </textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+
+    <!-- SUMMARY BAND — printed once after the last row -->
+    <summary>
+        <band height="30">
+            <line>
+                <reportElement x="0" y="0" width="782" height="1" forecolor="#2C3E50"/>
+            </line>
+            <staticText>
+                <reportElement x="0" y="4" width="782" height="22"
+                               backcolor="#F0F4F8" mode="Opaque"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font fontName="SansSerif" size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[— End of Rejected Cheques Report —  ]]></text>
+            </staticText>
+        </band>
+    </summary>
+
+</jasperReport>

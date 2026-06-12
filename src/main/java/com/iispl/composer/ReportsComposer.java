@@ -85,8 +85,10 @@ public class ReportsComposer extends SelectorComposer<Component> {
     @Wire private Div     rjPaginationBar;
     @Wire private Button  rjPrevBtn;
     @Wire private Button  rjNextBtn;
+    @Wire private Button  rjDownloadBtn;   // ← ADD THIS LINE
     @Wire private Label   rjPageInfoLabel;
-
+    
+  
     // ── Service ───────────────────────────────────────────────────────
     private final ReportsService reportService = new ReportsServiceImpl();
 
@@ -418,6 +420,45 @@ public class ReportsComposer extends SelectorComposer<Component> {
     public void onRjPrev() {
         if (rjCurrentPage > 0) { rjCurrentPage--; renderRejectedTable(); }
     }
+    
+    
+    
+
+    // ═══════════════════════════════════════════════════════════════
+    //  REJECTED CHEQUES TAB — Download PDF
+    // ═══════════════════════════════════════════════════════════════
+
+    @Listen("onClick = #rjDownloadBtn")
+    public void onDownloadRejected() {
+        rjErrorLabel.setValue("");
+
+        if (filteredRejectedCheques == null || filteredRejectedCheques.isEmpty()) {
+            rjErrorLabel.setValue("No rejected cheques to download.");
+            return;
+        }
+
+        // Build date range label for PDF header
+        LocalDate fromDate = toLocalDate(rjFromDateInput.getValue());
+        LocalDate toDate   = toLocalDate(rjToDateInput.getValue());
+
+        // If dates not set, derive from the data itself
+        if (fromDate == null || toDate == null) {
+            fromDate = filteredRejectedCheques.stream()
+                    .filter(c -> c.getRejectedAt() != null)
+                    .map(c -> c.getRejectedAt().toLocalDate())
+                    .min(LocalDate::compareTo).orElse(LocalDate.now());
+            toDate = filteredRejectedCheques.stream()
+                    .filter(c -> c.getRejectedAt() != null)
+                    .map(c -> c.getRejectedAt().toLocalDate())
+                    .max(LocalDate::compareTo).orElse(LocalDate.now());
+        }
+
+        String fileName = "RejectedCheques_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"))
+                + ".pdf";
+
+        pushRejectedPdf(filteredRejectedCheques, fromDate, toDate, fileName);
+    }
 
     @Listen("onClick = #rjNextBtn")
     public void onRjNext() {
@@ -670,5 +711,42 @@ public class ReportsComposer extends SelectorComposer<Component> {
 
     private String nvl(String s) {
         return (s != null && !s.trim().isEmpty()) ? s.trim() : "—";
+    }
+ // ═══════════════════════════════════════════════════════════════
+    //  PDF — Rejected Cheques list
+    // ═══════════════════════════════════════════════════════════════
+
+    private void pushRejectedPdf(List<OutwardCheque> cheques,
+                                  LocalDate           fromDate,
+                                  LocalDate           toDate,
+                                  String              fileName) {
+        try {
+            String jrxmlPath = resolveJrxmlPath("/reports/rejectedChequeReport.jrxml");
+            if (jrxmlPath == null) {
+                rjErrorLabel.setValue("Report template not found.");
+                return;
+            }
+
+            byte[] pdfBytes = reportService.generateMakerRejectedReport(
+                    cheques,
+                    currentUser.getFullName(),
+                    fromDate,
+                    toDate,
+                    jrxmlPath);
+
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                rjErrorLabel.setValue("Report generation failed. Please try again.");
+                return;
+            }
+
+            Filedownload.save(new AMedia(fileName, "pdf", "application/pdf",
+                    new ByteArrayInputStream(pdfBytes)));
+
+            rjErrorLabel.setValue("");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            rjErrorLabel.setValue("Report generation failed: " + e.getMessage());
+        }
     }
 }
