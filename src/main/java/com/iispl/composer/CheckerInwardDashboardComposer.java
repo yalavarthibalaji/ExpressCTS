@@ -35,6 +35,9 @@ import java.util.List;
  *   5. Stale batch guard on View      — re-checks batch still MakerVerified before navigating
  *   6. Session attribute confirmation — warns if batch ID could not be stored
  *   7. Service error isolation        — stat card load failure does not crash the page
+ *   8. Stale batch guard on Process   — re-checks batch still MakerVerified before navigating
+ *   9. Session attribute confirmation — for Process button (key: selectedBatchId, as
+ *      expected by ProcessBatchComposer), warns if it could not be stored
  */
 public class CheckerInwardDashboardComposer extends SelectorComposer<Component> {
 
@@ -209,9 +212,56 @@ public class CheckerInwardDashboardComposer extends SelectorComposer<Component> 
                 }
             });
 
+            // Col 3b — Process button: sends the batch straight to processBatch.zul
+            Button processBatchBtn = new Button("Process");
+            processBatchBtn.setSclass("btn bp btn-sm");
+
+            processBatchBtn.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                @Override
+                public void onEvent(Event e) {
+
+                    // VALIDATION 8 — Re-check batch is still MakerVerified before navigating
+                    // (same stale-batch guard used by the View button)
+                    InwardBatch fresh = inwardCheckerService.getBatchById(batchId);
+                    if (fresh == null) {
+                        Messagebox.show(
+                            "Batch " + batchId + " no longer exists.",
+                            "Not Found", Messagebox.OK, Messagebox.EXCLAMATION
+                        );
+                        return;
+                    }
+                    if (!"MakerVerified".equals(fresh.getStatus())) {
+                        Messagebox.show(
+                            "Batch " + batchId + " has already been processed by another checker.\n"
+                            + "Current status: " + fresh.getStatus() + ".\n\n"
+                            + "The list will now refresh.",
+                            "Batch Unavailable", Messagebox.OK, Messagebox.EXCLAMATION,
+                            ev -> populateStatCards()   // auto-refresh on dismiss
+                        );
+                        return;
+                    }
+
+                    // VALIDATION 9 — Confirm session attribute was stored before redirecting.
+                    // NOTE: ProcessBatchComposer reads "selectedBatchId" (not "selectedInwardBatchId"),
+                    // so that is the key used here.
+                    Sessions.getCurrent().setAttribute("selectedBatchId", batchId);
+                    Object stored = Sessions.getCurrent().getAttribute("selectedBatchId");
+                    if (stored == null) {
+                        Clients.showNotification(
+                            "Session error. Please try again.",
+                            "error", null, "top_center", 3000
+                        );
+                        return;
+                    }
+
+                    Executions.sendRedirect("/inward/inwardChecker/processBatch.zul");
+                }
+            });
+
             Div ac = new Div();
             ac.setSclass("ac");
             ac.appendChild(processBtn);
+            ac.appendChild(processBatchBtn);
             row.appendChild(ac);
 
             pendingBatchRows.appendChild(row);

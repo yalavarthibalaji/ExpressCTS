@@ -164,13 +164,13 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 
 	@Override
 	public void doAfterCompose(Component comp) throws Exception {
-		super.doAfterCompose(comp);
-		resolveBatchId();
-		loadCheques();
-		wireEvents();
-		showListPanel();
-	}
+	    super.doAfterCompose(comp);
 
+	    resolveBatchId();
+	    loadCheques();
+	    wireEvents();
+	    showListPanel();
+	}
 	// ──────────────────────────────────────────────────────────────────────
 
 	private void resolveBatchId() {
@@ -304,6 +304,19 @@ public class PayeeAccountComposer extends SelectorComposer<Component> {
 			return;
 
 		List<InwardCheque> filtered = getFilteredList();
+		if (filtered.isEmpty()) {
+			Listitem item = new Listitem();
+
+			Listcell cell = new Listcell(
+			    "No cheques available for Payee & Account entry"
+			);
+
+			cell.setSpan(8); // total number of columns
+			item.appendChild(cell);
+
+			chequeListbox.appendChild(item);
+			return;
+		}
 		int total = filtered.size();
 		currentPage = Math.min(currentPage, Math.max(1, totalPages(filtered)));
 

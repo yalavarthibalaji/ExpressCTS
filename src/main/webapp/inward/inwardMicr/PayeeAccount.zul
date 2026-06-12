@@ -111,7 +111,7 @@
                             <listheader label="PAYEE NAME"   width="190px" sclass="pa-lh cheque-table-header"/>
                             <listheader label="ACCOUNT NO."  width="165px" sclass="pa-lh cheque-table-header"/>
                             <listheader label="STATUS"       width="130px" sclass="pa-lh pa-lh-center cheque-table-header"/>
-                            <listheader label="ACTION"       width="135px" sclass="pa-lh pa-lh-center cheque-table-header"/>
+                            <listheader label="ACTION"       hflex="1" sclass="pa-lh pa-lh-center cheque-table-header"/>
                         </listhead>
                     </listbox>
                 </div>

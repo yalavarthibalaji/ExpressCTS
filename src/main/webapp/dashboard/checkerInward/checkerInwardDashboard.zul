@@ -92,7 +92,7 @@
 					    <columns>
 					        <column label="Batch ID" />
 					        <column label="Cheques"  width="160px" align="center" />
-					        <column label="Action"   width="140px" align="center" />
+					        <column label="Action"   width="190px" align="center" />
 					    </columns>
    					 <rows id="pendingBatchRows" />
 				</grid>
