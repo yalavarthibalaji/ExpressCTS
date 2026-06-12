@@ -6,3 +6,4 @@ src/main/resources/firebase-service-account.json
 
 # All JSON files in resources (broader safety net)
 src/main/resources/*.json
+src/resources/firebase-service-account.json

@@ -29,52 +29,67 @@
 
             <!-- BREADCRUMB -->
             <div sclass="pa-breadcrumb">
-                <span sclass="pa-bc-link">Inward</span>
-                <span sclass="pa-bc-sep">›</span>
-                <span sclass="pa-bc-current">Reject &amp; Repair</span>
+                <span sclass="breadcrumb-parent">Inward</span>
+                <span sclass="breadcrumb-sep">›</span>
+                <span sclass="breadcrumb-current">Reject &amp; Repair</span>
             </div>
 
-            <!-- PAGE TITLE -->
-            <div sclass="pa-page-header">
-                <div sclass="pa-page-title">Inward Correction — Maker</div>
-                <div sclass="pa-page-subtitle">
-                    OCR Reject &amp; Repair: Step 1 Reject &amp; Repair · Step 2 Date &amp; Amount · Step 3 Payee Name &amp; Account
+	        <!-- Detail panel breadcrumb (shown when review opens) -->
+                <div sclass="breadcrumb" id="bcDetail" visible="false">
+                    <label sclass="breadcrumb-parent" value="Inward" />
+                    <label sclass="breadcrumb-sep"    value=" › " />
+                    <label sclass="breadcrumb-parent" value="Date And Amount"
+                           style="cursor:pointer"
+                           onClick="composer.onBreadcrumbBack()" />
+                    <label sclass="breadcrumb-sep"    value=" › " />
+                    <label sclass="breadcrumb-current" value="Cheque Detail" />
                 </div>
-            </div>
+           
 
             <!-- ═══════════════════════════════════════════════════
                  WIZARD BAR
                  ═══════════════════════════════════════════════════ -->
-            <div sclass="pa-wizard-bar">
-                <!-- Step 1 -->
-                <div sclass="pa-wizard-step">
-                    <button id="btnStep1" sclass="step-circle-btn completed">1</button>
-                    <div sclass="pa-step-label-wrap">
-                        <span sclass="step-num completed">Step </span>
-                        <span sclass="step-desc completed">Reject &amp; Repair</span>
+            <div sclass="wizard-bar">
+                <!-- Step 1 — Completed -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep1" label="✓"
+                                sclass="step-circle-btn completed"
+                                tooltiptext="Step 1 — Reject &amp; Repair (completed)" />
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num  completed" value="Step 1" />
+                            <label sclass="step-desc completed" value="Reject &amp; Repair" />
+                        </div>
                     </div>
-                </div>
                 <div sclass="step-connector filled"/>
 
-                <!-- Step 2 -->
-                <div sclass="pa-wizard-step">
-                    <button id="btnStep2" sclass="step-circle-btn completed">2</button>
-                    <div sclass="pa-step-label-wrap">
-                        <span sclass="step-num completed">Step </span>
-                        <span sclass="step-desc completed">Date &amp; Amount</span>
+                <!-- Step 2 — Active -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep2" label="✓"
+                                sclass="step-circle-btn completed"
+                                tooltiptext="Step 2 — Date &amp; Amount (completed)" />
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num  completed" value="Step 2" />
+                            <label sclass="step-desc completed" value="Date &amp; Amount" />
+                        </div>
                     </div>
-                </div>
-                <div sclass="step-connector filled"/>
 
-                <!-- Step 3 — ACTIVE -->
-                <div sclass="pa-wizard-step">
-                    <button id="btnStep3" sclass="step-circle-btn active">3</button>
-                    <div sclass="pa-step-label-wrap">
-                        <span sclass="step-num active">Step </span>
-                        <span sclass="step-desc active">Payee &amp; Account</span>
+                    <div sclass="step-connector filled"/>
+
+                    <!-- Step 3 — Pending -->
+                    <div sclass="wizard-step">
+                        <button id="btnStep3" label="3"
+                                sclass="step-circle-btn active"
+                                tooltiptext="Step 3 — Payee &amp; Account (current)" />
+                        <div sclass="step-label-wrap">
+                            <label sclass="step-num  active"   value="Step 3" />
+                            <label sclass="step-desc active"  value="Payee &amp; Account" />
+                        </div>
                     </div>
-                </div>
-            </div>
+                    
+                    
+
+                </div><!-- /wizard-bar -->
+            
 
             <!-- ═══════════════════════════════════════════════════
                  LIST PANEL
@@ -232,9 +247,7 @@
 
                                 </div>
 
-                                <div sclass="ocr-warning-bar" id="ocrWarningBar">
-                                    <label value="⚠ OCR could not read MICR fields — enter correct values from physical cheque" />
-                                </div>
+                                
 
                             </div>
 

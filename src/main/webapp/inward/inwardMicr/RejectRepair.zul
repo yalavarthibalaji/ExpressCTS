@@ -40,7 +40,7 @@
                         </div>
                     </div>
 
-                    <div sclass="step-connector" id="conn1" />
+                    <div sclass="step-circle-btn.disabled-step" id="conn1" />
 
                     <div sclass="wizard-step">
                         <button id="btnStep2" label="2"
@@ -52,7 +52,7 @@
                         </div>
                     </div>
 
-                    <div sclass="step-connector" id="conn2" />
+                    <div sclass="step-circle-btn.disabled-step" id="conn2" />
 
                     <div sclass="wizard-step">
                         <button id="btnStep3" label="3"
@@ -113,7 +113,7 @@
                         <listbox id="chequeListbox"
                                  sclass="rr-listbox"
                                  emptyMessage="No MICR error cheques found."
-                                 height="380px">
+                                 height= "auto">
                             <listhead>
                                 <listheader label="Sno"
                                             width="70px"
@@ -259,9 +259,7 @@
 
                                 </div>
 
-                                <div sclass="ocr-warning-bar" id="ocrWarningBar">
-                                    <label value="⚠ OCR could not read MICR fields — enter correct values from physical cheque" />
-                                </div>
+                                
 
                             </div>
 
@@ -398,9 +396,11 @@
         </div>
     </div>
 
-    <div sclass="dash-footer">
+   <!--  <div sclass="dash-footer">
         <label value="ExpressClear CTS - IISPL" />
-    </div>
+    </div> 
+    -->
+   
 
 </div>
 </zk>

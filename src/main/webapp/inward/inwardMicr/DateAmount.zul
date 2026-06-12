@@ -20,29 +20,37 @@
         <div sclass="main">
             <div sclass="rr-main">
 
-                <!-- ══ Breadcrumb ══════════════════════════════════════ -->
-                <div sclass="breadcrumb">
+                <!-- ══ Breadcrumb — changes per panel ══════════════ -->
+                <!-- List panel breadcrumb (default) -->
+                <div sclass="breadcrumb" id="bcList">
                     <label sclass="breadcrumb-parent" value="Inward" />
-                    <label sclass="breadcrumb-sep" value=" › " />
+                    <label sclass="breadcrumb-sep"    value=" › " />
                     <label sclass="breadcrumb-current" value="Date And Amount" />
                 </div>
 
-                <!-- ══ Page Title ══════════════════════════════════════ -->
-                <div sclass="page-title-block">
-                    <label sclass="page-title"  value="Inward Correction — Maker" />
-                    <label sclass="page-subtitle" value="OCR Reject &amp; Repair" />
+                <!-- Detail panel breadcrumb (shown when review opens) -->
+                <div sclass="breadcrumb" id="bcDetail" visible="false">
+                    <label sclass="breadcrumb-parent" value="Inward" />
+                    <label sclass="breadcrumb-sep"    value=" › " />
+                    <label sclass="breadcrumb-parent" value="Date And Amount"
+                           style="cursor:pointer"
+                           onClick="composer.onBreadcrumbBack()" />
+                    <label sclass="breadcrumb-sep"    value=" › " />
+                    <label sclass="breadcrumb-current" value="Cheque Detail" />
                 </div>
 
-                <!-- ══ Wizard Bar ══════════════════════════════════════ -->
+               
+
+                <!-- ══ Wizard Bar ══════════════════════════════════ -->
                 <div sclass="wizard-bar">
 
                     <!-- Step 1 — Completed -->
                     <div sclass="wizard-step">
-                        <button id="btnStep1" label="1"
+                        <button id="btnStep1" label="✓"
                                 sclass="step-circle-btn completed"
                                 tooltiptext="Step 1 — Reject &amp; Repair (completed)" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num completed"  value="Step" />
+                            <label sclass="step-num  completed" value="Step 1" />
                             <label sclass="step-desc completed" value="Reject &amp; Repair" />
                         </div>
                     </div>
@@ -55,7 +63,7 @@
                                 sclass="step-circle-btn active"
                                 tooltiptext="Step 2 — Date &amp; Amount (current)" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num active"  value="Step" />
+                            <label sclass="step-num  active" value="Step 2" />
                             <label sclass="step-desc active" value="Date &amp; Amount" />
                         </div>
                     </div>
@@ -68,46 +76,36 @@
                                 sclass="step-circle-btn disabled-step"
                                 tooltiptext="Step 3 — Payee &amp; Account (not yet available)" />
                         <div sclass="step-label-wrap">
-                            <label sclass="step-num"  id="lblStep3Num"  value="Step" />
+                            <label sclass="step-num"  id="lblStep3Num"  value="Step 3" />
                             <label sclass="step-desc" id="lblStep3Desc" value="Payee &amp; Account" />
                         </div>
                     </div>
 
                 </div><!-- /wizard-bar -->
 
-                <!-- ══ Sub-toolbar ════════════════════════════════════ -->
-                <div sclass="da-subtoolbar">
-                    <button sclass="btn-back"
-                            id="btnBackToStep1"
-                            label="← Back to List" />
-                    <label sclass="badge-batch"
-                           id="lblBatchBadge"
-                           value="BATCH: —" />
-                    <label sclass="badge-pending"
-                           id="lblPendingBadge"
-                           value="0 PENDING" />
-                    <div sclass="da-toolbar-right">
-                        <combobox id="cmbFilter"
-                                  sclass="filter-select"
-                                  readonly="true"
-                                  width="170px"
-                                  placeholder="Filter by status">
-                            <comboitem label="All"           value=""              />
-                            <comboitem label="Needs Repair"  value="NEEDS_REPAIR"  />
-                            <comboitem label="Referred Back" value="REFERRED_DATEAMOUNT" />
-                            <comboitem label="Repaired"      value="REPAIRED"      />
-                            <comboitem label="Rejected"      value="REJECTED"      />
-                        </combobox>
-                    </div>
-                </div>
+                <!-- ══════════════════════════════════════════════════
+                     PANEL A — Cheque List (default visible)
+                ══════════════════════════════════════════════════════ -->
+                
 
-                <!-- ══ PANEL A: Cheque List (default) ════════════════ -->
-                <div id="listPanel" visible="true">
+                    <!-- Sub-toolbar: batch badge + pending badge + filter 
+                    <div sclass="da-subtoolbar">
+                        <button sclass="btn-back"
+                                id="btnBackToStep1"
+                                label="← Back to Step 1" />
+                        <label sclass="badge-batch"   id="lblBatchBadge"   value="BATCH: —" />
+                        <label sclass="badge-pending" id="lblPendingBadge" value="0 PENDING" />
+  
+                    </div>
+                    
+                    -->
+
+                    <div id="listPanel" visible="true">
                     <div sclass="content-panel">
                         <listbox id="chequeListbox"
                                  sclass="rr-listbox"
                                  emptyMessage="No cheques found."
-                                 height="380px">
+                                 height="auto">
                             <listhead>
                                 <listheader label="SNO"              width="70px"  align="center" sclass="cheque-table-header"/>
                                 <listheader label="CHEQUE NO."       width="150px"     sclass="cheque-table-header"/>
@@ -137,12 +135,24 @@
                     </div>
                 </div><!-- /listPanel -->
 
-                <!-- ══ PANEL B: Split-Screen Review (shown when Review clicked) -->
+                <!-- ══════════════════════════════════════════════════
+                     PANEL B — Split-Screen Review
+                     Visible when user clicks a row or Review button
+                ══════════════════════════════════════════════════════ -->
                 <div id="reviewSplitPanel" visible="false">
+
+                    <!-- Sub-toolbar: back + badges only (NO filter dropdown here) -->
+                    <div sclass="da-subtoolbar">
+                        <button sclass="btn-back"
+                                id="btnBackToList2"
+                                label="← Back to List" />
+                        <label sclass="badge-batch"   id="lblBatchBadge2"   value="BATCH: —" />
+                        <label sclass="badge-pending" id="lblPendingBadge2" value="0 PENDING" />
+                    </div>
 
                     <div sclass="split-container">
 
-                        <!-- ── LEFT: Cheque Image Card ────────────────── -->
+                        <!-- ── LEFT: Cheque Image ──────────────────── -->
                         <div sclass="split-left">
 
                             <div sclass="split-panel-header">
@@ -156,73 +166,38 @@
 
                             <div sclass="da-image-body">
 
-                        <!-- LEFT: Image Viewer -->
-                       
-
-                            <div sclass="image-viewer-body">
-
+                                <!-- Image viewer toolbar -->
                                 <div sclass="image-controls-bar">
                                     <div sclass="view-toggle-group">
-                                        <button id="btnViewFront"
-                                                sclass="view-toggle-btn active"
-                                                label="Front" />
-                                      
+                                        <button id="btnViewFront" sclass="view-toggle-btn active" label="Front" />
                                     </div>
-
                                     <div sclass="controls-divider" />
-
                                     <div sclass="zoom-controls">
-                                        <button sclass="btn-zoom"
-                                                id="btnZoomIn"
-                                                label="🔍 +" />
-                                        <button sclass="btn-zoom"
-                                                id="btnZoomOut"
-                                                label="🔍 −" />
-                                        <button sclass="btn-zoom"
-                                                id="btnZoomFit"
-                                                label="↔ Fit" />
-                                        <label sclass="zoom-level-lbl"
-                                               id="lblZoomLevel"
-                                               value="100%" />
+                                        <button sclass="btn-zoom" id="btnZoomIn"  label="🔍 +" />
+                                        <button sclass="btn-zoom" id="btnZoomOut" label="🔍 −" />
+                                        <button sclass="btn-zoom" id="btnZoomFit" label="↔ Fit" />
+                                        <label  sclass="zoom-level-lbl" id="lblZoomLevel" value="100%" />
                                     </div>
                                 </div>
 
-                                <!--
-                                  cheque-image-container has overflow:hidden + fixed height.
-                                  The three panel divs are siblings; only one is visible
-                                  at a time. Zoom applies only to the visible div wrapper,
-                                  preventing the three-image ghost glitch.
-                                -->
+                                <!-- Image panels -->
                                 <div sclass="cheque-image-container">
-
                                     <div id="divFrontImage" sclass="cheque-image-panel">
-                                        <image id="imgFront"
-                                               sclass="cheque-img"
-                                               src="" />
+                                        <image id="imgFront" sclass="cheque-img" src="" />
                                     </div>
-
-                                    <div id="divBackImage"
-                                         sclass="cheque-image-panel"
-                                         visible="false">
-                                        <image id="imgBack"
-                                               sclass="cheque-img"
-                                               src="" />
+                                    <div id="divBackImage" sclass="cheque-image-panel" visible="false">
+                                        <image id="imgBack" sclass="cheque-img" src="" />
                                     </div>
-
-                                    <div id="divGrayImage"
-                                         sclass="cheque-image-panel"
-                                         visible="false">
-                                        <image id="imgGray"
-                                               sclass="cheque-img"
-                                               src="" />
+                                    <div id="divGrayImage" sclass="cheque-image-panel" visible="false">
+                                        <image id="imgGray" sclass="cheque-img" src="" />
                                     </div>
-
                                 </div>
 
-                            </div>
+                                
 
-                         
-                              <div sclass="split-left-footer">
+                            </div><!-- /da-image-body -->
+
+                            <div sclass="split-left-footer">
                                 <span sclass="legend-dot green-dot" />
                                 <label value="Green = values match" />
                                 <label sclass="legend-sep" value="·" />
@@ -230,20 +205,9 @@
                                 <label value="Red = mismatch" />
                             </div>
 
-                        </div>
+                        </div><!-- /split-left -->
 
-                                <!-- OCR mismatch warning bar -->
-                                <div sclass="da-warning-bar" id="daWarningBar" visible="false">
-                                    <label value="⚠ Red-bordered fields have mismatches — review carefully" />
-                                </div>
-
-                            </div>
-
-                          
-
-                        <!-- /split-left -->
-
-                        <!-- ── RIGHT: Date &amp; Amount Repair Form ────── -->
+                        <!-- ── RIGHT: Repair Form ──────────────────── -->
                         <div sclass="split-right">
 
                             <div sclass="split-panel-header">
@@ -255,6 +219,18 @@
                             </div>
 
                             <div sclass="da-repair-body">
+
+                                <!-- Cheque identity row -->
+                                <div sclass="da-identity-row">
+                                    <div sclass="da-identity-item">
+                                        <label sclass="da-identity-label" value="CHEQUE NO." />
+                                        <label sclass="da-identity-value mono" id="lblDetailChequeNo" value="—" />
+                                    </div>
+                                    <div sclass="da-identity-item">
+                                        <label sclass="da-identity-label" value="BANK" />
+                                        <label sclass="da-identity-value" id="lblDetailBank" value="—" />
+                                    </div>
+                                </div>
 
                                 <!-- Comparison section -->
                                 <label sclass="da-section-label" value="COMPARISON" />
@@ -276,7 +252,9 @@
                                     </div>
                                 </div>
 
-                                <!-- Corrected Date & Amount (2-col grid) -->
+                                <!-- Correction inputs -->
+                                <label sclass="da-section-label" value="CORRECTION" />
+
                                 <div sclass="da-fields-row">
                                     <div sclass="da-field-group">
                                         <label sclass="da-field-label req-star" value="CORRECTED DATE" />
@@ -287,7 +265,7 @@
                                                  placeholder="DD/MM/YYYY" />
                                     </div>
                                     <div sclass="da-field-group">
-                                        <label sclass="da-field-label req-star" value="CORRECTED AMOUNT" />
+                                        <label sclass="da-field-label req-star" value="CORRECTED AMOUNT (₹)" />
                                         <doublebox id="numCorrectedAmt"
                                                    sclass="da-input"
                                                    width="100%"
@@ -302,18 +280,16 @@
                                              sclass="da-input"
                                              rows="3"
                                              width="100%"
-                                             placeholder="Note reason..." />
+                                             placeholder="Note reason for correction..." />
                                 </div>
 
-                                <!-- Action buttons -->
+                                <!-- Actions -->
                                 <div sclass="da-action-row">
-                                    <button id="btnAccept"      sclass="btn-da-accept"  label="✓ Accept" />
-                                    <button id="btnReject"      sclass="btn-da-reject"  label="✗ Reject" />
-                                   
-                                    <button id="btnBackToList2" sclass="btn-back"       label="← Back" />
+                                    <button id="btnAccept" sclass="btn-da-accept" label="✓ Accept" />
+                                    <button id="btnReject" sclass="btn-da-reject" label="✗ Reject" />
                                 </div>
 
-                            </div>
+                            </div><!-- /da-repair-body -->
                         </div><!-- /split-right -->
 
                     </div><!-- /split-container -->
@@ -324,13 +300,13 @@
         </div><!-- /main -->
     </div><!-- /body-row -->
 
-    <!-- ══ Reject Reason Popup ══════════════════════════════════════ -->
+    <!-- ══ Reject Reason Popup ══════════════════════════════════ -->
     <window id="rejectReasonPopup"
-            title="Reject Cheque — Confirm Reason"
+            title="  Reject Cheque — Confirm Reason"
             border="normal"
             mode="modal"
             visible="false"
-            width="440px"
+            width="460px"
             sclass="rr-popup">
         <div sclass="popup-body">
 
@@ -342,7 +318,7 @@
             </div>
 
             <div sclass="fg">
-                <label value="Reject Reason *" sclass="field-label" />
+                <label sclass="field-label" value="Reject Reason *" />
                 <combobox id="cmbRejectReason"
                           sclass=""
                           readonly="true"
@@ -356,24 +332,26 @@
                     <comboitem label="Other"             value="OTHER"            />
                 </combobox>
             </div>
+
             <div sclass="fg">
-                <label value="Remarks" sclass="field-label" />
+                <label sclass="field-label" value="Remarks" />
                 <textbox id="txtRejectRemarks"
                          sclass="fi"
                          rows="2"
                          width="100%"
                          placeholder="Additional remarks..." />
             </div>
+
         </div>
         <div sclass="popup-footer">
-            <button id="btnConfirmReject" sclass="btn-reject-popup" label="Confirm Reject" />
             <button id="btnCancelReject"  sclass="btn-cancel"       label="Cancel" />
+            <button id="btnConfirmReject" sclass="btn-reject-popup" label="Confirm Reject" />
         </div>
     </window>
 
-    <div sclass="dash-footer">
-        <label value="ExpressClear CTS - IISPL" />
-    </div>
+   <!-- <div sclass="dash-footer">
+        <label value="ExpressClear CTS · IISPL" />
+    </div> --> 
 
 </div>
 </zk>
