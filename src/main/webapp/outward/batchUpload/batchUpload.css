@@ -1,94 +1,245 @@
 /* ════════════════════════════════════════════════════
-   batchUpload.css
-   Page-specific styles ONLY.
-   Shared styles come from: global.css → components.css → layout.css
-   ════════════════════════════════════════════════════ */
+   batchUpload.css — Batch Upload screen
+   Page-specific styles only. Shared: global → components → layout
+════════════════════════════════════════════════════ */
 
-/* ── Error note (form upload errors) ────────────────── */
+/* ── Error note ─────────────────────────────────── */
 .err-note {
-  display: block;
-  background: var(--danger-bg);
-  border: 1px solid var(--danger-b);
-  border-radius: var(--r4);
-  padding: 7px 10px;
-  font-size: 12px;
-  color: var(--danger);
-  font-weight: 500;
-  margin-top: 8px;
+    display: block;
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-b);
+    border-radius: var(--r4);
+    padding: 7px 10px;
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 8px;
 }
 
-
-
-
-
-/* ── Read-only file name input (looks like an input field) ── */
+/* ── Read-only filename field ────────────────────── */
 .fi-ro {
-  background: var(--alt);
-  color: var(--tm);
-  display: flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--r4);
-  font-size: 13px;
-  width: 100%;
+    background: var(--alt);
+    color: var(--tm);
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r4);
+    font-size: 13px;
+    width: 100%;
 }
 
-/* ── Column filter input (inside grid header) ───────── */
-.col-fi {
-  display: block;
-  width: 100%;
-  height: 24px;
-  margin-top: 3px;
-  padding: 0 6px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  font-size: 11px;
-  background: #fff;
+/* ── Card Header — Title + View All ─────────────── */
+.bu-view-all-btn {
+    background: none;
+    border: 1px solid var(--border-s);
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    transition: background 0.12s;
+    white-space: nowrap;
 }
-.col-fi:focus {
-  outline: none;
-  border-color: var(--primary-light);
-}
-
-/* ── Pager info text (right of table) ───────────────── */
-.pager-info {
-  font-size: 12px;
-  color: var(--tm);
-  padding: 10px 14px;
+.bu-view-all-btn:hover { background: #f0f4ff; }
+.bu-view-all-btn.z-button {
+    border: 1px solid var(--border-s) !important;
+    background-image: none !important;
+    box-shadow: none !important;
 }
 
-/* ════════════════════════════════════════════════════
-   MISMATCH MODAL TABLE
-   Shown when uploaded XML totals differ from expected.
-   ════════════════════════════════════════════════════ */
+/* ── Filter Bar ─────────────────────────────────── */
+.bu-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+}
+
+/* Left: STATUS label + dropdown + Apply */
+.bu-filter-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Right: Search + Clear */
+.bu-filter-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* STATUS label */
+.bu-filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--t2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* Status dropdown */
+.bu-filter-select.z-listbox,
+.z-listbox.bu-filter-select {
+    height: 32px !important;
+    min-width: 155px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-family: var(--font) !important;
+    background: #fff !important;
+    padding: 0 8px !important;
+    cursor: pointer !important;
+}
+
+/* Apply button — solid navy */
+.bu-apply-btn {
+    height: 32px;
+    padding: 0 18px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.bu-apply-btn:hover { background: var(--primary-light); }
+.bu-apply-btn.z-button {
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+/* Search wrap — icon + input inside a single border */
+.bu-search-wrap {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    height: 32px;
+}
+.bu-search-wrap:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59,130,246,.10);
+}
+
+.bu-search-icon {
+    padding: 0 6px 0 10px;
+    font-size: 11px;
+    color: var(--tm);
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.bu-search-input .z-textbox,
+.bu-search-input input {
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 10px 0 0 !important;
+    font-size: 12px !important;
+    color: var(--t1) !important;
+    background: transparent !important;
+    outline: none !important;
+    height: 30px !important;
+    box-shadow: none !important;
+}
+
+/* Clear button — outlined */
+.bu-clear-btn {
+    height: 32px;
+    padding: 0 14px;
+    background: #fff;
+    color: var(--t2);
+    border: 1px solid var(--border) !important;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+}
+.bu-clear-btn:hover { background: var(--alt); }
+.bu-clear-btn.z-button {
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+/* ── Action Buttons Cell ─────────────────────────── */
+.bu-action-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* Uniform button sizing in action cell */
+.bu-action-btns .z-button {
+    height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    border-radius: var(--r4) !important;
+    white-space: nowrap !important;
+}
+
+/* ── Table enhancements ──────────────────────────── */
+/* dt-grid header handled globally by components.css  */
+
+
+/* Sticky header while scrolling */
+.tbl-wrap {
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.dt-grid .z-columns,
+.dt-grid .z-grid-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* ── Mismatch Modal Table ────────────────────────── */
 .mm-table {
-  border-collapse: collapse;
-  border: 1px solid var(--border);
-  border-radius: var(--r4);
-  overflow: hidden;
-  font-size: 13px;
-  width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: var(--r4);
+    overflow: hidden;
+    font-size: 13px;
+    width: 100%;
 }
 .mm-table th {
-  background: var(--alt);
-  padding: 7px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--tm);
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  text-align: center;
+    background: var(--alt);
+    padding: 7px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--tm);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    text-align: center;
 }
 .mm-table th:first-child { text-align: left; }
 .mm-table th:last-child  { border-right: none; }
 .mm-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
 }
 .mm-table tr:last-child td { border-bottom: none; }
 .mm-table td:last-child    { border-right: none; }
@@ -96,4 +247,4 @@
 .mm-lbl { font-weight: 500; color: var(--t1); }
 .mm-exp { text-align: center; color: var(--tm);     font-family: var(--mono); font-weight: 600; }
 .mm-got { text-align: center; color: var(--danger); font-family: var(--mono); font-weight: 600; }
-.mm-got { text-align: center; color: var(--danger); font-family: var(--mono); font-weight: 600; }
+

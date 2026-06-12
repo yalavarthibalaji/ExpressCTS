@@ -27,53 +27,58 @@
                     <n:div class="od-header-left">
                         <n:div class="od-page-eyebrow">OUTWARD CLEARING</n:div>
                         <label sclass="od-page-title" value="Maker Dashboard"/>
-                        <label sclass="od-page-sub"   value="Upload, repair and submit outward cheque batches"/>
+                        <label sclass="od-page-sub"
+                               value="Upload, repair and submit outward cheque batches"/>
                     </n:div>
                     <n:div class="od-header-right">
                         <n:div class="od-date-pill">
                             <n:i class="fa-regular fa-calendar"/>
                             <label id="lblTodayDate" sclass="od-date-text" value=""/>
                         </n:div>
-                       
                     </n:div>
                 </n:div>
 
                 <!-- ── KPI STRIP ── -->
                 <n:div class="od-kpi-strip">
 
-                    <n:div class="od-kpi-card od-kpi-total">
-                        <n:div class="od-kpi-icon-wrap od-kpi-icon-blue">
-                            <n:i class="fa-solid fa-layer-group"/>
+                 
+
+                    <!-- Pending Batches — Orange -->
+                    <n:div class="od-kpi-card od-kpi-pending">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-orange">
+                            <n:i class="fa-solid fa-hourglass-half"/>
                         </n:div>
                         <n:div class="od-kpi-body">
-                            <label id="kpiTotalBatches" sclass="od-kpi-value" value="0"/>
-                            <n:span class="od-kpi-label">Total Batches</n:span>
+                            <label id="kpiPendingBatches" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Pending Batches</n:span>
                         </n:div>
                     </n:div>
 
-                    <n:div class="od-kpi-card od-kpi-submitted">
+                    <!-- Cleared Batches — Green -->
+                    <n:div class="od-kpi-card od-kpi-cleared">
                         <n:div class="od-kpi-icon-wrap od-kpi-icon-green">
                             <n:i class="fa-solid fa-circle-check"/>
                         </n:div>
                         <n:div class="od-kpi-body">
-                            <label id="kpiSubmitted" sclass="od-kpi-value" value="0"/>
-                            <n:span class="od-kpi-label">Submitted Today</n:span>
+                            <label id="kpiClearedBatches" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Approved Batches</n:span>
                         </n:div>
                     </n:div>
-
-                    <n:div class="od-kpi-card od-kpi-cheques">
-                        <n:div class="od-kpi-icon-wrap od-kpi-icon-purple">
-                            <n:i class="fa-solid fa-money-check"/>
-                        </n:div>
-                        <n:div class="od-kpi-body">
-                            <label id="kpiTotalCheques" sclass="od-kpi-value" value="0"/>
-                            <n:span class="od-kpi-label">Total Cheques</n:span>
-                        </n:div>
-                    </n:div>
+                    
+                     <!-- Referred Batches — Red -->
+<n:div class="od-kpi-card od-kpi-referred">
+    <n:div class="od-kpi-icon-wrap od-kpi-icon-red">
+        <n:i class="fa-solid fa-rotate-left"/>
+    </n:div>
+    <n:div class="od-kpi-body">
+        <label id="kpiReferredBatches" sclass="od-kpi-value" value="0"/>
+        <n:span class="od-kpi-label">Referred Batches</n:span>
+    </n:div>
+</n:div>
 
                 </n:div>
 
-                <!-- ── QUICK ACTION CARDS ── -->
+                <!-- ── QUICK ACTIONS ── -->
                 <n:div class="od-section-label">QUICK ACTIONS</n:div>
                 <n:div class="od-action-row">
 
@@ -99,7 +104,7 @@
                             <n:div class="od-action-badge od-badge-amber">Repair</n:div>
                         </n:div>
                         <n:div class="od-action-title">MICR Repair</n:div>
-                      <n:div class="od-action-desc">Fix MICR errors in uploaded batches</n:div>
+                        <n:div class="od-action-desc">Fix MICR errors in uploaded batches</n:div>
                         <button sclass="od-action-btn od-btn-amber"
                                 label="Go to MICR Repair"
                                 id="gotoMicrRepair"/>
@@ -133,6 +138,20 @@
                                 id="gotoViewBatches"/>
                     </n:div>
 
+                    <n:div class="od-action-card od-action-reports">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-chart-bar"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-purple">Reports</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">Reports</n:div>
+                        <n:div class="od-action-desc">View batch processing reports and analytics</n:div>
+                        <button sclass="od-action-btn od-btn-purple"
+                                label="Go to Reports"
+                                id="gotoReports"/>
+                    </n:div>
+
                 </n:div>
 
                 <!-- ── RECENT BATCHES PANEL ── -->
@@ -149,23 +168,25 @@
                                 id="gotoViewBatchesSmall"/>
                     </n:div>
 
-                    <!-- ── FILTER BAR ── -->
+                    <!-- ── FILTER BAR (single line) ── -->
                     <n:div class="od-filter-bar">
 
-                        <n:div class="od-filter-left">
+                        <!-- Left: Date + Status + Apply -->
+                        <n:div class="od-filter-controls">
+
                             <n:div class="od-filter-group">
                                 <n:label class="od-filter-label">Date</n:label>
                                 <datebox id="filterFromDate"
                                          sclass="od-filter-datebox"
                                          format="dd-MM-yyyy"
-                                         placeholder="From date"
-                                         width="140px"/>
+                                         placeholder="From"
+                                         width="130px"/>
                                 <n:span class="od-filter-sep">to</n:span>
                                 <datebox id="filterToDate"
                                          sclass="od-filter-datebox"
                                          format="dd-MM-yyyy"
-                                         placeholder="To date"
-                                         width="140px"/>
+                                         placeholder="To"
+                                         width="130px"/>
                             </n:div>
 
                             <n:div class="od-filter-group">
@@ -173,7 +194,7 @@
                                 <combobox id="filterStatus"
                                           sclass="od-filter-combo"
                                           readonly="true"
-                                          width="180px"
+                                          width="165px"
                                           placeholder="All statuses">
                                     <comboitem label="All"                 value="ALL"/>
                                     <comboitem label="Needs MICR Repair"   value="NEEDS_REPAIR"/>
@@ -188,19 +209,25 @@
                                 </combobox>
                             </n:div>
 
-                            <button sclass="od-filter-apply-btn" label="Apply" id="btnApplyFilter"/>
-                            <button sclass="od-filter-clear-btn" label="Clear" id="btnClearFilter"/>
+                            <button sclass="od-filter-apply-btn"
+                                    label="Apply"
+                                    id="btnApplyFilter"/>
+
                         </n:div>
 
+                        <!-- Right: Search + Clear -->
                         <n:div class="od-filter-right">
                             <n:div class="od-search-wrap">
                                 <n:i class="fa-solid fa-magnifying-glass od-search-icon"/>
                                 <textbox id="filterBatchId"
                                          sclass="od-search-input"
                                          placeholder="Search Batch ID..."
-                                         width="210px"
+                                         width="190px"
                                          instant="true"/>
                             </n:div>
+                            <button sclass="od-filter-clear-btn"
+                                    label="Clear"
+                                    id="btnClearFilter"/>
                         </n:div>
 
                     </n:div>
@@ -210,10 +237,10 @@
                              sclass="od-batch-listbox"
                              visible="false">
                         <listhead sclass="od-listhead">
-                            <listheader label="Batch ID"    width="250px"/>
-                            <listheader label="Cheques"     width="140px"/>
-                            <listheader label="Amount (₹)"  width="220px"/>
-                            <listheader label="Uploaded At" width="180px"/>
+                            <listheader label="Batch ID"    width="220px"/>
+                            <listheader label="Cheques"     width="120px"/>
+                            <listheader label="Amount (₹)"  width="200px"/>
+                            <listheader label="Uploaded At" width="170px"/>
                             <listheader label="Status"/>
                         </listhead>
                     </listbox>
@@ -224,24 +251,20 @@
                            sclass="od-empty-msg"
                            visible="true"/>
 
-                <!-- ── PAGINATION BAR ── -->
-            <div id="batchPager" sclass="pager" visible="false">
-    			<button id="btnPrevPage"
-           		 sclass="btn bo btn-sm"
-           		 label="← Prev"
-          	      disabled="true"/>
-    			<label  id="pagerInfo"
-           		 sclass="pager-info"
-                 value="Page 1 of 1"/>
-                <button id="btnNextPage"
-                sclass="btn bo btn-sm"
-                 label="Next →"
-               disabled="true"/>
-            </div>
-                
-                
-             
-
+                    <!-- ── PAGINATION BAR ── -->
+                    <div id="batchPager" sclass="pager" visible="false">
+                        <button id="btnPrevPage"
+                                sclass="btn bo btn-sm"
+                                label="← Prev"
+                                disabled="true"/>
+                        <label  id="pagerInfo"
+                                sclass="pager-info"
+                                value="Page 1 of 1"/>
+                        <button id="btnNextPage"
+                                sclass="btn bo btn-sm"
+                                label="Next →"
+                                disabled="true"/>
+                    </div>
 
                 </n:div>
                 <!-- end od-recent-panel -->
@@ -258,76 +281,51 @@
 </div>
 <!-- end dash-shell -->
 
-<!-- ═══════════════════════════════════════════════
-     MODULE PICKER POPUP
-     Shown when maker clicks a REFER_BACK batch
-     that has cheques in BOTH modules.
-═══════════════════════════════════════════════ -->
+<!-- MODULE PICKER POPUP -->
 <div id="modulePickerModal" sclass="modal-ov">
     <div sclass="modal" style="width:560px">
-
         <div sclass="modal-hdr">
             <div sclass="modal-title">📋 Choose Module to Fix First</div>
             <button id="modulePickerCloseBtn" sclass="modal-x">✕</button>
         </div>
-
         <div sclass="modal-body">
-
             <div sclass="note info mb12">
                 <n:span>ℹ</n:span>
                 <n:span>
                     Batch
                     <n:b><label id="pickerBatchId" value=""/></n:b>
                     has cheques to fix in <n:b>both modules</n:b>.
-                    Pick which one you want to work on now —
-                    you can come back to the other one afterwards.
+                    Pick which one to work on now.
                 </n:span>
             </div>
-
             <div sclass="picker-grid">
-
-                <!-- MICR Repair card -->
                 <div sclass="picker-card">
                     <div sclass="picker-icon picker-icon-micr">M</div>
                     <div sclass="picker-card-body">
                         <div sclass="picker-title">MICR Repair</div>
-                        <div sclass="picker-desc">
-                            Fix MICR code mismatches identified by the checker.
-                        </div>
+                        <div sclass="picker-desc">Fix MICR code mismatches identified by the checker.</div>
                         <div sclass="picker-count">
                             <label id="pickerMicrCount" value="0"/> cheque(s) to fix
                         </div>
                     </div>
-                    <button id="pickerGoMicrBtn"
-                            sclass="btn bp btn-block"
-                            label="Fix MICR Issues →"/>
+                    <button id="pickerGoMicrBtn" sclass="btn bp btn-block" label="Fix MICR Issues →"/>
                 </div>
-
-                <!-- Data Entry card -->
                 <div sclass="picker-card">
                     <div sclass="picker-icon picker-icon-data">D</div>
                     <div sclass="picker-card-body">
                         <div sclass="picker-title">Data Entry</div>
-                        <div sclass="picker-desc">
-                            Re-enter the account number, amount, or other
-                            data fields flagged by the checker.
-                        </div>
+                        <div sclass="picker-desc">Re-enter the account number, amount, or other data fields flagged by the checker.</div>
                         <div sclass="picker-count">
                             <label id="pickerDataCount" value="0"/> cheque(s) to fix
                         </div>
                     </div>
-                    <button id="pickerGoDataBtn"
-                            sclass="btn bp btn-block"
-                            label="Fix Data Entry Issues →"/>
+                    <button id="pickerGoDataBtn" sclass="btn bp btn-block" label="Fix Data Entry Issues →"/>
                 </div>
-
             </div>
         </div>
-
         <div sclass="modal-foot">
             <button id="pickerCancelBtn" sclass="btn bo" label="Cancel"/>
         </div>
-
     </div>
 </div>
 

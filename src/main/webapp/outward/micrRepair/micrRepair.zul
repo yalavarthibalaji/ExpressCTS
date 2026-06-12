@@ -171,19 +171,26 @@
                             </grid>
                         </div>
                     </div>
+						
+						
+                    <!-- end card mb12 (MICR cheque table) -->
 
-                    <!-- Proceed button -->
-                    <div sclass="flex gap8 items-c">
-                        <button id="proceedBtn"
-                                sclass="btn bp btn-lg btn-disabled"
-                                disabled="true">
-                            Proceed to Account Entry
-                        </button>
-                        <label id="proceedHint"
-                               sclass="txt-sm txt-muted"
-                               value="Complete all repairs to proceed"
-                               visible="true"/>
+                    <!-- ── CHEQUE PAGINATION BAR ── -->
+                    <div id="chequePager" sclass="pager" visible="false">
+                        <button id="btnChqPrevPage"
+                                sclass="btn bo btn-sm"
+                                label="← Prev"
+                                disabled="true"/>
+                        <label  id="chequePagerInfo"
+                                sclass="pager-info"
+                                value="Page 1 of 1"/>
+                        <button id="btnChqNextPage"
+                                sclass="btn bo btn-sm"
+                                label="Next →"
+                                disabled="true"/>
                     </div>
+
+                  
 
                 </div>
                 <!-- end listView -->
@@ -522,9 +529,34 @@
 
     </div>
     <!-- end body-row -->
+	<!-- ══ ALL REPAIRS COMPLETE POPUP ══ -->
+<div id="allRepairsModal" sclass="modal-ov">
+    <div sclass="modal" style="width:420px">
 
+        <div sclass="modal-hdr">
+            <n:div class="modal-title">✅ All MICR Repairs Complete</n:div>
+            <button id="allRepairsCloseBtn" sclass="modal-x">✕</button>
+        </div>
+
+        <div sclass="modal-body" style="text-align:center; padding:28px 24px">
+            <n:div style="font-size:48px; margin-bottom:14px">✅</n:div>
+            <n:div style="font-size:13px; color:#4A5568; line-height:1.6">
+                All cheques in batch
+                <n:b><label id="allRepairsBatchId" value=""/></n:b>
+                have been repaired successfully.
+            </n:div>
+        </div>
+
+        <div sclass="modal-foot" style="justify-content:center; padding:16px">
+            <button id="proceedToDataEntryBtn"
+                    sclass="btn bp btn-lg"
+                    label="Proceed to Data Entry →"/>
+        </div>
+
+    </div>
+</div>
     <!-- STATUSBAR -->
     <include src="/component/statusbar.zul"/>
-
+	
 </div>
 </zk>

@@ -1,7 +1,6 @@
 package com.iispl.composer;
 
 import com.iispl.dto.LoginDTO;
-
 import com.iispl.entity.outward.OutwardBatch;
 import com.iispl.service.BatchUploadService;
 import com.iispl.serviceImpl.BatchUploadServiceImpl;
@@ -26,16 +25,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 public class DashboardComposer extends SelectorComposer<Component> {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
     private static final DateTimeFormatter CELL_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     // ── KPI Labels ──
-    @Wire private Label kpiTotalBatches;
-    @Wire private Label kpiSubmitted;
-    @Wire private Label kpiTotalCheques;
+    @Wire private Label kpiReferredBatches;
+    @Wire private Label kpiPendingBatches;
+    @Wire private Label kpiClearedBatches;
 
     // ── Pagination ──
     @Wire private Div    batchPager;
@@ -51,7 +49,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
     @Wire private Label userName;
     @Wire private Label userRole;
 
-    // ── Module Picker Popup (for REFER_BACK with cheques in both modules) ──
+    // ── Module Picker Popup ──
     @Wire private Div    modulePickerModal;
     @Wire private Label  pickerBatchId;
     @Wire private Label  pickerMicrCount;
@@ -60,7 +58,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
     // ── Service ──
     private final MakerOutwardService makerOutwardService = new MakerOutwardServiceImpl();
 
-    // ── State for popup (which batch is currently being routed) ──
+    // ── State for popup ──
     private OutwardBatch pickerCurrentBatch;
 
     // ── Recent batches table ──
@@ -79,7 +77,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
     private List<OutwardBatch>       allBatches;
 
     // ── Pagination State ──
-    private static final int    PAGE_SIZE          = 2;
+    private static final int    PAGE_SIZE          = 3;
     private int                 currentPage        = 0;
     private List<OutwardBatch>  currentDisplayList = new ArrayList<>();
 
@@ -100,7 +98,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
         if (userName   != null) userName.setValue(dto.getFullName());
         if (userRole   != null) userRole.setValue(formatRole(dto.getRoleCode()));
 
-        if (lblTodayDate       != null)
+        if (lblTodayDate != null)
             lblTodayDate.setValue(LocalDate.now().format(DATE_FMT));
 
         allBatches = batchUploadService.getMyBatches(currentMakerId);
@@ -109,34 +107,47 @@ public class DashboardComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  KPI — computed from full batch list
+    //  KPI
     // ════════════════════════════════════════════════════
 
     private void loadKpis(List<OutwardBatch> batches) {
         try {
-            long totalBatches = batches.size();
-            long submitted    = 0;
-            long totalCheques = 0;
+        	long referredBatches = 0;
+            long pendingBatches = 0;   // Maker still needs to act
+            long clearedBatches = 0;   // Approved or exported
 
             for (OutwardBatch b : batches) {
                 String status = b.getStatus() != null ? b.getStatus() : "";
-
-                if ("SUBMITTED".equals(status))     submitted++;
-                if (b.getChequeCount() > 0)         totalCheques += b.getChequeCount();
+                switch (status) {
+                    // ── Pending: maker still has work to do ──
+                case "NEEDS_REPAIR":
+                case "ENTRY_PENDING":
+                    pendingBatches++;
+                    break;
+                case "REFER_BACK":
+                    referredBatches++;
+                    break;
+                    // ── Cleared: fully processed through checker ──
+                    case "CHECKER_APPROVED":
+                    case "EXPORTED":
+                        clearedBatches++;
+                        break;
+                    default:
+                        break;
+                }
             }
 
-            setValue(kpiTotalBatches, totalBatches);
-            setValue(kpiSubmitted,    submitted);
-            setValue(kpiTotalCheques, totalCheques);
+            setValue(kpiReferredBatches, referredBatches);
+            setValue(kpiPendingBatches, pendingBatches);
+            setValue(kpiClearedBatches, clearedBatches);
 
         } catch (Exception e) {
-            System.err.println(
-                "DashboardComposer → KPI load failed: " + e.getMessage());
+            System.err.println("DashboardComposer → KPI load failed: " + e.getMessage());
         }
     }
 
     // ════════════════════════════════════════════════════
-    //  Render Table — saves list and resets to page 1
+    //  Render Table
     // ════════════════════════════════════════════════════
 
     private void renderTable(List<OutwardBatch> batches) {
@@ -145,12 +156,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
         renderCurrentPage();
     }
 
-    // ════════════════════════════════════════════════════
-    //  Render Current Page
-    // ════════════════════════════════════════════════════
-
     private void renderCurrentPage() {
-        // Clear existing rows
         List<Component> toRemove = recentBatchList.getChildren().stream()
                 .filter(c -> c instanceof Listitem)
                 .collect(Collectors.toList());
@@ -200,7 +206,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
         recentBatchList.setVisible(true);
         emptyBatchesMsg.setVisible(false);
 
-        // Show pager only when more than one page exists
         batchPager.setVisible(totalPages > 1);
         pagerInfo.setValue("Page " + (currentPage + 1) + " of " + totalPages
                 + "  (" + totalItems + " batches)");
@@ -209,7 +214,7 @@ public class DashboardComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  Pagination Listeners
+    //  Pagination
     // ════════════════════════════════════════════════════
 
     @Listen("onClick = #btnPrevPage")
@@ -242,8 +247,8 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
         java.util.Date fromRaw = filterFromDate != null ? filterFromDate.getValue() : null;
         java.util.Date toRaw   = filterToDate   != null ? filterToDate.getValue()   : null;
-        String statusVal       = "";
-        String batchIdVal      = filterBatchId  != null
+        String statusVal  = "";
+        String batchIdVal = filterBatchId != null
             ? filterBatchId.getValue().trim().toLowerCase() : "";
 
         if (filterStatus != null && filterStatus.getSelectedItem() != null) {
@@ -325,6 +330,11 @@ public class DashboardComposer extends SelectorComposer<Component> {
         Executions.sendRedirect("/outward/viewBatches/viewBatches.zul");
     }
 
+    @Listen("onClick = #gotoReports")
+    public void gotoReports() {
+        Executions.sendRedirect("/reports/reports.zul");
+    }
+
     @Listen("onClick = #logoutBtn")
     public void doLogout() { SessionUtil.logout(); }
 
@@ -347,8 +357,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
     }
 
     private String nvl(String s) { return s != null ? s : "-"; }
-
-
 
     private String formatStatusLabel(String status) {
         if (status == null) return "-";
@@ -394,9 +402,9 @@ public class DashboardComposer extends SelectorComposer<Component> {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  Row Click — route by status
-    // ════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Row Click
+    // ════════════════════════════════════════════════════
 
     @Listen("onSelect = #recentBatchList")
     public void onBatchRowSelect() {
@@ -425,16 +433,13 @@ public class DashboardComposer extends SelectorComposer<Component> {
                 Executions.sendRedirect(
                     "/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
                 return;
-
             case "ENTRY_PENDING":
                 Executions.sendRedirect(
                     "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
                 return;
-
             case "REFER_BACK":
                 handleReferBackClick(batch);
                 return;
-
             case "SUBMITTED":
             case "CHECKER_IN_PROGRESS":
             case "CHECKER_HOLD":
@@ -444,7 +449,6 @@ public class DashboardComposer extends SelectorComposer<Component> {
                 Executions.sendRedirect(
                     "/outward/viewBatches/viewBatches.zul?batchId=" + batchId);
                 return;
-
             default:
                 Clients.showNotification("No action defined for status: " + status,
                         "info", null, "top_center", 2000);
@@ -458,32 +462,28 @@ public class DashboardComposer extends SelectorComposer<Component> {
 
         if (micrCount == 0 && dataCount == 0) {
             Clients.showNotification(
-                    "Batch is in Refer Back but has no referred cheques. "
-                  + "Check the batch in View Batches.",
+                    "Batch is in Refer Back but has no referred cheques.",
                     "warning", null, "top_center", 3000);
             Executions.sendRedirect(
                 "/outward/viewBatches/viewBatches.zul?batchId=" + batch.getBatchId());
             return;
         }
-
         if (micrCount > 0 && dataCount == 0) {
             Executions.sendRedirect(
                 "/outward/micrRepair/micrRepair.zul?batchId=" + batch.getBatchId());
             return;
         }
-
         if (dataCount > 0 && micrCount == 0) {
             Executions.sendRedirect(
                 "/outward/acctAmount/acctAmount.zul?batchId=" + batch.getBatchId());
             return;
         }
-
         showModulePicker(batch, micrCount, dataCount);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  Module Picker Popup
-    // ════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    //  Module Picker
+    // ════════════════════════════════════════════════════
 
     private void showModulePicker(OutwardBatch batch, int micrCount, int dataCount) {
         pickerCurrentBatch = batch;
@@ -499,31 +499,21 @@ public class DashboardComposer extends SelectorComposer<Component> {
     }
 
     @Listen("onClick = #modulePickerCloseBtn, #pickerCancelBtn")
-    public void onPickerClose() {
-        hideModulePicker();
-    }
+    public void onPickerClose() { hideModulePicker(); }
 
     @Listen("onClick = #pickerGoMicrBtn")
     public void onPickerGoMicr() {
-        if (pickerCurrentBatch == null) {
-            hideModulePicker();
-            return;
-        }
+        if (pickerCurrentBatch == null) { hideModulePicker(); return; }
         String batchId = pickerCurrentBatch.getBatchId();
         hideModulePicker();
-        Executions.sendRedirect(
-            "/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
+        Executions.sendRedirect("/outward/micrRepair/micrRepair.zul?batchId=" + batchId);
     }
 
     @Listen("onClick = #pickerGoDataBtn")
     public void onPickerGoData() {
-        if (pickerCurrentBatch == null) {
-            hideModulePicker();
-            return;
-        }
+        if (pickerCurrentBatch == null) { hideModulePicker(); return; }
         String batchId = pickerCurrentBatch.getBatchId();
         hideModulePicker();
-        Executions.sendRedirect(
-            "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
+        Executions.sendRedirect("/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
     }
 }

@@ -54,13 +54,19 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     @Wire private Button btnPrevPage;
     @Wire private Button btnNextPage;
     @Wire private Label  batchPagerInfo;
+ // ── Cheque List Pagination ──
+    @Wire private Div    chequePager;
+    @Wire private Button btnChqPrevPage;
+    @Wire private Button btnChqNextPage;
+    @Wire private Label  chequePagerInfo;
 
     // ── List View ──
     @Wire private Label  listBatchBadge;
     @Wire private Label  listPendingBadge;
     @Wire private Rows   micrRows;
-    @Wire private Button proceedBtn;
-    @Wire private Label  proceedHint;
+ // ── All Repairs Modal ──
+    @Wire private Div   allRepairsModal;
+    @Wire private Label allRepairsBatchId;
 
     // ── Repair View toolbar ──
     @Wire private Label  repairBatchBadge;
@@ -108,8 +114,10 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
     private boolean             currentChequeHasErrors = false;
 
     // ── Pagination State ──
-    private static final int    PAGE_SIZE        = 1;
+    private static final int    PAGE_SIZE        = 5;
     private int                 batchPage        = 0;
+    private static final int    CHEQUE_PAGE_SIZE = 5;
+    private int                 chequePage       = 0;
     private List<OutwardBatch>  batchDisplayList = new ArrayList<>();
 
     // ════════════════════════════════════════════════════
@@ -166,10 +174,8 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         batchSelectView.setVisible("batchSelect".equals(view));
         listView.setVisible("list".equals(view));
         repairView.setVisible("repair".equals(view));
-        // Hide pager when leaving batch select view
-        if (!"batchSelect".equals(view)) {
-            batchPager.setVisible(false);
-        }
+        if (!"batchSelect".equals(view)) batchPager.setVisible(false);
+        if (!"list".equals(view))        chequePager.setVisible(false);
     }
 
     // ════════════════════════════════════════════════════
@@ -247,6 +253,25 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
             }
         }
     }
+    @Listen("onClick = #btnChqPrevPage")
+    public void onChqPrevPage() {
+        if (chequePage > 0) {
+            chequePage--;
+            renderChequePage();
+        }
+    }
+
+    @Listen("onClick = #btnChqNextPage")
+    public void onChqNextPage() {
+        if (repairList != null) {
+            int totalPages = (int) Math.ceil(
+                    (double) repairList.size() / CHEQUE_PAGE_SIZE);
+            if (chequePage < totalPages - 1) {
+                chequePage++;
+                renderChequePage();
+            }
+        }
+    }
 
     private Row buildBatchSelectRow(int idx, final OutwardBatch b) {
         Row row = new Row();
@@ -291,16 +316,42 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
 
     private void loadAndShowList() {
         repairList = micrService.getMicrErrorCheques(currentBatch.getId());
-
         listBatchBadge.setValue(safe(batchId));
         listPendingBadge.setValue(repairList.size() + " Pending");
+        chequePage = 0;
+        renderChequePage();
+      
+    }
 
+    private void renderChequePage() {
         micrRows.getChildren().clear();
-        int idx = 1;
-        for (OutwardCheque cheque : repairList) {
+
+        if (repairList == null || repairList.isEmpty()) {
+            chequePager.setVisible(false);
+            return;
+        }
+
+        int totalItems = repairList.size();
+        int totalPages = (int) Math.ceil((double) totalItems / CHEQUE_PAGE_SIZE);
+
+        if (chequePage >= totalPages) chequePage = totalPages - 1;
+        if (chequePage < 0)           chequePage = 0;
+
+        int fromIndex = chequePage * CHEQUE_PAGE_SIZE;
+        int toIndex   = Math.min(fromIndex + CHEQUE_PAGE_SIZE, totalItems);
+
+        List<OutwardCheque> pageData = repairList.subList(fromIndex, toIndex);
+
+        int idx = fromIndex + 1;
+        for (OutwardCheque cheque : pageData) {
             micrRows.appendChild(buildListRow(idx++, cheque));
         }
-        checkProceedButton();
+
+        chequePager.setVisible(totalPages > 1);
+        chequePagerInfo.setValue("Page " + (chequePage + 1) + " of " + totalPages
+                + "  (" + totalItems + " cheques)");
+        btnChqPrevPage.setDisabled(chequePage == 0);
+        btnChqNextPage.setDisabled(chequePage >= totalPages - 1);
     }
 
     private Row buildListRow(int idx, final OutwardCheque cheque) {
@@ -336,15 +387,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         return row;
     }
 
-    private void checkProceedButton() {
-        boolean allDone = micrService.isAllRepaired(currentBatch.getId());
-        proceedBtn.setDisabled(!allDone);
-        proceedBtn.setSclass(allDone
-            ? "btn bp btn-lg"
-            : "btn bp btn-lg btn-disabled");
-        proceedHint.setVisible(!allDone);
-    }
-
+   
     // ════════════════════════════════════════════════════
     //  Open Repair View
     // ════════════════════════════════════════════════════
@@ -647,9 +690,8 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         if (micrService.isAllRepaired(currentBatch.getId())) {
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
                 micrService.markBatchEntryDone(currentBatch.getId());
-                Clients.showNotification(
-                    "All MICR repairs complete. Batch ready for Account Entry.",
-                    "info", null, "top_center", 3000);
+                goBackToList();
+                showAllRepairsCompleteModal();   // ← popup appears over the list
             } else {
                 int remaining = makerOutwardService.countActiveReferrals(currentBatch.getId());
                 if (remaining == 0) {
@@ -660,9 +702,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                         "info", null, "top_center", 3000);
                     goBackToList();
                 }
-                return;
             }
-            goBackToList();
             return;
         }
 
@@ -721,9 +761,9 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         if (micrService.isAllRepaired(currentBatch.getId())) {
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
                 micrService.markBatchEntryDone(currentBatch.getId());
-                Clients.showNotification(
-                    "All repairs complete. Batch ready for Account Entry.",
-                    "info", null, "top_center", 3000);
+                goBackToList();
+                showAllRepairsCompleteModal();   // ← popup appears over the list
+                return;
             } else {
                 int remaining = makerOutwardService.countActiveReferrals(currentBatch.getId());
                 if (remaining == 0) {
@@ -758,11 +798,7 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
         }
     }
 
-    @Listen("onClick = #proceedBtn")
-    public void onProceed() {
-        Executions.sendRedirect(
-            "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
-    }
+    
 
     @Listen("onClick = #goToBatchUploadBtn")
     public void goToBatchUpload() {
@@ -809,5 +845,29 @@ public class MicrRepairComposer extends SelectorComposer<Component> {
                 "error", null, "top_center", 3000);
         }
         goBackToList();
+        
+        
     }
+    
+ // ════════════════════════════════════════════════════
+//  All Repairs Complete — Popup
+// ════════════════════════════════════════════════════
+
+private void showAllRepairsCompleteModal() {
+    allRepairsBatchId.setValue(safe(batchId));
+    allRepairsModal.setSclass("modal-ov open");
+}
+
+@Listen("onClick = #allRepairsCloseBtn")
+public void onAllRepairsClose() {
+    allRepairsModal.setSclass("modal-ov");
+    loadBatchSelectView();          // → back to batch list
+}
+
+@Listen("onClick = #proceedToDataEntryBtn")
+public void onProceedToDataEntry() {
+    allRepairsModal.setSclass("modal-ov");
+    Executions.sendRedirect(
+        "/outward/acctAmount/acctAmount.zul?batchId=" + batchId);
+}
 }

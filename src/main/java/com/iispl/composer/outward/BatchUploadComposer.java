@@ -5,7 +5,9 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.zkoss.util.media.Media;
 import org.zkoss.zk.ui.Component;
@@ -13,7 +15,6 @@ import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
-import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.event.UploadEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
@@ -36,38 +37,36 @@ import com.iispl.service.BatchUploadService;
 import com.iispl.serviceImpl.BatchUploadServiceImpl;
 import com.iispl.util.SessionUtil;
 
-/**
- * File    : com/iispl/composer/outward/BatchUploadComposer.java
- * Purpose : Handles Batch Upload screen for Maker Outward.
- *
- * Batch Status Flow:
- *   NEEDS_REPAIR  → MICR Repair screen
- *   ENTRY_PENDING → Account & Amount Entry screen
- *   REFER_BACK    → Account & Amount Entry screen (re-enter)
- *   SUBMITTED     → No action (in checker queue)
- */
 public class BatchUploadComposer extends SelectorComposer<Component> {
 
     private final BatchUploadService service  = new BatchUploadServiceImpl();
     private final DecimalFormat      moneyFmt = new DecimalFormat("#,##0.00");
 
-
-    // ── Form ──
+    // ── Upload Form ──
     @Wire private Decimalbox expectedAmountBox;
     @Wire private Intbox     expectedCountBox;
     @Wire private Label      fileNameLabel;
     @Wire private Label      formErrorLabel;
     @Wire private Button     processBtn;
 
-    // ── Result section ──
+    // ── Result Section ──
     @Wire private Div     batchResultSection;
     @Wire private Label   batchNoteLabel;
+    @Wire private Label   batchCountBadge;
     @Wire private Rows    batchRows;
-    @Wire private Label   pagerInfo;
+
+    // ── Filter Controls ──
     @Wire private Textbox batchSearchBox;
     @Wire private Listbox statusFilterBox;
+    
 
-    // ── Mismatch modal ──
+    // ── Pagination ──
+    @Wire private Div    batchPager;
+    @Wire private Button btnPrevPage;
+    @Wire private Button btnNextPage;
+    @Wire private Label  pagerInfo;
+
+    // ── Mismatch Modal ──
     @Wire private Div   mismatchModal;
     @Wire private Label mismatchExpectedCount;
     @Wire private Label mismatchExpectedAmount;
@@ -75,12 +74,17 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
     @Wire private Label mismatchParsedAmount;
 
     // ── State ──
-    private BatchUploadResult lastResult;
-    private File              uploadedFile;
-    private String            uploadedFileName;
-    private Long              currentMakerId;
-    private Row               lastAddedRow;
-    private int               rowSeqCounter = 0;
+    private BatchUploadResult  lastResult;
+    private OutwardBatch       lastAddedBatch;
+    private File               uploadedFile;
+    private String             uploadedFileName;
+    private Long               currentMakerId;
+
+    // ── Pagination State ──
+    private static final int    PAGE_SIZE          = 3;
+    private int                 currentPage        = 0;
+    private List<OutwardBatch>  allBatches         = new ArrayList<>();
+    private List<OutwardBatch>  currentDisplayList = new ArrayList<>();
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -99,7 +103,6 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
             return;
         }
 
-    
         currentMakerId = dto.getUserId();
 
         formErrorLabel.setVisible(false);
@@ -107,7 +110,6 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
         mismatchModal.setSclass("modal-ov");
         processBtn.setDisabled(true);
 
-        attachFilterListeners();
         loadBatches();
     }
 
@@ -117,22 +119,127 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
 
     private void loadBatches() {
         List<OutwardBatch> list = service.getMyBatches(currentMakerId);
-        if (list == null || list.isEmpty()) return;
+        allBatches = (list != null) ? list : new ArrayList<>();
 
+        if (!allBatches.isEmpty()) {
+            batchNoteLabel.setValue("✓ " + allBatches.size() + " batches found.");
+            batchNoteLabel.setSclass("note suc mb12");
+        }
+
+        applyFiltersAndRender();
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Filter + Render
+    // ════════════════════════════════════════════════════
+
+    private void applyFiltersAndRender() {
+        String search = batchSearchBox != null
+                ? batchSearchBox.getValue().trim().toLowerCase() : "";
+        String status = getSelectedStatus();
+
+        currentDisplayList = allBatches.stream()
+                .filter(b -> {
+                    boolean matchSearch = search.isEmpty()
+                            || (b.getBatchId() != null
+                                && b.getBatchId().toLowerCase().contains(search));
+                    boolean matchStatus = status.isEmpty()
+                            || status.equalsIgnoreCase(
+                                b.getStatus() != null ? b.getStatus() : "");
+                    return matchSearch && matchStatus;
+                })
+                .collect(Collectors.toList());
+
+        currentPage = 0;
+        renderPage();
+    }
+
+    private void renderPage() {
         batchRows.getChildren().clear();
-        rowSeqCounter = 0;
 
-        for (OutwardBatch b : list) {
-            batchRows.appendChild(buildBatchRow(b, false));
+        int totalFiltered = currentDisplayList.size();
+        batchCountBadge.setValue(totalFiltered + " Batches");
+
+        if (totalFiltered == 0) {
+            batchPager.setVisible(false);
+            if (!allBatches.isEmpty()) batchResultSection.setVisible(true);
+            return;
+        }
+
+        int totalPages = (int) Math.ceil((double) totalFiltered / PAGE_SIZE);
+
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+        if (currentPage < 0)           currentPage = 0;
+
+        int fromIndex = currentPage * PAGE_SIZE;
+        int toIndex   = Math.min(fromIndex + PAGE_SIZE, totalFiltered);
+
+        List<OutwardBatch> pageData = currentDisplayList.subList(fromIndex, toIndex);
+
+        for (OutwardBatch b : pageData) {
+            batchRows.appendChild(buildBatchRow(b));
         }
 
         batchResultSection.setVisible(true);
-        pagerInfo.setValue("Showing " + list.size() + " batches");
-        batchNoteLabel.setValue("✓ " + list.size() + " batches found.");
-        batchNoteLabel.setSclass("note suc mb12");
+
+        batchPager.setVisible(totalPages > 1);
+        pagerInfo.setValue("Page " + (currentPage + 1) + " of " + totalPages
+                + "  (" + totalFiltered + " batches)");
+        btnPrevPage.setDisabled(currentPage == 0);
+        btnNextPage.setDisabled(currentPage >= totalPages - 1);
     }
 
+    // ════════════════════════════════════════════════════
+    //  Pagination Listeners
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #btnPrevPage")
+    public void onPrevPage() {
+        if (currentPage > 0) {
+            currentPage--;
+            renderPage();
+        }
+    }
+
+    @Listen("onClick = #btnNextPage")
+    public void onNextPage() {
+        if (currentDisplayList != null) {
+            int totalPages = (int) Math.ceil(
+                    (double) currentDisplayList.size() / PAGE_SIZE);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                renderPage();
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Filter Listeners
+    // ════════════════════════════════════════════════════
+
+    @Listen("onChanging = #batchSearchBox; onChange = #batchSearchBox")
+    public void onSearchChange() { applyFiltersAndRender(); }
     
+    
+    @Listen("onClick = #btnApplyFilter")
+    public void onApplyFilter() { applyFiltersAndRender(); }
+    
+
+    @Listen("onClick = #btnClearFilter")
+    public void onClearFilter() {
+        batchSearchBox.setValue("");
+        statusFilterBox.setSelectedIndex(0);
+        applyFiltersAndRender();
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Navigation
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #gotoViewBatches")
+    public void gotoViewBatches() {
+        Executions.sendRedirect("/outward/viewBatches/viewBatches.zul");
+    }
 
     // ════════════════════════════════════════════════════
     //  File Upload
@@ -194,18 +301,16 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
             return;
         }
 
-        addBatchRow(lastResult);
+        addNewBatch(lastResult);
 
         if (lastResult.isHasMismatch()) {
             showMismatchModal();
         } else {
             batchNoteLabel.setValue(
                 "✓ Batch " + lastResult.getBatchId()
-                + " created successfully — "
-                + lastResult.getParsedChequeCount() + " cheques | ₹"
-                + moneyFmt.format(lastResult.getParsedTotalAmount()));
+                + " created — " + lastResult.getParsedChequeCount()
+                + " cheques | ₹" + moneyFmt.format(lastResult.getParsedTotalAmount()));
             batchNoteLabel.setSclass("note suc mb12");
-            batchResultSection.setVisible(true);
             Clients.showNotification(
                 "✓ Batch " + lastResult.getBatchId() + " processed.",
                 "info", null, "top_center", 2500);
@@ -214,56 +319,72 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  Build Batch Row
+    //  Add New Batch to List
     // ════════════════════════════════════════════════════
 
-    private void addBatchRow(BatchUploadResult result) {
+    private void addNewBatch(BatchUploadResult result) {
         OutwardBatch b = new OutwardBatch();
         b.setId(result.getBatchDbId());
         b.setBatchId(result.getBatchId());
         b.setChequeCount(result.getParsedChequeCount());
         b.setActualAmount(BigDecimal.valueOf(result.getParsedTotalAmount()));
-        // STATUS FIX: was "ENTRY_DONE" → now "ENTRY_PENDING"
         b.setStatus(result.isHasMicrErrors() ? "NEEDS_REPAIR" : "ENTRY_PENDING");
 
-        Row row = buildBatchRow(b, true);
-        batchRows.insertBefore(row, batchRows.getFirstChild());
-        lastAddedRow = row;
-        renumberRows();
-        batchResultSection.setVisible(true);
-        refreshPager();
+        allBatches.add(0, b);
+        lastAddedBatch = b;
+
+        applyFiltersAndRender();
     }
 
-    private Row buildBatchRow(final OutwardBatch b, boolean isNew) {
-        rowSeqCounter++;
+    // ════════════════════════════════════════════════════
+    //  Build Batch Row
+    // ════════════════════════════════════════════════════
 
+    private Row buildBatchRow(final OutwardBatch b) {
         int    total     = b.getChequeCount();
         String st        = b.getStatus() != null ? b.getStatus() : "";
         int    processed;
         switch (st) {
-            case "PASSED":
-            case "SUBMITTED": processed = total; break;
-            default:          processed = 0;
+            case "CHECKER_APPROVED":
+            case "EXPORTED":
+            case "SUBMITTED":
+                processed = total;
+                break;
+            default:
+                processed = 0;
         }
         int pending = total - processed;
 
         Row row = new Row();
-        row.setSclass(isNew ? "row-new" : "");
-        row.setAttribute("batchStatus", b.getStatus() != null ? b.getStatus() : "");
 
-        row.appendChild(cell(String.valueOf(rowSeqCounter)));
-
-        Label batchIdLbl = new Label(b.getBatchId());
-        batchIdLbl.setSclass("mono");
+        // Batch ID
+        Label batchIdLbl = new Label(b.getBatchId() != null ? b.getBatchId() : "—");
+        batchIdLbl.setSclass("mono fw6");
         row.appendChild(batchIdLbl);
 
+        // Cheque Count
         row.appendChild(cell(String.valueOf(total)));
+
+        // Amount
         row.appendChild(cell(b.getActualAmount() != null
             ? "₹" + moneyFmt.format(b.getActualAmount()) : "—"));
-        row.appendChild(cell(String.valueOf(pending)));
-        row.appendChild(cell(String.valueOf(processed)));
+
+        // Pending
+        Label pendingLbl = new Label(String.valueOf(pending));
+        pendingLbl.setSclass(pending > 0 ? "txt-warn fw6" : "txt-success");
+        row.appendChild(pendingLbl);
+
+        // Processed
+        Label processedLbl = new Label(String.valueOf(processed));
+        processedLbl.setSclass(processed > 0 ? "txt-success fw6" : "txt-muted");
+        row.appendChild(processedLbl);
+
+        // Status badge
         row.appendChild(buildStatusBadge(b.getStatus()));
-        row.appendChild(buildActionBtn(b));
+
+        // Action buttons
+        row.appendChild(buildActionBtns(b));
+
         return row;
     }
 
@@ -271,7 +392,6 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
         return new Label(text != null ? text : "—");
     }
 
-    /** Status badge label with correct colours for all statuses. */
     private Label buildStatusBadge(String status) {
         Label badge = new Label();
         if (status == null) status = "";
@@ -292,8 +412,20 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
                 badge.setValue("Submitted");
                 badge.setSclass("badge b-pass");
                 break;
-            case "PASSED":
-                badge.setValue("Passed");
+            case "CHECKER_IN_PROGRESS":
+                badge.setValue("Checker In Progress");
+                badge.setSclass("badge b-info");
+                break;
+            case "CHECKER_HOLD":
+                badge.setValue("On Hold");
+                badge.setSclass("badge b-ref");
+                break;
+            case "CHECKER_APPROVED":
+                badge.setValue("Approved");
+                badge.setSclass("badge b-pass");
+                break;
+            case "EXPORTED":
+                badge.setValue("Exported");
                 badge.setSclass("badge b-pass");
                 break;
             case "REJECTED":
@@ -307,75 +439,76 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
         return badge;
     }
 
-    /** Action button that routes to the correct next screen per status. */
-    private Div buildActionBtn(final OutwardBatch b) {
+    private Div buildActionBtns(final OutwardBatch b) {
         Div ac = new Div();
-        ac.setSclass("ac");
+        ac.setSclass("bu-action-btns");
 
-        // View button — always shown
+        // View button — always present
         Button viewBtn = new Button("View");
         viewBtn.setSclass("btn bo btn-sm");
         viewBtn.addEventListener(Events.ON_CLICK,
             new EventListener<Event>() {
                 @Override public void onEvent(Event e) {
                     Executions.sendRedirect(
-                        "/outward/viewBatches/viewBatches.zul");
+                        "/outward/viewBatches/viewBatches.zul?batchId="
+                        + b.getBatchId());
                 }
             });
         ac.appendChild(viewBtn);
 
-        String  status    = b.getStatus() != null ? b.getStatus() : "";
-        Button  actionBtn = new Button();
+        // Action button based on status
+        String status = b.getStatus() != null ? b.getStatus() : "";
+        Button actionBtn = null;
 
         switch (status) {
             case "NEEDS_REPAIR":
-                actionBtn.setLabel("MICR Repair");
+                actionBtn = new Button("MICR Repair");
                 actionBtn.setSclass("btn bp btn-sm");
+                final String micrBatchId = b.getBatchId();
                 actionBtn.addEventListener(Events.ON_CLICK,
                     new EventListener<Event>() {
                         @Override public void onEvent(Event e) {
                             Executions.sendRedirect(
                                 "/outward/micrRepair/micrRepair.zul?batchId="
-                                + b.getBatchId());
+                                + micrBatchId);
                         }
                     });
                 break;
 
             case "ENTRY_PENDING":
-                actionBtn.setLabel("Data Entry");
+                actionBtn = new Button("Data Entry");
                 actionBtn.setSclass("btn bp btn-sm");
+                final String entryBatchId = b.getBatchId();
                 actionBtn.addEventListener(Events.ON_CLICK,
                     new EventListener<Event>() {
                         @Override public void onEvent(Event e) {
                             Executions.sendRedirect(
                                 "/outward/acctAmount/acctAmount.zul?batchId="
-                                + b.getBatchId());
+                                + entryBatchId);
                         }
                     });
                 break;
 
             case "REFER_BACK":
-                // Checker referred back — maker re-processes data entry
-                actionBtn.setLabel("Re-Process");
+                actionBtn = new Button("Re-Process");
                 actionBtn.setSclass("btn bw btn-sm");
+                final String referBatchId = b.getBatchId();
                 actionBtn.addEventListener(Events.ON_CLICK,
                     new EventListener<Event>() {
                         @Override public void onEvent(Event e) {
                             Executions.sendRedirect(
                                 "/outward/acctAmount/acctAmount.zul?batchId="
-                                + b.getBatchId());
+                                + referBatchId);
                         }
                     });
                 break;
 
             default:
-                // SUBMITTED, PASSED, REJECTED — no further action
-                actionBtn.setLabel("—");
-                actionBtn.setSclass("btn bo btn-sm");
-                actionBtn.setDisabled(true);
+                // SUBMITTED / CHECKER_* / EXPORTED / REJECTED — no action
+                break;
         }
 
-        ac.appendChild(actionBtn);
+        if (actionBtn != null) ac.appendChild(actionBtn);
         return ac;
     }
 
@@ -392,22 +525,18 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
     }
 
     @Listen("onClick = #mismatchCloseBtn")
-    public void onMismatchClose() {
-        mismatchModal.setSclass("modal-ov");
-    }
+    public void onMismatchClose() { mismatchModal.setSclass("modal-ov"); }
 
     @Listen("onClick = #mismatchAcceptBtn")
     public void onMismatchAccept() {
         mismatchModal.setSclass("modal-ov");
         batchNoteLabel.setValue(
             "✓ Batch " + lastResult.getBatchId()
-            + " accepted with file values — "
-            + lastResult.getParsedChequeCount() + " cheques | ₹"
-            + moneyFmt.format(lastResult.getParsedTotalAmount()));
+            + " accepted — " + lastResult.getParsedChequeCount()
+            + " cheques | ₹" + moneyFmt.format(lastResult.getParsedTotalAmount()));
         batchNoteLabel.setSclass("note suc mb12");
         Clients.showNotification(
-            "✓ Batch accepted with "
-            + lastResult.getParsedChequeCount() + " cheques.",
+            "✓ Batch accepted with " + lastResult.getParsedChequeCount() + " cheques.",
             "info", null, "top_center", 2500);
         resetForm();
     }
@@ -420,18 +549,15 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
             service.rejectBatch(lastResult.getBatchDbId());
         }
 
-        if (lastAddedRow != null && lastAddedRow.getParent() != null) {
-            batchRows.removeChild(lastAddedRow);
-            rowSeqCounter = Math.max(0, rowSeqCounter - 1);
-            lastAddedRow = null;
+        // Remove last added batch from the list
+        if (lastAddedBatch != null) {
+            allBatches.remove(lastAddedBatch);
+            lastAddedBatch = null;
         }
 
-        if (batchRows.getChildren().isEmpty()) {
-            batchResultSection.setVisible(false);
-        } else {
-            renumberRows();
-            refreshPager();
-        }
+        applyFiltersAndRender();
+
+        if (allBatches.isEmpty()) batchResultSection.setVisible(false);
 
         resetForm();
         Clients.showNotification(
@@ -440,83 +566,13 @@ public class BatchUploadComposer extends SelectorComposer<Component> {
     }
 
     // ════════════════════════════════════════════════════
-    //  Filter Listeners
+    //  Helpers
     // ════════════════════════════════════════════════════
-
-    private void attachFilterListeners() {
-        batchSearchBox.addEventListener(Events.ON_CHANGING,
-            new EventListener<InputEvent>() {
-                @Override public void onEvent(InputEvent e) {
-                    applyFilters(e.getValue(), getSelectedStatus(), "");
-                }
-            });
-
-        statusFilterBox.addEventListener(Events.ON_SELECT,
-            new EventListener<Event>() {
-                @Override public void onEvent(Event e) {
-                    applyFilters(batchSearchBox.getValue(),
-                                 getSelectedStatus(), "");
-                }
-            });
-    }
 
     private String getSelectedStatus() {
         if (statusFilterBox.getSelectedItem() == null) return "";
         Object val = statusFilterBox.getSelectedItem().getValue();
         return val != null ? val.toString() : "";
-    }
-
-    private void applyFilters(String search, String status, String colFilter) {
-        String srch = search != null ? search.trim().toLowerCase() : "";
-        String stat = status != null ? status.trim().toUpperCase() : "";
-
-        int visible = 0;
-        for (Object obj : batchRows.getChildren()) {
-            if (!(obj instanceof Row)) continue;
-            Row row = (Row) obj;
-
-            String batchId = "";
-            int    idx     = 0;
-            for (Object c : row.getChildren()) {
-                if (c instanceof Label && idx == 1) {
-                    batchId = ((Label) c).getValue().toLowerCase();
-                    break;
-                }
-                idx++;
-            }
-            Object statusAttr = row.getAttribute("batchStatus");
-            String rowStatus  = statusAttr != null
-                                 ? statusAttr.toString().toUpperCase() : "";
-
-            boolean show =
-                (srch.isEmpty() || batchId.contains(srch))
-                && (stat.isEmpty() || rowStatus.equals(stat));
-            row.setVisible(show);
-            if (show) visible++;
-        }
-        pagerInfo.setValue("Showing " + visible + " batches");
-    }
-
-    // ════════════════════════════════════════════════════
-    //  Helpers
-    // ════════════════════════════════════════════════════
-
-    private void renumberRows() {
-        int seq = 0;
-        for (Object obj : batchRows.getChildren()) {
-            if (!(obj instanceof Row)) continue;
-            seq++;
-            Object first = ((Row) obj).getChildren().isEmpty()
-                           ? null : ((Row) obj).getChildren().get(0);
-            if (first instanceof Label) {
-                ((Label) first).setValue(String.valueOf(seq));
-            }
-        }
-        rowSeqCounter = seq;
-    }
-
-    private void refreshPager() {
-        pagerInfo.setValue("Showing " + batchRows.getChildren().size() + " batches");
     }
 
     private void showError(String msg) {

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page title="ExpressCTS — Batch Upload"
-      contentType="text/html;charset=UTF-8"?>
+<?page title="ExpressCTS — Batch Upload" contentType="text/html;charset=UTF-8"?>
 <?link rel="stylesheet" type="text/css"
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"?>
 <?link rel="stylesheet" type="text/css" href="/css/global.css"?>
@@ -8,29 +7,17 @@
 <?link rel="stylesheet" type="text/css" href="/css/layout.css"?>
 <?link rel="stylesheet" type="text/css" href="/outward/batchUpload/batchUpload.css"?>
 
-<zk xmlns="http://www.zkoss.org/2005/zul"
-    xmlns:n="native">
+<zk xmlns="http://www.zkoss.org/2005/zul" xmlns:n="native">
 
-<div apply="com.iispl.composer.outward.BatchUploadComposer"
-     sclass="shell">
+<div apply="com.iispl.composer.outward.BatchUploadComposer" sclass="shell">
 
-    <!-- ══════════════════════════════════════════
-         TOPBAR
-    ══════════════════════════════════════════ -->
     <include src="/component/topbar.zul"/>
 
-    <!-- ══════════════════════════════════════════
-         BODY ROW  (sidebar + main)
-    ══════════════════════════════════════════ -->
     <div sclass="body-row">
-
-        <!-- SIDEBAR — rendered by SidebarComposer -->
         <include src="/component/sidebar.zul"/>
 
-        <!-- MAIN COLUMN -->
         <div sclass="main">
 
-            <!-- BREADBAR -->
             <div sclass="breadbar">
                 <n:span class="par">Home</n:span>
                 <n:span class="sep">›</n:span>
@@ -39,40 +26,28 @@
                 <n:span class="cur">Batch Upload</n:span>
             </div>
 
-            <!-- PAGE -->
             <div sclass="page">
 
                 <!-- Page Header -->
                 <div sclass="page-hdr">
                     <div>
-                        <n:div class="page-title">
-                            Cheque File Processing
-                        </n:div>
+                        <n:div class="page-title">Cheque File Processing</n:div>
                         <n:div class="page-sub">
-                            Upload cheque file and process batch —
-                            Maximum 99 cheques per batch
+                            Upload cheque ZIP file and process batch — Maximum 99 cheques per batch
                         </n:div>
                     </div>
                 </div>
 
-                <!-- ────────────────────────────────
-                     UPLOAD FORM CARD
-                ──────────────────────────────── -->
+                <!-- ── UPLOAD FORM CARD ── -->
                 <div sclass="card mb16">
                     <div sclass="card-hdr">
-                        <n:div class="card-title">
-                            Upload &amp; Process Batch
-                        </n:div>
+                        <n:div class="card-title">Upload &amp; Process Batch</n:div>
                     </div>
                     <div sclass="card-body">
 
-                        <!-- File row — full width -->
                         <div sclass="frow">
                             <div sclass="fg" style="grid-column:span 3">
-                                <n:label>
-                                    Upload File
-                                    <n:span class="req">*</n:span>
-                                </n:label>
+                                <n:label>Upload File <n:span class="req">*</n:span></n:label>
                                 <div sclass="flex gap8">
                                     <label id="fileNameLabel"
                                            sclass="fi flex1 fi-ro"
@@ -80,170 +55,155 @@
                                     <button id="uploadFileBtn"
                                             sclass="btn bo"
                                             upload="true,maxsize=51200">
-                                        Browse File
+                                        📂 Browse File
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Amount + Count row -->
                         <div sclass="frow c2">
-
                             <div sclass="fg">
-                                <n:label>
-                                    Expected Amount
-                                    <n:span class="req">*</n:span>
-                                </n:label>
+                                <n:label>Expected Amount <n:span class="req">*</n:span></n:label>
                                 <decimalbox id="expectedAmountBox"
                                             sclass="fi"
                                             format="#,##0.00"
-                                            placeholder="Enter Total Batch Amount"
+                                            placeholder="Enter total batch amount"
                                             constraint="no negative,no zero"/>
                             </div>
-
                             <div sclass="fg">
-                                <n:label>
-                                    Cheque Count
-                                    <n:span class="req">*</n:span>
-                                </n:label>
+                                <n:label>Cheque Count <n:span class="req">*</n:span></n:label>
                                 <div sclass="flex gap8 items-c">
                                     <intbox id="expectedCountBox"
                                             sclass="fi flex1"
                                             placeholder="e.g. 50"
                                             constraint="no negative,no zero"/>
-                                    <n:span class="txt-sm txt-muted"
-                                            style="white-space:nowrap">
+                                    <n:span class="txt-sm txt-muted" style="white-space:nowrap">
                                         Max 99
                                     </n:span>
                                 </div>
                             </div>
-
                         </div>
 
-                        <!-- Error label -->
-                        <label id="formErrorLabel"
-                               sclass="err-note"
-                               value=""
-                               visible="false"/>
+                        <label id="formErrorLabel" sclass="err-note" value="" visible="false"/>
 
-                        <!-- Process button — left aligned -->
                         <div sclass="mt4">
-                            <button id="processBtn"
-                                    sclass="btn bp btn-lg"
-                                    disabled="true">
-                                ▶ Validate File
+                            <button id="processBtn" sclass="btn bp btn-lg" disabled="true">
+                                ▶ Validate &amp; Process
                             </button>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- ────────────────────────────────
-                     RESULT SECTION
-                     Hidden until batch is uploaded
-                ──────────────────────────────── -->
+                <!-- ── RESULT SECTION ── -->
                 <div id="batchResultSection" visible="false">
 
-                    <!-- Note bar -->
-                    <label id="batchNoteLabel"
-                           sclass="note suc mb12"
-                           value=""/>
+                    <label id="batchNoteLabel" sclass="note suc mb12" value=""/>
 
-                    <!-- Batch Table Card -->
                     <div sclass="card">
 
+                        <!-- Card Header -->
                         <div sclass="card-hdr">
-                            <n:div class="card-title">📦 Batches</n:div>
-                            <div sclass="flex gap8 items-c">
-                                <textbox id="batchSearchBox"
-                                         sclass="fi"
-                                         style="width:200px"
-                                         placeholder="🔍 Search batch ID..."
-                                         instant="true"/>
-                               <listbox id="statusFilterBox"
-					         sclass="fs"
-					         style="width:175px"
-					         mold="select">
-					    <listitem label="All Status"          value=""/>
-					    <listitem label="Needs MICR Repair"   value="NEEDS_REPAIR"/>
-					    <listitem label="Pending Data Entry"  value="ENTRY_PENDING"/>
-					    <listitem label="Referred Back"       value="REFER_BACK"/>
-					    <listitem label="Submitted"           value="SUBMITTED"/>
-					    <listitem label="Passed"              value="PASSED"/>
-					    <listitem label="Rejected"            value="REJECTED"/>
-					</listbox>
+                            <div sclass="flex items-c gap8">
+                                <n:div class="card-title">Batches</n:div>
+                                <label id="batchCountBadge"
+                                       sclass="badge b-info"
+                                       value="0 Batches"/>
                             </div>
+                            <button id="gotoViewBatches"
+                                    sclass="bu-view-all-btn"
+                                    label="View All →"/>
                         </div>
 
+                       <!-- Filter Bar -->
+<div sclass="bu-filter-bar">
+
+    <!-- Left: Status + Apply -->
+    <div sclass="bu-filter-left">
+        <n:label class="bu-filter-label">STATUS</n:label>
+        <listbox id="statusFilterBox"
+                 sclass="fs bu-filter-select"
+                 mold="select">
+            <listitem label="All statuses"          value=""/>
+            <listitem label="Needs MICR Repair"     value="NEEDS_REPAIR"/>
+            <listitem label="Pending Data Entry"    value="ENTRY_PENDING"/>
+            <listitem label="Referred Back"         value="REFER_BACK"/>
+            <listitem label="Submitted"             value="SUBMITTED"/>
+            <listitem label="Checker In Progress"   value="CHECKER_IN_PROGRESS"/>
+            <listitem label="On Hold"               value="CHECKER_HOLD"/>
+            <listitem label="Approved"              value="CHECKER_APPROVED"/>
+            <listitem label="Exported"              value="EXPORTED"/>
+            <listitem label="Rejected"              value="REJECTED"/>
+        </listbox>
+        <button id="btnApplyFilter" sclass="bu-apply-btn" label="Apply"/>
+    </div>
+
+    <!-- Right: Search + Clear -->
+    <div sclass="bu-filter-right">
+        <div sclass="bu-search-wrap">
+            <n:i class="fa-solid fa-magnifying-glass bu-search-icon"/>
+            <textbox id="batchSearchBox"
+                     sclass="bu-search-input"
+                     placeholder="Search Batch ID..."
+                     width="200px"
+                     instant="true"/>
+        </div>
+        <button id="btnClearFilter" sclass="bu-clear-btn" label="Clear"/>
+    </div>
+
+</div>
+                        <!-- Table -->
                         <div sclass="tbl-wrap">
                             <grid id="batchGrid" sclass="dt-grid"
                                   emptyMessage="No batches found.">
-                                <columns>
-                                    <column label="S.No"
-                                            width="65px" sclass="batch-table-header"/>
-                                    <column label="Batch ID"
-                                            width="170px" sclass="batch-table-header"/>
-                                    <column label="Cheque Count"
-                                            width="130px" sclass="batch-table-header"/>
-                                    <column label="Total Amount (₹)"
-                                            width="160px" sclass="batch-table-header"/>
-                                    <column label="Pending Count"
-                                            width="130px" sclass="batch-table-header"/>
-                                    <column label="Processed Count"
-                                            width="145px" sclass="batch-table-header"/>
-                                    <column label="Status"
-                                            width="150px" sclass="batch-table-header"/>
-                                    <column label="Action"
-                                            width="160px" sclass="batch-table-header"/>
-                                </columns>
-                                <rows id="batchRows"/>
+<columns>
+    <column label="Batch ID"         width="185px" sclass="batch-table-header"/>
+    <column label="Cheques"          width="110px" sclass="batch-table-header"/>
+    <column label="Total Amount (₹)" width="165px" sclass="batch-table-header"/>
+    <column label="Pending"          width="110px" sclass="batch-table-header"/>
+    <column label="Processed"        width="110px" sclass="batch-table-header"/>
+    <column label="Status"           width="170px" sclass="batch-table-header"/>
+    <column label="Action"                         sclass="batch-table-header"/>
+</columns>                                <rows id="batchRows"/>
                             </grid>
+                        </div>
 
-					  <div id="batchPager" sclass="pager" visible="false">
-					    <button id="btnPrevPage" sclass="btn bo btn-sm" label="← Prev" disabled="true"/>
-					    <label  id="pagerInfo" sclass="pager-info" value="Page 1 of 1"/>
-					    <button id="btnNextPage" sclass="btn bo btn-sm" label="Next →" disabled="true"/>
-					</div>
-		     </div>
+                        <!-- Pagination -->
+                        <div id="batchPager" sclass="pager" visible="false">
+                            <button id="btnPrevPage"
+                                    sclass="btn bo btn-sm"
+                                    label="← Prev"
+                                    disabled="true"/>
+                            <label  id="pagerInfo"
+                                    sclass="pager-info"
+                                    value="Page 1 of 1"/>
+                            <button id="btnNextPage"
+                                    sclass="btn bo btn-sm"
+                                    label="Next →"
+                                    disabled="true"/>
+                        </div>
 
                     </div>
                 </div>
-                <!-- end batchResultSection -->
 
             </div>
-            <!-- end page -->
-
         </div>
-        <!-- end main -->
-
     </div>
-    <!-- end body-row -->
 
-    <!-- ══════════════════════════════════════════
-         STATUSBAR
-    ══════════════════════════════════════════ -->
     <include src="/component/statusbar.zul"/>
-    <!-- ══════════════════════════════════════════
-         MISMATCH MODAL
-         Accept  = keep batch, proceed
-         Reject  = delete batch from DB, reset form
-    ══════════════════════════════════════════ -->
+
+    <!-- MISMATCH MODAL -->
     <div id="mismatchModal" sclass="modal-ov">
         <div sclass="modal">
-
             <div sclass="modal-hdr">
                 <n:div class="modal-title">⚠ Count / Amount Mismatch</n:div>
                 <button id="mismatchCloseBtn" sclass="modal-x">✕</button>
             </div>
-
             <div sclass="modal-body">
-
                 <n:p class="txt-sm txt-muted mb12">
                     The uploaded file values do not match what you entered.
-                    Review the comparison below then Accept or Reject the batch.
+                    Review and Accept or Reject the batch.
                 </n:p>
-
-                <!-- Comparison table -->
                 <n:table class="mm-table" style="width:100%;margin-bottom:12px">
                     <n:thead>
                         <n:tr>
@@ -255,40 +215,24 @@
                     <n:tbody>
                         <n:tr>
                             <n:td class="mm-lbl">Cheque Count</n:td>
-                            <n:td class="mm-exp">
-                                <label id="mismatchExpectedCount" value="0"/>
-                            </n:td>
-                            <n:td class="mm-got">
-                                <label id="mismatchParsedCount" value="0"/>
-                            </n:td>
+                            <n:td class="mm-exp"><label id="mismatchExpectedCount" value="0"/></n:td>
+                            <n:td class="mm-got"><label id="mismatchParsedCount"   value="0"/></n:td>
                         </n:tr>
                         <n:tr>
                             <n:td class="mm-lbl">Total Amount (₹)</n:td>
-                            <n:td class="mm-exp">
-                                <label id="mismatchExpectedAmount" value="0"/>
-                            </n:td>
-                            <n:td class="mm-got">
-                                <label id="mismatchParsedAmount" value="0"/>
-                            </n:td>
+                            <n:td class="mm-exp"><label id="mismatchExpectedAmount" value="0"/></n:td>
+                            <n:td class="mm-got"><label id="mismatchParsedAmount"   value="0"/></n:td>
                         </n:tr>
                     </n:tbody>
                 </n:table>
-
                 <div sclass="note warn">
                     <label value="⚠ Accept proceeds with file values. Reject discards this batch entirely."/>
                 </div>
-
             </div>
-
             <div sclass="modal-foot">
-                <button id="mismatchRejectBtn" sclass="btn bd">
-                    ✗ Reject Batch
-                </button>
-                <button id="mismatchAcceptBtn" sclass="btn bp">
-                    ✓ Accept
-                </button>
+                <button id="mismatchRejectBtn" sclass="btn bd">✗ Reject Batch</button>
+                <button id="mismatchAcceptBtn" sclass="btn bp">✓ Accept</button>
             </div>
-
         </div>
     </div>
 
