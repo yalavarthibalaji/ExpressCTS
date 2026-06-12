@@ -16,79 +16,226 @@
 
     <div sclass="body-row">
         <include src="/component/sidebar.zul"/>
+
         <div sclass="main">
             <div sclass="dash-main">
 
-                <div sclass="welcome-block">
-                    <label sclass="welcome-title" value="Dashboard"/>
-                    <label sclass="welcome-sub" value="Outward cheque verification — verify, export and report"/>
-                </div>
-
-                <n:div class="quick-cards">
-                    <include src="/component/dashCard.zul"
-                             icon="✅" title="Verification Queue"
-                             desc="Verify maker-submitted batches"
-                             btnId="gotoVerificationQueue" style="qcard-primary"/>
-
-                    <include src="/component/dashCard.zul"
-                             icon="📥" title="DEM Export"
-                             desc="Generate CXF/CIGF &amp; reports"
-                             btnId="gotoDemExport" style="qcard-warning"/>
-
-                    <include src="/component/dashCard.zul"
-                             icon="📊" title="Reports"
-                             desc="View outward processing reports"
-                             btnId="gotoReports" style="qcard-primary"/>
+                <!-- ── PAGE HEADER ── -->
+                <n:div class="od-page-header">
+                    <n:div class="od-header-left">
+                        <n:div class="od-page-eyebrow">OUTWARD CLEARING</n:div>
+                        <label sclass="od-page-title" value="Checker Dashboard"/>
+                        <label sclass="od-page-sub"   value="Verify, export and report outward cheque batches"/>
+                    </n:div>
+                    <n:div class="od-header-right">
+                        <n:div class="od-date-pill">
+                            <n:i class="fa-regular fa-calendar"/>
+                            <label id="lblTodayDate" sclass="od-date-text" value=""/>
+                        </n:div>
+                        
+                    </n:div>
                 </n:div>
 
-                <!-- Bottom Row: Pending Verification + Summary -->
-                <n:div class="bottom-row">
+                <!-- ── KPI STRIP — 3 cards: Awaiting Review, On Hold, Ready to Export ── -->
+                <n:div class="od-kpi-strip od-kpi-strip-3">
 
-                    <n:div class="recent-section">
-                        <n:div class="recent-title">Pending Verification</n:div>
-                        <n:div class="recent-table-wrap">
-                            <grid id="pendingBatchGrid" sclass="recent-grid" width="100%"
-                                  xmlns="http://www.zkoss.org/2005/zul">
-                                <columns>
-                                    <column label="BATCH ID" width="160px"/>
-                                    <column label="CHEQUES"  width="100px"/>
-                                    <column label="ACTION"   />
-                                </columns>
-                                <rows id="pendingBatchRows"/>
-                            </grid>
+                    <n:div class="od-kpi-card od-kpi-awaiting">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-amber">
+                            <n:i class="fa-solid fa-hourglass-half"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiPending" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Awaiting Review</n:span>
                         </n:div>
                     </n:div>
 
-                    <n:div class="summary-section">
-                        <n:div class="recent-title">Summary</n:div>
-                        <n:div class="summary-body">
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">Pending Queue</n:span>
-                                <label id="sumPending" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">On Hold</n:span>
-                                <label id="sumOnHold" sclass="sum-val sum-warn" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">Ready to Export</n:span>
-                                <label id="sumReadyExport" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
-                            <n:div class="sum-row">
-                                <n:span class="sum-lbl">DEM Exported</n:span>
-                                <label id="sumExported" sclass="sum-val" value="0"
-                                       xmlns="http://www.zkoss.org/2005/zul"/>
-                            </n:div>
+                    <n:div class="od-kpi-card od-kpi-hold">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-purple">
+                            <n:i class="fa-solid fa-circle-pause"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiHold" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">On Hold</n:span>
+                        </n:div>
+                    </n:div>
+
+                    <n:div class="od-kpi-card od-kpi-ready">
+                        <n:div class="od-kpi-icon-wrap od-kpi-icon-teal">
+                            <n:i class="fa-solid fa-circle-check"/>
+                        </n:div>
+                        <n:div class="od-kpi-body">
+                            <label id="kpiReady" sclass="od-kpi-value" value="0"/>
+                            <n:span class="od-kpi-label">Ready to Export</n:span>
                         </n:div>
                     </n:div>
 
                 </n:div>
 
-            </div>
-        </div>
+                <!-- ── QUICK ACTION CARDS ── -->
+                <n:div class="od-section-label">QUICK ACTIONS</n:div>
+                <n:div class="od-action-row od-action-row-3">
+
+                    <n:div class="od-action-card od-action-verify">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-circle-check"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-blue">Verify</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">Verification Queue</n:div>
+                        <n:div class="od-action-desc">Pass, reject or refer maker-submitted batches</n:div>
+                        <button sclass="od-action-btn od-btn-blue"
+                                label="Go to Verification Queue"
+                                id="gotoVerificationQueue"/>
+                    </n:div>
+
+                    <n:div class="od-action-card od-action-export">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-file-export"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-teal">Export</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">DEM Export</n:div>
+                        <n:div class="od-action-desc">Generate CXF / CIGF files for approved batches</n:div>
+                        <button sclass="od-action-btn od-btn-teal"
+                                label="Go to DEM Export"
+                                id="gotoDemExport"/>
+                    </n:div>
+
+                    <n:div class="od-action-card od-action-report">
+                        <n:div class="od-action-top">
+                            <n:div class="od-action-icon-wrap">
+                                <n:i class="fa-solid fa-chart-bar"/>
+                            </n:div>
+                            <n:div class="od-action-badge od-badge-slate">Reports</n:div>
+                        </n:div>
+                        <n:div class="od-action-title">Reports</n:div>
+                        <n:div class="od-action-desc">View outward processing and verification reports</n:div>
+                        <button sclass="od-action-btn od-btn-slate"
+                                label="View Reports"
+                                id="gotoReports"/>
+                    </n:div>
+
+                </n:div>
+
+                <!-- ── RECENT BATCHES PANEL ── -->
+                <n:div class="od-recent-panel">
+
+                    <!-- Panel header -->
+                    <n:div class="od-panel-header">
+                        <n:div class="od-panel-title">
+                            <n:i class="fa-solid fa-clock-rotate-left"/>
+                            Recent Batches
+                        </n:div>
+                        <button sclass="od-view-all-btn"
+                                label="View All"
+                                id="gotoVerificationQueueSmall"/>
+                    </n:div>
+
+                    <!-- ── FILTER BAR ── -->
+                    <div sclass="fbar mb0 od-panel-fbar">
+
+                        <!-- From Date -->
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">From Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="filterFromDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$filterFromDateInput').setValue(this.value);"/>
+                            </div>
+                            <textbox id="filterFromDateInput" sclass="hidden-textbox" value=""/>
+                        </div>
+
+                        <!-- To Date -->
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">To Date</n:label>
+                            <div sclass="date-wrap">
+                                <n:input type="date"
+                                         id="filterToDateNative"
+                                         class="native-date-input"
+                                         oninput="zk.$('$filterToDateInput').setValue(this.value);"/>
+                            </div>
+                            <textbox id="filterToDateInput" sclass="hidden-textbox" value=""/>
+                        </div>
+
+                        <!-- Status -->
+                        <div sclass="fg">
+                            <n:label class="fg-lbl">Status</n:label>
+                            <listbox id="filterStatus" sclass="fs" mold="select">
+                                <listitem label="All Status"      value="ALL"                 selected="true"/>
+                                <listitem label="Pending"         value="SUBMITTED"/>
+                                <listitem label="In Progress"     value="CHECKER_IN_PROGRESS"/>
+                                <listitem label="Hold"            value="CHECKER_HOLD"/>
+                                <listitem label="With Maker"      value="REFER_BACK"/>
+                                <listitem label="Ready to Export" value="CHECKER_APPROVED"/>
+                                <listitem label="Exported"        value="EXPORTED"/>
+                                <listitem label="Rejected"        value="REJECTED"/>
+                            </listbox>
+                        </div>
+
+                        <!-- Search -->
+                        <div sclass="fg flex1">
+                            <n:label class="fg-lbl">Search Batch ID</n:label>
+                            <textbox id="filterBatchId"
+                                     sclass="fi w100"
+                                     placeholder="e.g. B-2026-0610-001"
+                                     instant="true"/>
+                        </div>
+
+                        <button id="btnApplyFilter" sclass="btn bp">Apply</button>
+                        <button id="btnClearFilter" sclass="btn bo">Clear</button>
+
+                    </div>
+
+                    <!-- ── BATCH TABLE ── -->
+                  <listbox id="recentBatchList"
+         sclass="od-batch-listbox"
+         visible="false"
+         width="100%">
+
+    <listhead>
+        <listheader label="Batch ID" hflex="1"/>
+        <listheader label="Cheques" hflex="1"/>
+        <listheader label="Amount (₹)" hflex="1"/>
+        <listheader label="Submitted At" hflex="1"/>
+        <listheader label="Status" hflex="1"/>
+    </listhead>
+
+</listbox>
+
+                    <!-- ── EMPTY MESSAGE ── -->
+                    <label id="emptyBatchesMsg"
+                           value="No batches found."
+                           sclass="od-empty-msg"
+                           visible="true"/>
+
+                    <!-- ── PAGINATION BAR ── -->
+                    <div id="batchPager" sclass="od-pager" visible="false">
+                        <button id="btnPrevPage"
+                                sclass="btn bo btn-sm"
+                                label="← Prev"
+                                disabled="true"/>
+                        <label  id="pagerInfo"
+                                sclass="od-pager-info"
+                                value="Page 1 of 1"/>
+                        <button id="btnNextPage"
+                                sclass="btn bo btn-sm"
+                                label="Next →"
+                                disabled="true"/>
+                    </div>
+
+                </n:div>
+                <!-- end od-recent-panel -->
+
+            </div><!-- /dash-main -->
+        </div><!-- /main -->
+    </div><!-- /body-row -->
+
+    <!-- ══ FOOTER ══ -->
+    <div sclass="dash-footer">
+        <label value="ExpressClear CTS — IISPL"/>
     </div>
 
 </div>

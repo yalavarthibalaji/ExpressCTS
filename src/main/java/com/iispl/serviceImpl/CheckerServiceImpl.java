@@ -87,7 +87,7 @@ public class CheckerServiceImpl implements CheckerService {
         try {
             counts.put("pending",    batchDao.countByStatus("SUBMITTED"));
             counts.put("inProgress", batchDao.countByStatus("CHECKER_IN_PROGRESS"));
-            counts.put("hold",       batchDao.countByStatus("CHECKER_HOLD"));
+            counts.put("hold",       batchDao.countByStatus("CHECKER_HOLD") + batchDao.countByStatus("REFER_BACK"));
             counts.put("approved",   batchDao.countByStatus("CHECKER_APPROVED"));
             counts.put("exported",   batchDao.countByStatus("EXPORTED"));
 
