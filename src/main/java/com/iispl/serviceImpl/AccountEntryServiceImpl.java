@@ -48,6 +48,14 @@ public class AccountEntryServiceImpl implements AccountEntryService {
     }
 
     @Override
+    public java.util.Map<Long, Integer> getPendingCountsForBatches(java.util.List<Long> batchDbIds) {
+        if (batchDbIds == null || batchDbIds.isEmpty()) {
+            return new java.util.HashMap<>();
+        }
+        return chequeDao.getPendingCountsForBatches(batchDbIds);
+    }
+
+    @Override
     public boolean saveEntry(Long       chequeId,
                               String     accountNo,
                               String     accountHolder,
@@ -63,7 +71,11 @@ public class AccountEntryServiceImpl implements AccountEntryService {
             return false;
         }
 
-        boolean ok = chequeDao.saveAccountEntry(
+        // BUG-3 / ENHANCEMENT-1 FIX:
+        // Single atomic DAO call replaces the old two-step pattern
+        // (saveAccountEntry → clearReferral) which used two transactions
+        // and risked a partial write if the second call failed.
+        boolean ok = chequeDao.saveAccountEntryAtomic(
             chequeId,
             accountNo     != null ? accountNo.trim()     : "",
             accountHolder != null ? accountHolder.trim() : "",
@@ -73,12 +85,17 @@ public class AccountEntryServiceImpl implements AccountEntryService {
             payeeName     != null ? payeeName.trim()     : "");
 
         if (ok) {
-            // Clear referral if this cheque was sent by Checker (REFER_BACK).
-            // Safe to call unconditionally — DAO is a no-op when
-            // referred_to_module is already NULL (normal flow).
-            chequeDao.clearReferral(chequeId, "ENTRY_DONE");
+            // ENHANCEMENT-2: audit log for every entry save
+            auditService.log(
+                makerId,
+                AuditService.M_ACCOUNT_ENTRY,
+                "CHEQUE_ENTRY_SAVED",
+                AuditService.E_OUTWARD_CHEQUE,
+                chequeId,
+                null,
+                "account=" + accountNo + ", amount=" + amount);
 
-            System.out.println("AccountEntryService → Entry saved. "
+            System.out.println("AccountEntryService → Entry saved (atomic). "
                     + "chequeId=" + chequeId);
         }
         return ok;

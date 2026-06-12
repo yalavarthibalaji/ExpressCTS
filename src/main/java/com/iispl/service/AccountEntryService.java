@@ -35,6 +35,13 @@ public interface AccountEntryService {
     List<OutwardCheque> getPendingCheques(Long batchDbId);
 
     /**
+     * Bug-4 FIX: returns pending counts for a list of batches in ONE
+     * DB round-trip. Used by the batch selection grid to avoid the
+     * N+1 query that called getPendingCheques() per row.
+     */
+    java.util.Map<Long, Integer> getPendingCountsForBatches(java.util.List<Long> batchDbIds);
+
+    /**
      * Saves account entry data for one cheque.
      * Sets cheque status = ENTRY_DONE.
      *

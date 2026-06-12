@@ -81,6 +81,36 @@ public interface OutwardChequeDao {
                               String     chequeDate,
                               String     payeeName);
 
+    /**
+     * Bug-3 / Enhancement-1 FIX — ATOMIC save.
+     * Replaces the (saveAccountEntry + clearReferral) two-step pattern
+     * with one SQL UPDATE in one transaction.
+     *
+     * Sets:
+     *   account_no, account_holder, amount, amount_in_words, cheque_date,
+     *   payee_name, status = 'ENTRY_DONE',
+     *   referred_to_module = NULL (clears any referral atomically),
+     *   updated_at = NOW().
+     *
+     * Either everything commits or nothing commits — no partial writes.
+     */
+    boolean saveAccountEntryAtomic(Long       chequeId,
+                                    String     accountNo,
+                                    String     accountHolder,
+                                    BigDecimal amount,
+                                    String     amountInWords,
+                                    String     chequeDate,
+                                    String     payeeName);
+
+    /**
+     * Bug-4 FIX — bulk pending-count for a list of batch IDs.
+     * Avoids the N+1 query pattern of calling getPendingCheques()
+     * once per batch row in the selection grid.
+     *
+     * Returns a Map of batchDbId -> pending count.
+     */
+    java.util.Map<Long, Integer> getPendingCountsForBatches(java.util.List<Long> batchDbIds);
+
     // ── Checker Outward ───────────────────────────────────────────────────────
 
     /**

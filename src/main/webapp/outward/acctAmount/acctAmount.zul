@@ -176,20 +176,28 @@
 
                             <div sclass="split-body img-bg">
 
-                                <!-- FRONT image -->
-                                <div sclass="img-sec-label">FRONT</div>
-                                <div sclass="chq-img-panel">
-                                    <image id="frontImage"
-                                           sclass="chq-img-actual"
-                                           style="width:100%;height:auto;max-height:240px;object-fit:contain;display:block"/>
+                                <!-- Image tab buttons (MICR Repair style) -->
+                                <div sclass="chq-tab-row">
+                                    <button id="tabFrontBtn"
+                                            sclass="chq-tab chq-tab-active"
+                                            label="FRONT"/>
+                                    <button id="tabBackBtn"
+                                            sclass="chq-tab"
+                                            label="BACK"/>
                                 </div>
 
-                                <!-- BACK image -->
-                                <div sclass="img-sec-label mt8">BACK</div>
-                                <div sclass="chq-img-panel">
+                                <!-- FRONT image — visible by default -->
+                                <div id="chqFront" sclass="chq-img-panel">
+                                    <image id="frontImage"
+                                           sclass="chq-img-actual"
+                                           style="width:100%;height:auto;max-height:420px;object-fit:contain;display:block"/>
+                                </div>
+
+                                <!-- BACK image — hidden until BACK tab clicked -->
+                                <div id="chqBack" sclass="chq-img-panel" visible="false">
                                     <image id="backImage"
                                            sclass="chq-img-actual"
-                                           style="width:100%;height:auto;max-height:240px;object-fit:contain;display:block"/>
+                                           style="width:100%;height:auto;max-height:420px;object-fit:contain;display:block"/>
                                 </div>
 
                             </div>
@@ -284,8 +292,14 @@
 
     </div>
 
-</div>
+    <!-- Enhancement 6 — CBS cache hint -->
+    <div id="cbsCacheDiv" visible="false" sclass="cbs-cache-hint mt8">
+        <label id="cbsCacheLabel"
+               sclass="cbs-cache-text"
+               value=""/>
+    </div>
 
+</div>
                                 <!-- Section 3: Amount Entry -->
                                 <div sclass="vs">
                                     <n:div class="vs-title">
@@ -321,7 +335,8 @@
                                         </n:label>
                                         <textbox id="amountInWordsBox"
                                                  sclass="fi"
-                                                 placeholder="e.g. Fifty Thousand Rupees Only"/>
+                                                 readonly="true"
+                                                 placeholder="Auto-filled from amount"/>
                                     </div>
                                 </div>
 

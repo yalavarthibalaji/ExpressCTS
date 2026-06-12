@@ -2,10 +2,13 @@ package com.iispl.composer.outward;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Executions;
@@ -87,9 +90,13 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     // ── Entry View — Navigation ──
     @Wire private Label navLabel;
 
-    // ── Left Panel — Cheque Images ──
-    @Wire private Image frontImage;
-    @Wire private Image backImage;
+    // ── Left Panel — Cheque Images (MICR-style tabs) ──
+    @Wire private Button tabFrontBtn;
+    @Wire private Button tabBackBtn;
+    @Wire private Div    chqFront;
+    @Wire private Div    chqBack;
+    @Wire private Image  frontImage;
+    @Wire private Image  backImage;
 
     // ── Right Panel — Cheque Info (read-only) ──
     @Wire private Label chqNoDisplay;
@@ -108,6 +115,10 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     @Wire private Label   valStatusBadge;   // ACTIVE / INACTIVE badge
     @Wire private Label   valIfscLabel;     // IFSC code
     @Wire private Label   valBalanceLabel;  // balance
+
+    // ── CBS cache hint ──
+    @Wire private Div   cbsCacheDiv;
+    @Wire private Label cbsCacheLabel;
 
     // ── Right Panel — Amount Entry ──
     @Wire private Decimalbox amountBox;
@@ -142,6 +153,19 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     // ── CBS Validation State (reset per cheque) ──
     private boolean             isValidated   = false;
     private CbsValidationResult cbsResult     = null;
+
+    // ── Unsaved-changes flag ──
+    private boolean isDirty = false;
+
+    // ── CBS session cache (account number → result) ──
+    private final Map<String, CbsValidationResult> cbsCache = new HashMap<>();
+
+    // ── XML-parsed amount used for the mismatch warning ──
+    private BigDecimal originalXmlAmount = null;
+
+    // ── Guard that prevents the amountInWordsBox auto-fill from firing
+    //    its own onChange handler during programmatic prefill ──
+    private boolean autoFillingWords = false;
 
     // ════════════════════════════════════════════════════
     //  Page Init
@@ -243,9 +267,16 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
         List<OutwardBatch> pageData = batchDisplayList.subList(fromIndex, toIndex);
 
+        // Fetch pending counts for ALL visible batches in ONE query
+        // (avoids one DB round-trip per batch row).
+        List<Long> ids = new ArrayList<>();
+        for (OutwardBatch b : pageData) ids.add(b.getId());
+        Map<Long, Integer> pendingMap = entryService.getPendingCountsForBatches(ids);
+
         int idx = fromIndex + 1;
         for (OutwardBatch b : pageData) {
-            batchSelectRows.appendChild(buildBatchSelectRow(idx++, b));
+            int pending = pendingMap.getOrDefault(b.getId(), 0);
+            batchSelectRows.appendChild(buildBatchSelectRow(idx++, b, pending));
         }
 
         batchPager.setVisible(totalPages > 1);
@@ -275,7 +306,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         }
     }                                           // ← onNextPage() closes HERE}
 
-    private Row buildBatchSelectRow(int idx, final OutwardBatch b) {
+    private Row buildBatchSelectRow(int idx, final OutwardBatch b, int pending) {
         Row row = new Row();
         row.appendChild(new Label(String.valueOf(idx)));
 
@@ -288,17 +319,23 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             b.getActualAmount() != null
             ? "₹" + moneyFmt.format(b.getActualAmount()) : "—"));
 
-        int pending = 0;
-        try {
-            pending = entryService.getPendingCheques(b.getId()).size();
-        } catch (Exception e) {
-            pending = b.getChequeCount();
-        }
+        // Pending count passed in by caller (single bulk query for all batches)
         row.appendChild(new Label(String.valueOf(pending)));
         row.appendChild(new Label(String.valueOf(b.getChequeCount() - pending)));
 
-        Label statusBadge = new Label("Entry Done");
-        statusBadge.setSclass("badge b-info");
+        // Status badge reflects the actual batch status —
+        // "Referred Back" for REFER_BACK, "Entry Done" otherwise.
+        String statusText;
+        String badgeSclass;
+        if ("REFER_BACK".equals(b.getStatus())) {
+            statusText  = "Referred Back";
+            badgeSclass = "badge b-warn";
+        } else {
+            statusText  = "Entry Done";
+            badgeSclass = "badge b-info";
+        }
+        Label statusBadge = new Label(statusText);
+        statusBadge.setSclass(badgeSclass);
         row.appendChild(statusBadge);
 
         Button selectBtn = new Button("Select");
@@ -328,6 +365,10 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         pendingList  = entryService.getPendingCheques(currentBatch.getId());
         totalCheques = currentBatch.getChequeCount();
         currentIndex = 0;
+
+        // Reset per-batch session state
+        cbsCache.clear();          // fresh CBS cache for new batch
+        isDirty = false;           // no unsaved changes yet
 
         refreshStatsBar();
 
@@ -376,10 +417,26 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         // Account section
         accountNoBox.setValue(safe(cheque.getAccountNo()));
 
+        // ── Always reset image panel to FRONT tab on new cheque ──
+        chqFront.setVisible(true);
+        chqBack.setVisible(false);
+        tabFrontBtn.setSclass("chq-tab chq-tab-active");
+        tabBackBtn.setSclass("chq-tab");
+
         // ── RESET CBS validation state for every new cheque ──
         resetCbsValidation();
 
-        // Amount pre-fill
+        // Capture XML-parsed amount for the mismatch warning.
+        // Only for first-time entry (PENDING); skip for re-entry of
+        // CHECKER_REFERRED cheques.
+        if ("PENDING".equals(cheque.getStatus())) {
+            originalXmlAmount = cheque.getAmount();
+        } else {
+            originalXmlAmount = null;
+        }
+
+        // Amount pre-fill — guard onChange handler from firing for our setValue
+        autoFillingWords = true;
         if (cheque.getAmount() != null) {
             amountBox.setValue(cheque.getAmount());
             amountInWordsBox.setValue(
@@ -388,6 +445,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             amountBox.setValue((BigDecimal) null);
             amountInWordsBox.setValue("");
         }
+        autoFillingWords = false;
 
         chequeDateBox.setValue(
             cheque.getChequeDate() != null
@@ -397,6 +455,12 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
         loadImages(cheque);
         rejectPanel.setVisible(false);
+
+        // ── Reset auxiliary divs on every cheque load ──
+        cbsCacheDiv.setVisible(false);
+
+        // Form is fresh — no unsaved changes yet
+        isDirty = false;
     }
 
     private void loadImages(OutwardCheque cheque) {
@@ -443,6 +507,8 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         if (isValidated || cbsResult != null) {
             resetCbsValidation();
         }
+        cbsCacheDiv.setVisible(false);
+        isDirty = true;
     }
 
     // ════════════════════════════════════════════════════
@@ -460,17 +526,37 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             return;
         }
 
+        String key = accNo.trim();
+
+        // Check the CBS session cache first — saves a network call
+        if (cbsCache.containsKey(key)) {
+            CbsValidationResult cached = cbsCache.get(key);
+            cbsResult = cached;
+            displayCbsResult(cached);
+            // Show small hint that result came from cache
+            cbsCacheDiv.setVisible(true);
+            cbsCacheLabel.setValue("⚡ CBS result loaded from session cache "
+                                   + "(no network call made).");
+            System.out.println("AccountEntryComposer → CBS cache hit: " + key);
+            return;
+        }
+
         // ── Show loading state ──
         validateBtn.setLabel("Validating...");
         validateBtn.setDisabled(true);
         valResultDiv.setVisible(false);
         valDetailsDiv.setVisible(false);
+        cbsCacheDiv.setVisible(false);
 
-        System.out.println("AccountEntryComposer → CBS validate: " + accNo.trim());
+        System.out.println("AccountEntryComposer → CBS validate (live): " + key);
 
         // ── Call CBS (Firebase) ──
-        CbsValidationResult result = cbsService.validateAccount(accNo.trim());
+        CbsValidationResult result = cbsService.validateAccount(key);
         cbsResult = result;
+
+        // Store result in session cache so the next click on the same
+        // account number returns instantly
+        cbsCache.put(key, result);
 
         // ── Reset button ──
         validateBtn.setLabel("Validate");
@@ -612,11 +698,53 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     @Listen("onChange = #amountBox")
     public void onAmountChange() {
+        // Skip if this onChange was triggered by our own setValue() during
+        // loadChequeForm() — otherwise we would overwrite a freshly loaded
+        // amount-in-words value with the computed one before the user has
+        // even seen it.
+        if (autoFillingWords) return;
+
         BigDecimal amt = amountBox.getValue();
+        autoFillingWords = true;
         if (amt != null && amt.compareTo(BigDecimal.ZERO) > 0) {
             amountInWordsBox.setValue(
                 AmountToWords.convert(amt.doubleValue()));
+        } else {
+            amountInWordsBox.setValue("");
         }
+        autoFillingWords = false;
+
+        // Form has been modified by the user
+        isDirty = true;
+    }
+
+    // ════════════════════════════════════════════════════
+    //  IMAGE TAB SWITCHING (MICR Repair style)
+    // ════════════════════════════════════════════════════
+
+    @Listen("onClick = #tabFrontBtn")
+    public void onTabFront() {
+        chqFront.setVisible(true);
+        chqBack.setVisible(false);
+        tabFrontBtn.setSclass("chq-tab chq-tab-active");
+        tabBackBtn.setSclass("chq-tab");
+    }
+
+    @Listen("onClick = #tabBackBtn")
+    public void onTabBack() {
+        chqFront.setVisible(false);
+        chqBack.setVisible(true);
+        tabFrontBtn.setSclass("chq-tab");
+        tabBackBtn.setSclass("chq-tab chq-tab-active");
+    }
+
+    // ════════════════════════════════════════════════════
+    //  Dirty-flag tracking for other form fields
+    // ════════════════════════════════════════════════════
+
+    @Listen("onChanging = #chequeDateBox; onChanging = #payeeNameBox")
+    public void onFormFieldChanging() {
+        isDirty = true;
     }
 
     // ════════════════════════════════════════════════════
@@ -626,16 +754,41 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
     @Listen("onClick = #prevBtn")
     public void onPrev() {
         if (pendingList == null || pendingList.isEmpty()) return;
-        currentIndex = (currentIndex - 1 + pendingList.size())
-                        % pendingList.size();
-        loadChequeForm(pendingList.get(currentIndex));
+        navigateTo((currentIndex - 1 + pendingList.size()) % pendingList.size());
     }
 
     @Listen("onClick = #nextBtn")
     public void onNext() {
         if (pendingList == null || pendingList.isEmpty()) return;
-        currentIndex = (currentIndex + 1) % pendingList.size();
-        loadChequeForm(pendingList.get(currentIndex));
+        navigateTo((currentIndex + 1) % pendingList.size());
+    }
+
+    /**
+     * Shared navigation helper that prompts about unsaved changes before
+     * moving away from the current cheque. Used by the Prev / Next buttons.
+     */
+    private void navigateTo(final int newIndex) {
+        if (newIndex == currentIndex) return;
+
+        if (isDirty) {
+            Messagebox.show(
+                "You have unsaved changes on this cheque.\n\n"
+                + "Navigate away anyway? Your edits will be lost.",
+                "Unsaved Changes",
+                Messagebox.YES | Messagebox.NO,
+                Messagebox.QUESTION,
+                event -> {
+                    if (Messagebox.ON_YES.equals(event.getName())) {
+                        isDirty      = false;
+                        currentIndex = newIndex;
+                        loadChequeForm(pendingList.get(currentIndex));
+                    }
+                }
+            );
+        } else {
+            currentIndex = newIndex;
+            loadChequeForm(pendingList.get(currentIndex));
+        }
     }
 
     // ════════════════════════════════════════════════════
@@ -708,6 +861,49 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             words = AmountToWords.convert(amount.doubleValue());
         }
 
+        // ── Amount mismatch check ──
+        // If the maker-entered amount differs from the XML-parsed amount
+        // by more than 1%, show a YES/NO confirmation before saving.
+        // Catches data-entry errors like missed/extra zeros.
+        if (originalXmlAmount != null
+                && originalXmlAmount.compareTo(BigDecimal.ZERO) > 0
+                && isMismatch(amount, originalXmlAmount)) {
+            final String finalWords  = words;
+            final String finalAccNo  = accNo;
+            final String finalDate   = dateStr;
+            final String finalPayee  = payee;
+            final BigDecimal finalAmount = amount;
+
+            String msg = String.format(
+                "Entered amount ₹%s differs from the XML-parsed amount ₹%s "
+                + "by more than 1%%.%n%nThis could be a data entry error.%n%n"
+                + "Save the entered value anyway?",
+                amount.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                originalXmlAmount.setScale(2, RoundingMode.HALF_UP).toPlainString()
+            );
+            Messagebox.show(msg, "Amount Mismatch Warning",
+                Messagebox.YES | Messagebox.NO, Messagebox.EXCLAMATION,
+                event -> {
+                    if (Messagebox.ON_YES.equals(event.getName())) {
+                        doSaveCheque(cheque, finalAccNo, finalAmount,
+                                     finalWords, finalDate, finalPayee);
+                    }
+                });
+            return;
+        }
+
+        doSaveCheque(cheque, accNo, amount, words, dateStr, payee);
+    }
+
+    /**
+     * Performs the actual cheque save after all validations + amount-mismatch
+     * confirmation are passed. Updates the thumbnail strip and progress bar,
+     * then either advances to the next cheque or finalises the batch.
+     */
+    private void doSaveCheque(OutwardCheque cheque,
+                              String accNo, BigDecimal amount,
+                              String words, String dateStr, String payee) {
+
         // ── Get CBS account holder name to store ──
         String accountHolder = (cbsResult != null
                 && cbsResult.getAccountHolderName() != null
@@ -719,7 +915,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         boolean ok = entryService.saveEntry(
             cheque.getId(),
             accNo.trim(),
-            accountHolder,      // ← real CBS account holder name
+            accountHolder,
             amount,
             words.trim(),
             dateStr.trim(),
@@ -737,6 +933,9 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             "✓ Cheque " + cheque.getChequeNo() + " entry saved.",
             "info", null, "top_center", 2000);
 
+        // Clear unsaved-changes flag — save completed successfully
+        isDirty = false;
+
         pendingList.remove(currentIndex);
 
         if (entryService.isAllEntriesDone(currentBatch.getId())) {
@@ -744,7 +943,7 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             // For REFER_BACK batches, the maker manually re-submits from
             // View Batches so they explicitly confirm the fix.
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
-            	entryService.submitBatch(currentBatch.getId(), currentMakerId);
+                entryService.submitBatch(currentBatch.getId(), currentMakerId);
                 Clients.showNotification(
                     "All entries done! Batch " + batchId
                     + " submitted to Checker queue.",
@@ -753,9 +952,8 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
                 // REFER_BACK: check ALL modules, not just Data Entry
                 int remaining = makerOutwardService.countActiveReferrals(currentBatch.getId());
                 if (remaining == 0) {
-                    // Last referred cheque across all modules — show resubmit popup
-                   // showBatchSubmittedState();
                     showResubmitPopup();
+                    return;  // BUG: was missing — popup must complete before redirect
                 } else {
                     // MICR module still has referred cheques pending
                     Clients.showNotification(
@@ -833,21 +1031,25 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
             "Cheque " + cheque.getChequeNo() + " rejected.",
             "info", null, "top_center", 2000);
 
+        // Clear unsaved-changes flag — save completed successfully
+        isDirty = false;
+
         pendingList.remove(currentIndex);
 
         if (entryService.isAllEntriesDone(currentBatch.getId())) {
             // Auto-submit only for the NORMAL flow.
             // For REFER_BACK batches, the maker manually re-submits later.
             if (!"REFER_BACK".equals(currentBatch.getStatus())) {
-            	entryService.submitBatch(currentBatch.getId(), currentMakerId);
+                entryService.submitBatch(currentBatch.getId(), currentMakerId);
             } else {
-            	int remAfterReject = makerOutwardService.countActiveReferrals(currentBatch.getId());
-                if (remAfterReject == 0) {
-                    showResubmitPopup();
-                }
+                int remAfterReject = makerOutwardService.countActiveReferrals(currentBatch.getId());
                 System.out.println("AccountEntryComposer → REFER_BACK batch "
                     + currentBatch.getBatchId()
                     + " — referred cheque rejected, remaining=" + remAfterReject);
+                if (remAfterReject == 0) {
+                    showResubmitPopup();
+                    return;  // popup handles redirect on YES
+                }
             }
             showBatchSubmittedState();
             return;
@@ -870,10 +1072,39 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
 
     @Listen("onClick = #backBtn")
     public void onBack() {
+        // Prompt about unsaved changes before leaving the screen
+        if (isDirty) {
+            Messagebox.show(
+                "You have unsaved changes on this cheque.\n\n"
+                + "Leave anyway? Your edits will be lost.",
+                "Unsaved Changes",
+                Messagebox.YES | Messagebox.NO,
+                Messagebox.QUESTION,
+                event -> {
+                    if (Messagebox.ON_YES.equals(event.getName())) {
+                        isDirty = false;
+                        doBack();
+                    }
+                }
+            );
+        } else {
+            doBack();
+        }
+    }
+
+    /**
+     * cameFromSidebar drives the back navigation:
+     *   true  → user arrived from the sidebar link → return to the in-page
+     *           batch selection view.
+     *   false → user arrived via the batchId URL parameter (i.e. from the
+     *           MICR Repair screen's "Proceed to Account Entry" button) →
+     *           go back to MICR Repair.
+     */
+    private void doBack() {
         if (cameFromSidebar) {
             loadBatchSelectView();
         } else {
-            Executions.sendRedirect("/outward/batchUpload/batchUpload.zul");
+            Executions.sendRedirect("/outward/micrRepair/micrRepair.zul");
         }
     }
 
@@ -924,5 +1155,27 @@ public class AccountEntryComposer extends SelectorComposer<Component> {
         }
         // Navigate away AFTER popup interaction — not before
         showBatchSubmittedState();
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Amount mismatch tolerance check
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns true if the maker-entered amount differs from the XML-parsed
+     * amount by more than 1%.
+     *
+     * Why 1%? Banks tolerate small rounding when re-keying handwritten
+     * cheques but anything beyond that probably indicates a missed/extra
+     * digit (e.g. ₹5,000 typed as ₹50,000 or vice-versa).
+     *
+     * BigDecimal.compareTo is used (not equals) so 1000 vs 1000.00 compare equal.
+     */
+    private boolean isMismatch(BigDecimal entered, BigDecimal original) {
+        if (entered == null || original == null) return false;
+        if (original.compareTo(BigDecimal.ZERO) <= 0) return false;
+        BigDecimal diff      = entered.subtract(original).abs();
+        BigDecimal tolerance = original.multiply(new BigDecimal("0.01"));
+        return diff.compareTo(tolerance) > 0;
     }
 }

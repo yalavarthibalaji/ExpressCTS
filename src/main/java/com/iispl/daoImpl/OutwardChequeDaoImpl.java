@@ -340,9 +340,18 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
     public int countPendingEntries(Long batchDbId) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         try {
+            // BUG-1 FIX: this query MUST match findPendingEntries() above.
+            // The old version counted only status='PENDING' but the find
+            // method also returns CHECKER_REFERRED rows routed to DATA_ENTRY.
+            // Result: isAllEntriesDone() fired too early in REFER_BACK flow
+            // and the batch auto-submitted with referred cheques still unfixed.
             String sql = "SELECT COUNT(*) FROM outward_cheque "
                        + "WHERE batch_id = :batchId "
-                       + "AND status = 'PENDING'";
+                       + "  AND ( "
+                       + "         status = 'PENDING' "
+                       + "      OR (status             = 'CHECKER_REFERRED' "
+                       + "          AND referred_to_module = 'DATA_ENTRY') "
+                       + "      )";
             NativeQuery<?> q = session.createNativeQuery(sql);
             q.setParameter("batchId", batchDbId);
             Number count = (Number) q.uniqueResult();
@@ -401,6 +410,124 @@ public class OutwardChequeDaoImpl implements OutwardChequeDao {
             System.err.println("OutwardChequeDao → saveAccountEntry failed: "
                     + e.getMessage());
             return false;
+        } finally {
+            session.close();
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  BUG-3 / ENHANCEMENT-1 FIX — ATOMIC save
+    //  Single SQL UPDATE replaces the old two-step pattern:
+    //    saveAccountEntry()  → tx 1 (entry fields + status)
+    //    clearReferral()     → tx 2 (referred_to_module = NULL)
+    //  Now everything is in ONE transaction. All-or-nothing.
+    //  Safe to call for both normal and REFER_BACK flows because
+    //  setting referred_to_module = NULL is a no-op on rows that
+    //  already have it NULL.
+    // ════════════════════════════════════════════════════
+    @Override
+    public boolean saveAccountEntryAtomic(Long       chequeId,
+                                            String     accountNo,
+                                            String     accountHolder,
+                                            BigDecimal amount,
+                                            String     amountInWords,
+                                            String     chequeDate,
+                                            String     payeeName) {
+
+        if (chequeId == null) {
+            System.err.println("OutwardChequeDao → saveAccountEntryAtomic: chequeId is null");
+            return false;
+        }
+
+        Session     session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tx      = null;
+        try {
+            tx = session.beginTransaction();
+
+            String sql = "UPDATE outward_cheque "
+                       + "SET account_no         = :accountNo, "
+                       + "    account_holder     = :accountHolder, "
+                       + "    amount             = :amount, "
+                       + "    amount_in_words    = :amountInWords, "
+                       + "    cheque_date        = CAST(:chequeDate AS DATE), "
+                       + "    payee_name         = :payeeName, "
+                       + "    status             = 'ENTRY_DONE', "
+                       + "    referred_to_module = NULL, "
+                       + "    updated_at         = NOW() "
+                       + "WHERE id = :chequeId";
+
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameter("accountNo",     accountNo     != null ? accountNo     : "");
+            q.setParameter("accountHolder", accountHolder != null ? accountHolder : "");
+            q.setParameter("amount",        amount);
+            q.setParameter("amountInWords", amountInWords != null ? amountInWords : "");
+            q.setParameter("chequeDate",    chequeDate    != null ? chequeDate    : "");
+            q.setParameter("payeeName",     payeeName     != null ? payeeName     : "");
+            q.setParameter("chequeId",      chequeId);
+
+            int rows = q.executeUpdate();
+            tx.commit();
+
+            System.out.println("OutwardChequeDao → ATOMIC save OK. "
+                    + "chequeId=" + chequeId + " status=ENTRY_DONE referral=cleared");
+            return rows > 0;
+
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            System.err.println("OutwardChequeDao → saveAccountEntryAtomic failed: "
+                    + e.getMessage());
+            return false;
+        } finally {
+            session.close();
+        }
+    }
+
+    // ════════════════════════════════════════════════════
+    //  BUG-4 FIX — bulk pending-count for batch list view.
+    //  Old code called getPendingCheques(b.getId()).size() inside
+    //  the batch row builder — one DB round-trip PER batch (N+1).
+    //  This method runs a single GROUP BY query that returns counts
+    //  for ALL batches in one shot.
+    // ════════════════════════════════════════════════════
+    @Override
+    public java.util.Map<Long, Integer> getPendingCountsForBatches(java.util.List<Long> batchDbIds) {
+        java.util.Map<Long, Integer> result = new java.util.HashMap<>();
+        if (batchDbIds == null || batchDbIds.isEmpty()) return result;
+
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        try {
+            // Same WHERE clause as findPendingEntries — must stay in sync
+            String sql = "SELECT batch_id, COUNT(*) AS cnt "
+                       + "FROM outward_cheque "
+                       + "WHERE batch_id IN (:batchIds) "
+                       + "  AND ( "
+                       + "         status = 'PENDING' "
+                       + "      OR (status             = 'CHECKER_REFERRED' "
+                       + "          AND referred_to_module = 'DATA_ENTRY') "
+                       + "      ) "
+                       + "GROUP BY batch_id";
+            NativeQuery<?> q = session.createNativeQuery(sql);
+            q.setParameterList("batchIds", batchDbIds);
+
+            @SuppressWarnings("unchecked")
+            java.util.List<Object[]> rows = (java.util.List<Object[]>) q.getResultList();
+            for (Object[] row : rows) {
+                Long  batchId = ((Number) row[0]).longValue();
+                Integer count = ((Number) row[1]).intValue();
+                result.put(batchId, count);
+            }
+            // Fill zeros for batches with no pending rows
+            for (Long id : batchDbIds) {
+                if (!result.containsKey(id)) result.put(id, 0);
+            }
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("OutwardChequeDao → getPendingCountsForBatches failed: "
+                    + e.getMessage());
+            // On error, fall back to zeros so the UI still renders
+            for (Long id : batchDbIds) result.put(id, 0);
+            return result;
         } finally {
             session.close();
         }
