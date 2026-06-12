@@ -17,6 +17,7 @@ import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zul.Button;
+import org.zkoss.zul.Div;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Row;
 import org.zkoss.zul.Rows;
@@ -27,7 +28,7 @@ import java.util.Map;
 public class CheckerOutwardDashboardComposer extends SelectorComposer<Component> {
 
     // ── Topbar labels ──
-    @Wire private Label userAvatar;
+	@Wire private Label userAvatar;
     @Wire private Label userName;
     @Wire private Label userRole;
 
@@ -66,7 +67,6 @@ public class CheckerOutwardDashboardComposer extends SelectorComposer<Component>
             return;
         }
 
-        // Step 3: Populate topbar
         if (userAvatar != null) userAvatar.setValue(dto.getInitials());
         if (userName   != null) userName.setValue(dto.getFullName());
         if (userRole   != null) userRole.setValue("Checker — Outward");

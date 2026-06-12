@@ -146,7 +146,6 @@ public class DemExportComposer extends SelectorComposer<Component> {
             Executions.sendRedirect(SessionUtil.getDashboardUrlFor(dto.getRoleCode()));
             return;
         }
-
         if (userAvatar != null) userAvatar.setValue(dto.getInitials());
         if (userName   != null) userName.setValue(dto.getFullName());
         if (userRole   != null) userRole.setValue("Checker — Outward");
